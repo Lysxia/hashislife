@@ -11,6 +11,14 @@ typedef struct Hashtbl Hashtbl;
 /* Internal node or leaf */
 typedef union Node Node;
 
+/* List like type */
+typedef struct Quad Quad;
+
+struct Hashtbl {
+  int size;
+  struct Quad** tbl;
+};
+
 union Node {
   // internal node
   struct {
@@ -19,17 +27,17 @@ union Node {
 
   // leaf
   struct {
-    int ul_,ur_,bl_,br_;
+    int map[4];
+    /* 0 1
+     * 2 3
+     * */
   } l;
 };
 
-/* List like type */
-typedef struct Quad Quad;
-
 struct Quad {
   int depth; // head information
-  Node node;
-  Quad* tl; // tail
+  union Node node;
+  struct Quad* tl; // tail
 };
 
 int hash(Node);
@@ -37,11 +45,11 @@ int hash(Node);
 Hashtbl hashtbl_new();
 
 /* Hash is computed before calling find and/or add */
-Quad* hashtbl_find(Node key, Hashtbl hashtbl, int h);
+Quad* hashtbl_find(Hashtbl hashtbl, int h, Node key);
 
-void hashtbl_add(Quad* elt, Hashtbl hashtbl, int h);
+void hashtbl_add(Hashtbl hashtbl, int h, Quad* elt);
 
-Quad* list_find(Node key, Quad* list);
+Quad* list_find(Quad* list, Node key);
 
 void hashtbl_free(Hashtbl);
 

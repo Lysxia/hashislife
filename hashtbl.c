@@ -2,16 +2,11 @@
 #include <stdio.h>
 #include "hashtbl.h"
 
-struct Hashtbl {
-  int size;
-  Quad** tbl;
-};
-
 Hashtbl hashtbl_new()
 {
   Hashtbl h = {
     .size = init_size,
-    .tbl = malloc(init_size*sizeof(Quad*)),
+    .tbl = calloc(init_size*sizeof(Quad*)),
   };
   return h;
 }
@@ -24,18 +19,18 @@ int hash(Node n)
         *(long int) n.n.br) >> (sizeof(unsigned int)-init_addr_size);
 }
 
-Quad* hashtbl_find(Node key, Hashtbl hashtbl, int h)
+Quad* hashtbl_find(Hashtbl hashtbl, int h, Node key)
 {
   return list_find (key,hashtbl.tbl[h]);
 }
 
-void hashtbl_add(Quad* elt, Hashtbl hashtbl, int h)
+void hashtbl_add(Hashtbl hashtbl, int h, Quad* elt)
 {
   elt->tl = hashtbl.tbl[h];
   hashtbl.tbl[h] = elt;
 }
 
-Quad* list_find(Node key, Quad* list)
+Quad* list_find(Quad* list, Node key)
 {
   if (list != NULL && // left to right lazy evaluation
        (key.n.ul != list->node.n.ul ||
