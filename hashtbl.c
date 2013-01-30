@@ -2,47 +2,100 @@
 #include <stdio.h>
 #include "hashtbl.h"
 
+#define BUCKET_COUNT 8
+
+const unsigned int init_addr_size = 20;
+const unsigned int init_size = 1048576;
+
 Hashtbl hashtbl_new()
 {
-  Hashtbl h = {
-    .size = init_size,
-    .tbl = calloc(init_size*sizeof(Quad*)),
-  };
+  Hashtbl h = malloc(sizeof(struct Hashtbl));
+  h->size = init_size;
+  h->tbl = calloc(init_size,sizeof(Quad*));
+  h->len = 0;
+
   return h;
 }
 
-int hash(Node n)
+int hash(Node* n)
 {
-  return (unsigned int) ((long int) n.n.ul
-        *(long int) n.n.ur
-        *(long int) n.n.bl
-        *(long int) n.n.br) >> (sizeof(unsigned int)-init_addr_size);
+  long int a[4],x;
+  int i;
+
+  for (i=0 ; i<4 ; i++)
+    a[i] = (long int) n->n.sub[i] >> 2;
+
+  x = (a[0]<<15)^(a[1]<<10)^(a[2]<<5)^a[3];
+
+  return (unsigned int) x&(init_size-1);
 }
 
-Quad* hashtbl_find(Hashtbl hashtbl, int h, Node key)
+Quad* hashtbl_find(Hashtbl hashtbl, int h, Node* key)
 {
-  return list_find (key,hashtbl.tbl[h]);
+  return list_find(key,hashtbl->tbl[h]);
 }
 
 void hashtbl_add(Hashtbl hashtbl, int h, Quad* elt)
 {
-  elt->tl = hashtbl.tbl[h];
-  hashtbl.tbl[h] = elt;
+  hashtbl->len++;
+  elt->tl = hashtbl->tbl[h];
+  hashtbl->tbl[h] = elt;
 }
 
-Quad* list_find(Quad* list, Node key)
+Quad* list_find(Node* key, Quad* list)
 {
-  if (list != NULL && // left to right lazy evaluation
-       (key.n.ul != list->node.n.ul ||
-        key.n.ur != list->node.n.ur ||
-        key.n.bl != list->node.n.bl ||
-        key.n.br != list->node.n.br))
-    return list_find(key,list->tl);
+  if (list != NULL) // left to right lazy evaluation
+  {
+    int i;
+    for (i=0; i<4 ; i++)
+      if (key->n.sub[i] != list->node.n.sub[i])
+        return list_find(key,list->tl);
+    return list;
+  }
   else
     return list;
 }
 
 void hashtbl_free(Hashtbl hashtbl)
 {
-  free(hashtbl.tbl);
+  free(hashtbl->tbl);
+  free(hashtbl);
+}
+
+void print_quad(Quad* q)
+{
+  if (q->depth == 0)
+  {
+    int i;
+    printf("LEAF ");
+    for (i=0 ; i<4 ; i++)
+      printf("%d",q->node.l.map[i]);
+    printf("\n");
+  }
+  else
+    printf("QUAD depth: %d\n", q->depth);
+}
+
+int list_length(Quad* list)
+{
+  if (list == NULL)
+    return 0;
+  else 
+    return 1+list_length(list->tl);
+}
+
+void htbl_stat(Hashtbl htbl)
+{
+  int i, max[BUCKET_COUNT]={0};
+  for (i=0 ; i<init_size ; i++)
+  {
+    int l = list_length(htbl->tbl[i]);
+    max[(l>=BUCKET_COUNT) ? BUCKET_COUNT-1 : l]++;
+  }
+
+  printf("LENGTH: %d\n", htbl->len);
+  for (i=0 ; i<BUCKET_COUNT ; i++)
+    printf("%d %d\n",i,max[i]);
+
+  return;
 }

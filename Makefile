@@ -1,12 +1,7 @@
-OBJ=read_gol.o sparsemap.o slowlife.o
+OBJ=hashtbl.o hashlife.o main.o
 
-slowlife:
-
-test: slowlife test.txt
-	./slowlife test.txt
-
-slowlife: $(OBJ)
-	gcc $(OBJ) -o slowlife
+hashlife: $(OBJ)
+	gcc $(OBJ) -o $@
 
 %.o: %.c %.h
 	gcc -c $<
