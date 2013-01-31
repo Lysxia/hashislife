@@ -3,7 +3,11 @@
 
 #include "hashtbl.h"
 
-Quad* hashlife(int** map, int m, int n, int mmin, int mmax, int nmin, int nmax, int d);
+Quad* hashlife(int** map, int m, int n,
+                int mmin, int mmax, int nmin, int nmax, int d);
+
+Quad* _hashlife(int** map, int m, int n,
+                int mmin, int mmax, int nmin, int nmax, int d);
 
 Quad* mk_quad(Quad *quad[4], int d);
 

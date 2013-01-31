@@ -15,6 +15,7 @@ Hashtbl htbl = NULL;
  * 2 3 */
 Quad *leaves = NULL;
 
+// A smarter memory allocation, malloc chunks of memory
 Quad *quad_block;
 int count = 1024;
 
@@ -22,7 +23,9 @@ Quad **stack = NULL;
 int stack_size = 0;
 
 // Hashtable must have been initialized through hashlife_init
-Quad* hashlife(int** map, int m, int n, int mmin, int mmax, int nmin, int nmax, int d)
+Quad* _hashlife(int** map, int m, int n,
+                int mmin, int mmax,
+                int nmin, int nmax, int d)
 {
   if (d==0)
   {
@@ -41,12 +44,28 @@ Quad* hashlife(int** map, int m, int n, int mmin, int mmax, int nmin, int nmax, 
     Quad *quad[4];
     int mmid = (mmin+mmax)/2, nmid = (nmin+nmax)/2;
 
-    quad[0] = hashlife(map,m,n, mmin,mmid, nmin,nmid, d-1);
-    quad[1] = hashlife(map,m,n, mmin,mmid, nmid,nmax, d-1);
-    quad[2] = hashlife(map,m,n, mmid,mmax, nmin,nmid, d-1);
-    quad[3] = hashlife(map,m,n, mmid,mmax, nmid,nmax, d-1);
+    quad[0] = _hashlife(map,m,n, mmin,mmid, nmin,nmid, d-1);
+    quad[1] = _hashlife(map,m,n, mmin,mmid, nmid,nmax, d-1);
+    quad[2] = _hashlife(map,m,n, mmid,mmax, nmin,nmid, d-1);
+    quad[3] = _hashlife(map,m,n, mmid,mmax, nmid,nmax, d-1);
 
     return mk_quad(quad,d);
+  }
+}
+
+Quad* hashlife(int** map, int m, int n,
+                int mmin, int mmax,
+                int nmin, int nmax, int d)
+{
+  int side = 1<<d;
+  if (mmax-mmin == side && nmax-nmin == side)
+  {
+    return _hashlife(map,m,n,mmin,mmax,nmin,nmax,d);
+  }
+  else
+  {
+    printf("Incompatible sizes. Exiting.\n");
+    return NULL;
   }
 }
 
@@ -81,9 +100,7 @@ Quad* mk_quad(Quad *quad[4], int d)
       q = quad_block+count++;
     else
     {
-      if (stack == NULL)
-        stack = malloc(sizeof(Quad*)*stack_max_size);
-      else if (stack_size == stack_max_size)
+      if (stack_size == stack_max_size)
       {
         printf("Not enough stack space.");
         exit(1);
@@ -148,6 +165,9 @@ void hashlife_init(int rule[16])
 {
   const int leaves_n = 16;
   int i;
+
+  // Init memory stack
+  stack = malloc(sizeof(Quad*)*stack_max_size);
 
   htbl = hashtbl_new();
   leaves = malloc(leaves_n*sizeof(Quad));
