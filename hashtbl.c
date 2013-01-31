@@ -17,20 +17,20 @@ Hashtbl hashtbl_new()
   return h;
 }
 
-int hash(Node* n)
+int hash(Quad* key[4])
 {
   long int a[4],x;
   int i;
 
   for (i=0 ; i<4 ; i++)
-    a[i] = (long int) n->n.sub[i] >> 2;
+    a[i] = (long int) key[i] >> 2;
 
   x = (a[0]<<15)^(a[1]<<10)^(a[2]<<5)^a[3];
 
   return (unsigned int) x&(init_size-1);
 }
 
-Quad* hashtbl_find(Hashtbl hashtbl, int h, Node* key)
+Quad* hashtbl_find(Hashtbl hashtbl, int h, Quad* key[4])
 {
   return list_find(key,hashtbl->tbl[h]);
 }
@@ -42,13 +42,13 @@ void hashtbl_add(Hashtbl hashtbl, int h, Quad* elt)
   hashtbl->tbl[h] = elt;
 }
 
-Quad* list_find(Node* key, Quad* list)
+Quad* list_find(Quad* key[4], Quad* list)
 {
   if (list != NULL) // left to right lazy evaluation
   {
     int i;
     for (i=0; i<4 ; i++)
-      if (key->n.sub[i] != list->node.n.sub[i])
+      if (key[i] != list->node.n.sub[i])
         return list_find(key,list->tl);
     return list;
   }

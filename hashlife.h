@@ -5,11 +5,11 @@
 
 Quad* hashlife(int** map, int m, int n, int mmin, int mmax, int nmin, int nmax, int d);
 
-Quad* mk_quad(Node* n, int d);
+Quad* mk_quad(Quad *quad[4], int d);
 
 void hashlife_init(int rule[16]);
 
-void quad_d1(Node* node, int rule[16]);
+void quad_d1(Quad* quad[4], int rule[16]);
 
 int nb_nodes();
 

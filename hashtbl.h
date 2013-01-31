@@ -38,16 +38,16 @@ struct Quad {
   struct Quad* tl; // tail
 };
 
-int hash(Node*);
+int hash(Quad*[4]);
 
 Hashtbl hashtbl_new();
 
 /* Hash is computed before calling find and/or add */
-Quad* hashtbl_find(Hashtbl hashtbl, int h, Node* key);
+Quad* hashtbl_find(Hashtbl hashtbl, int h, Quad* key[4]);
 
 void hashtbl_add(Hashtbl hashtbl, int h, Quad* elt);
 
-Quad* list_find(Node* key, Quad* list);
+Quad* list_find(Quad* key[4], Quad* list);
 
 void hashtbl_free(Hashtbl);
 

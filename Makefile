@@ -6,5 +6,7 @@ hashlife: $(OBJ)
 %.o: %.c %.h
 	gcc -c $<
 
+.INTERMEDIATE: $(OBJ)
+
 clean:
 	rm -f *\~ *.o *.h.gch
