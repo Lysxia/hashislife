@@ -8,12 +8,12 @@
 const int quad_block_size = 2048;
 const int stack_max_size = 1048576;
 
-Hashtbl htbl;
+Hashtbl htbl = NULL;
 
 /* Th e address of a leaf is 0123 representing the 4 bit picture
  * 0 1
  * 2 3 */
-Quad *leaves;
+Quad *leaves = NULL;
 
 Quad *quad_block;
 int count = 1024;
@@ -21,33 +21,76 @@ int count = 1024;
 Quad **stack = NULL;
 int stack_size = 0;
 
-Quad* new_quad(Node* n, int d)
+// Hashtable must have been initialized through hashlife_init
+Quad* hashlife(int** map, int m, int n, int mmin, int mmax, int nmin, int nmax, int d)
 {
-  Quad *q;
-  if (count < quad_block_size)
-    q = quad_block+count++;
+  if (d==0)
+  {
+    int i, j, acc=0;
+    for (i=0 ; i<2 ; i++)
+      for (j=0 ; j<2 ; j++)
+      {
+        acc <<= 1;
+        if (mmin+i>=0 && mmin+i<m && nmin+j>=0 && nmin+j<n)
+          acc += map[mmin+i][nmin+j];
+      }
+    return leaves+acc;
+  }
   else
   {
-    if (stack == NULL)
-      stack = malloc(sizeof(Quad*)*stack_max_size);
-    else if (stack_size == stack_max_size)
-    {
-      printf("Not enough stack space.");
-      exit(1);
-    }
-    else
-      stack[stack_size++] = quad_block;
-
-    quad_block = malloc(quad_block_size*sizeof(Quad));
-    count = 1;
-
-    q = quad_block;
+    Node node;
+    node.n.sub[0] = hashlife(map,m,n,mmin,(mmin+mmax)/2,nmin,(nmin+nmax)/2,d-1);
+    node.n.sub[1] = hashlife(map,m,n,mmin,(mmin+mmax)/2,(nmin+nmax)/2,nmax,d-1);
+    node.n.sub[2] = hashlife(map,m,n,(mmin+mmax)/2,mmax,nmin,(nmin+nmax)/2,d-1);
+    node.n.sub[3] = hashlife(map,m,n,(mmin+mmax)/2,mmax,(nmin+nmax)/2,nmax,d-1);
+    return mk_quad(&node,d);
   }
+}
 
-  q->node = *n;
-  q->depth = d;
-  
-  hashtbl_add(htbl,hash(n),q);
+// Prerequisite : the four sub trees were computed and hashed...
+Quad* mk_quad(Node* n, int d)
+{
+  int h = hash(n);
+
+  Quad *q = hashtbl_find(htbl,h,n);
+
+  if (q==NULL)
+  {
+    if (count < quad_block_size)
+      q = quad_block+count++;
+    else
+    {
+      if (stack == NULL)
+        stack = malloc(sizeof(Quad*)*stack_max_size);
+      else if (stack_size == stack_max_size)
+      {
+        printf("Not enough stack space.");
+        exit(1);
+      }
+      else
+        stack[stack_size++] = quad_block;
+
+      quad_block = malloc(quad_block_size*sizeof(Quad));
+      count = 1;
+
+      q = quad_block;
+    }
+
+    // Unwrap quad tree
+    Quad *qs[4][4];
+    int i,j;
+    for (i=0 ; i<4 ; i++)
+      for (j=0 ; j<4 ; j++)
+        qs[i][j] = n->n.sub[i]->node.n.sub[j];
+
+    
+
+
+    q->node = *n;
+    q->depth = d;
+    
+    hashtbl_add(htbl,h,q);
+  }
 
   return q;
 }
