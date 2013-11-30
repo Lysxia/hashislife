@@ -3,18 +3,21 @@
 
 #include "hashtbl.h"
 
-Quad* map_to_quad(int** map, int m, int n);
+// To be called before any other function
+void hashlife_init(int rule[16]);
 
 Quad* cons_quad(Quad *quad[4], int d);
 
-void hashlife_init(int rule[16]);
+Quad* fate(Quad* quad);
 
-void quad_d1(Quad* quad[4], int rule[16]);
+Quad* dead_space(int d);
 
 int nb_nodes();
 
 void hash_info();
 
 const int* step(int state[4]);
+
+Quad *leaves;
 
 #endif

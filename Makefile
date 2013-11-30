@@ -1,10 +1,11 @@
-OBJ=hashtbl.o hashlife.o main.o
+OBJ=hashtbl.o hashlife.o hbitmaps.o main.o
+CC=gcc -W -Wall
 
 hashlife: $(OBJ)
-	gcc $(OBJ) -o $@
+	$(CC) $(OBJ) -o $@
 
 %.o: %.c %.h
-	gcc -c $<
+	$(CC) -c $<
 
 .INTERMEDIATE: $(OBJ)
 

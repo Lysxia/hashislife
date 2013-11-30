@@ -4,8 +4,8 @@
 
 #define BUCKET_COUNT 8
 
-const unsigned int init_addr_size = 20;
-const unsigned int init_size = 1 << 20;
+const signed int init_addr_size = 20;
+const signed int init_size = 1 << 20;
 
 Hashtbl hashtbl_new()
 {
