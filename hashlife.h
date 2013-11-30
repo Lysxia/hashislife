@@ -3,13 +3,9 @@
 
 #include "hashtbl.h"
 
-Quad* hashlife(int** map, int m, int n,
-                int mmin, int mmax, int nmin, int nmax, int d);
+Quad* map_to_quad(int** map, int m, int n);
 
-Quad* _hashlife(int** map, int m, int n,
-                int mmin, int mmax, int nmin, int nmax, int d);
-
-Quad* mk_quad(Quad *quad[4], int d);
+Quad* cons_quad(Quad *quad[4], int d);
 
 void hashlife_init(int rule[16]);
 
@@ -19,6 +15,6 @@ int nb_nodes();
 
 void hash_info();
 
-int* step(int state[4]);
+const int* step(int state[4]);
 
 #endif

@@ -20,7 +20,7 @@ struct Hashtbl {
 union Node {
   // internal node
   struct {
-    struct Quad *sub[4],*next; // subtrees : 0-upperleft, 1-upperright, 2-bottomleft, 3-bottomright
+    struct Quad *sub[4], *next; // subtrees : 0-upperleft, 1-upperright, 2-bottomleft, 3-bottomright
   } n;
 
   // leaf
@@ -33,7 +33,8 @@ union Node {
 };
 
 struct Quad {
-  int depth; // head information
+  int depth; // head information,
+             // quad tree for a square map with side 2^(depth+1)
   union Node node;
   struct Quad* tl; // tail
 };

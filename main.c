@@ -22,7 +22,7 @@ void test()
       if (state[i] < 0)
         return;
     }
-    int *map = step(state);
+    const int *map = step(state);
     for (i=0 ; i<4 ; i++)
       printf("%d ",map[i]);
     printf("\n");

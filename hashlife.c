@@ -5,68 +5,119 @@
 
 #define DEBUG
 
-const int quad_block_size = 2048;
-const int stack_max_size = 1048576;
+const int quad_block_size = 2 << 11;
+const int stack_max_size = 2 << 20;
 
 Hashtbl htbl = NULL;
 
-/* Th e address of a leaf is 0123 representing the 4 bit picture
+/* The address of a leaf is 0123 representing the 4 bit picture
  * 0 1
  * 2 3 */
 Quad *leaves = NULL;
 
+Quad **dead_quad = NULL; // Squares of dead cells
+int dead_size = 32;
+
 // A smarter memory allocation, malloc chunks of memory
+// May prevent future garbage collection though...
 Quad *quad_block;
-int count = 1024;
+int quad_block_count = 2 << 11;
 
 Quad **stack = NULL;
 int stack_size = 0;
 
+Quad* map_to_quad_(int** map, int m, int n,
+                int mmin, int mmax, int nmin, int nmax, int d);
+
+Quad* dead_space(int d);
+
 // Hashtable must have been initialized through hashlife_init
-Quad* _hashlife(int** map, int m, int n,
+
+Quad* map_to_quad(int** map, int m, int n)
+{
+  int side = 2, d = 0;
+
+  while (side < m || side < n)
+  {
+    side <<= 1;
+    d++;
+  }
+
+  return map_to_quad_(map,m,n, 0,side, 0,side, d);
+}
+
+Quad* map_to_quad_(int** map, int m, int n,
                 int mmin, int mmax,
                 int nmin, int nmax, int d)
 {
-  if (d==0)
+  if (mmin >= m || nmin >= n)
   {
-    int i, j, acc=0;
-    for (i=0 ; i<2 ; i++)
-      for (j=0 ; j<2 ; j++)
+    return dead_space(d);
+  }
+  else if (d == 0)
+  {
+    int i, j, acc = 0;
+    for (i = 0 ; i < 2 ; i++)
+      for (j = 0 ; j < 2 ; j++)
       {
         acc <<= 1;
-        if (mmin+i>=0 && mmin+i<m && nmin+j>=0 && nmin+j<n)
-          acc += map[mmin+i][nmin+j];
+        if (mmin + i >= 0 && mmin + i < m && nmin + j >= 0 && nmin + j < n)
+          acc += map[mmin+i][nmin+j] != 0; // 0 if cell is 0, 1 otherwise
       }
-    return leaves+acc;
+    return leaves + acc;
   }
   else
   {
     Quad *quad[4];
-    int mmid = (mmin+mmax)/2, nmid = (nmin+nmax)/2;
+    int mmid = (mmin + mmax) / 2, nmid = (nmin + nmax) / 2;
 
-    quad[0] = _hashlife(map,m,n, mmin,mmid, nmin,nmid, d-1);
-    quad[1] = _hashlife(map,m,n, mmin,mmid, nmid,nmax, d-1);
-    quad[2] = _hashlife(map,m,n, mmid,mmax, nmin,nmid, d-1);
-    quad[3] = _hashlife(map,m,n, mmid,mmax, nmid,nmax, d-1);
+    quad[0] = map_to_quad_(map,m,n, mmin,mmid, nmin,nmid, d-1);
+    quad[1] = map_to_quad_(map,m,n, mmin,mmid, nmid,nmax, d-1);
+    quad[2] = map_to_quad_(map,m,n, mmid,mmax, nmin,nmid, d-1);
+    quad[3] = map_to_quad_(map,m,n, mmid,mmax, nmid,nmax, d-1);
 
-    return mk_quad(quad,d);
+    return cons_quad(quad,d);
   }
 }
 
-Quad* hashlife(int** map, int m, int n,
-                int mmin, int mmax,
-                int nmin, int nmax, int d)
+Quad* dead_space(int d)
 {
-  int side = 1<<d;
-  if (mmax-mmin == side && nmax-nmin == side)
+  if (dead_size <= d)
   {
-    return _hashlife(map,m,n,mmin,mmax,nmin,nmax,d);
+    int i, new_size = dead_size;
+    while (new_size <= d)
+      dead_size *= 2;
+
+    Quad **new_quad = malloc(new_size * sizeof(Quad*));
+
+    if (new_quad == NULL)
+    {
+      printf("in dead_space(%d): not enough memory.\n", d);
+      exit(1);
+    }
+
+    for (i = 0 ; i < dead_size ; i++)
+      new_quad[i] = dead_quad[i];
+
+    for (i = dead_size ; i < new_size ; i++)
+      new_quad[i] = NULL;
+
+    dead_size = new_size;
+
+    free(dead_quad);
+
+    dead_quad = new_quad;
+  }
+
+  if (dead_quad[d] == NULL)
+  {
+    Quad *ds = dead_space(d-1);
+    Quad *zero[4] = {ds, ds, ds, ds};
+
+    return dead_quad[d] = cons_quad(zero, d);
   }
   else
-  {
-    printf("Incompatible sizes. Exiting.\n");
-    return NULL;
-  }
+    return dead_quad[d];
 }
 
 const int subtrees[5][4][2] = {
@@ -84,36 +135,21 @@ const int subtrees2[4][4] = {
   {6,7,8,3}
 };
 
-// Prerequisite : the four sub trees were computed and hashed...
-Quad* mk_quad(Quad *quad[4], int d)
-{
-  int i,h;
+Quad* alloc_quad();
 
-  h = hash(quad);
+// Prerequisite : the four sub trees were computed and hashed.
+// This is the only constructor of quadtrees
+Quad* cons_quad(Quad *quad[4], int d)
+{
+  int h = hash(quad);
 
   // Check if we didn't already memoize requested node
-  Quad *q = hashtbl_find(htbl,h,quad);
+  Quad *q = hashtbl_find(htbl, h, quad);
 
-  if (q==NULL)
+  if (q == NULL)
   {
-    if (count < quad_block_size)
-      q = quad_block+count++;
-    else
-    {
-      if (stack_size == stack_max_size)
-      {
-        printf("Not enough stack space.");
-        exit(1);
-      }
-      else
-        stack[stack_size++] = quad_block;
-
-      quad_block = malloc(quad_block_size*sizeof(Quad));
-      count = 1;
-
-      q = quad_block;
-    }
-
+    q = alloc_quad();
+/* Future computation
     // Unwrap quad tree
     Quad *qs[4][4], *q1[9], *tmp[4], **nxt=q->node.n.sub;
 
@@ -153,12 +189,46 @@ Quad* mk_quad(Quad *quad[4], int d)
     }
 
     q->node.n.next = mk_quad(nxt,d-1);
+*/
+
+    int i;
+
     q->depth = d;
-    
-    hashtbl_add(htbl,h,q);
+    q->node.n.next = NULL;
+
+    for (i = 0 ; i < 4 ; i++)
+      q->node.n.sub[i] = quad[i];
+ 
+    hashtbl_add(htbl, h, q);
   }
 
   return q;
+}
+
+Quad* alloc_quad()
+{
+  if (quad_block_count < quad_block_size)
+    return quad_block + quad_block_count++;
+  else if (stack_size == stack_max_size)
+  {
+    printf("in alloc_quad(): Not enough stack space.\n");
+    exit(1);
+  }
+  else
+  {
+    quad_block = malloc(quad_block_size * sizeof(Quad));
+    stack[stack_size++] = quad_block;
+
+    if (quad_block == NULL)
+    {
+      printf("in alloc_quad(): Not enough memory.\n");
+      exit(1);
+    }
+
+    quad_block_count = 1;
+
+    return quad_block;
+  }
 }
 
 void hashlife_init(int rule[16])
@@ -166,13 +236,19 @@ void hashlife_init(int rule[16])
   const int leaves_n = 16;
   int i;
 
-  // Init memory stack
-  stack = malloc(sizeof(Quad*)*stack_max_size);
-
   htbl = hashtbl_new();
-  leaves = malloc(leaves_n*sizeof(Quad));
 
-  for (i=0 ; i<leaves_n ; i++)
+  stack = malloc(sizeof(Quad*) * stack_max_size);
+  leaves = malloc(leaves_n * sizeof(Quad));
+  dead_quad = malloc(dead_size * sizeof(Quad*));
+
+  if (stack == NULL || leaves == NULL || dead_quad == NULL)
+  {
+    printf("in hashlife_init(...): Not enough memory. (lol)\n");
+    exit(1);
+  }
+
+  for (i = 0 ; i < leaves_n ; i++)
   {
     Node n;
     int j, i_ = i;
@@ -186,18 +262,23 @@ void hashlife_init(int rule[16])
     leaves[i].tl = NULL;
   }
 
+  dead_quad[0] = &leaves[0];
+
+  for (i = 1 ; i < dead_size ; i++)
+    dead_quad[i] = NULL;
+
   int k[4];
 
-  for (k[0]=0 ; k[0] < leaves_n ; k[0]++)
-    for (k[1]=0 ; k[1] < leaves_n ; k[1]++)
-      for (k[2]=0 ; k[2] < leaves_n ; k[2]++)
-        for (k[3]=0 ; k[3] < leaves_n ; k[3]++)
+  for (k[0] = 0 ; k[0] < leaves_n ; k[0]++)
+    for (k[1] = 0 ; k[1] < leaves_n ; k[1]++)
+      for (k[2] = 0 ; k[2] < leaves_n ; k[2]++)
+        for (k[3] = 0 ; k[3] < leaves_n ; k[3]++)
         {
           Quad *quad[4];
           int j;
 
-          for (j=0 ; j<4 ; j++)
-            quad[j] = leaves+k[j];
+          for (j = 0 ; j < 4 ; j++)
+            quad[j] = leaves + k[j];
 
           quad_d1(quad,rule);
         }
@@ -214,14 +295,16 @@ const int coord[4][8][2] = {
 
 const int pos[4][2] = {{0,3},{1,2},{2,1},{3,0}};
 
+// Create depth 1 node
 void quad_d1(Quad* quad[4], int rule[16])
 {
-  Quad *q = malloc(sizeof(Quad));
+  Quad *q = alloc_quad();
+
   int acc = 0, i;
 
-  for (i=0 ; i<4 ; ++i)
+  for (i = 0 ; i < 4 ; ++i)
   {
-    int j, sum = 0;
+    int j, sum = 0; 
 
     q->node.n.sub[i] = quad[i];
 
@@ -239,7 +322,6 @@ void quad_d1(Quad* quad[4], int rule[16])
 
   q->node.n.next = leaves + acc;
   q->depth = 1;
-  q->tl = NULL;
 
   hashtbl_add(htbl, hash(quad), q);
 }
@@ -249,7 +331,7 @@ void hash_info()
   htbl_stat(htbl);
 }
 
-int* step(int state[4])
+const int* step(int state[4])
 {
   Quad *quad[4];
   int i;
