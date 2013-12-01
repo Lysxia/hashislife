@@ -8,7 +8,7 @@ typedef int rule;
 // To be called before any other function
 void hashlife_init(rule r);
 
-Quad *cons_quad(Quad *quad[4], int d);
+Quad *cons_quad(Quad *quad[4]);
 
 Quad *fate(Quad *quad);
 

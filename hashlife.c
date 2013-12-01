@@ -33,9 +33,17 @@ int stack_size = 0;
 // Hashtable must have been initialized through hashlife_init
 
 // Prerequisite : the four sub trees were computed and hashed.
-// This is the only constructor of quadtrees
-Quad *cons_quad(Quad *quad[4], int d)
+// This is the only constructor of quadtrees to be used
+Quad *cons_quad(Quad *quad[4])
 {
+  int i, d = -1;
+  for (i = 0 ; i < 4 ; i++)
+  {
+    if (quad[i] == NULL || (d != -1 && quad[i]->depth != d))
+      return NULL;
+    d = quad[i]->depth;
+  }
+  
   int h = hash(quad);
 
   // Check if we didn't already memoize requested node
@@ -43,6 +51,8 @@ Quad *cons_quad(Quad *quad[4], int d)
 
   if (q == NULL)
   {
+    d++;
+
     q = alloc_quad();
 
     q->depth = d;
@@ -108,7 +118,7 @@ Quad *fate(Quad *q)
     Quad *qs[4][4], *q1[9], *tmp[4], *nxt[4],
          **quad = q->node.n.sub;
 
-    int i, j, d = q->depth;
+    int i, j;
 
     /* qs is the array of depth d-2 subtrees
          00 01 10 11
@@ -132,7 +142,7 @@ Quad *fate(Quad *q)
     {
       for (j=0 ; j<4 ; j++)
         tmp[j] = qs[subtrees[i][j][0]][subtrees[i][j][1]];
-      q1[i+4] = fate(cons_quad(tmp,d-2));
+      q1[i+4] = fate(cons_quad(tmp));
     }
 
     // nxt=q->node.n.sub holds the quad tree pointer to step 2^d
@@ -140,10 +150,10 @@ Quad *fate(Quad *q)
     {
       for (j=0 ; j<4 ; j++)
         tmp[i] = q1[subtrees2[i][j]];
-      nxt[i] = fate(cons_quad(tmp,d-2));
+      nxt[i] = fate(cons_quad(tmp));
     }
 
-    q->node.n.next = cons_quad(nxt,d-1);
+    q->node.n.next = cons_quad(nxt);
   }
 
   return q->node.n.next;
@@ -183,7 +193,7 @@ Quad *dead_space(int d)
     Quad *ds = dead_space(d-1);
     Quad *zero[4] = {ds, ds, ds, ds};
 
-    return dead_quad[d] = cons_quad(zero, d);
+    return dead_quad[d] = cons_quad(zero);
   }
   else
     return dead_quad[d];

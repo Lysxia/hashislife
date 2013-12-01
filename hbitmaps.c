@@ -53,7 +53,7 @@ Quad *map_to_quad_(int **map, int m, int n,
           nmin + (i & 1 ? s : 0),
           d-1, s);
 
-    return cons_quad(quad,d);
+    return cons_quad(quad);
   }
 }
 
