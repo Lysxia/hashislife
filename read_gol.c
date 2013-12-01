@@ -1,111 +1,106 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
+#include "read_gol.h"
 
-int set_9(int k, int B[9])
+int** read_gol(int *m, int *n, rule r, FILE *file)
 {
-    if (k<0 || k>8)
-    {
-        return 1;
-    }
-    B[k] = 1;
-    return 0;
-}
+  int **life, i, j;
 
-int** read_gol(char* filename, int* m, int* n, int B[9], int S[9])
-{
-    FILE *file = fopen(filename, "r");
-    int **life, i, j;
-    int a, b;
-    char c;
+  if (file == NULL)
+	  return NULL;
 
-    if (file == NULL)
-    {
-	printf("Failed to open file '%s'", filename);
-	return NULL;
-    }
+  const int buffsize = 20;
+  char buff[buffsize];
 
-    //map size
-    fscanf(file, "%d %d ", m, n);
-    a=*m;
-    b=*n;
+  // map size on two lines
+  int a, b;
 
-    //B rule
-    fscanf(file, "B%c", &c);
-    
-    while (c != '/')
-    {
-	if (set_9(c-'0',B))
-	{
-	    printf("Bad B rule\n");
-	    return NULL;
-	}
-	fscanf(file, "%c", &c);
-    }
+  fgets(buff, buffsize, file);
+  a = *m = atoi(buff);
+ 
+  fgets(buff, buffsize, file);
+  b = *n = atoi(buff);
 
-    //S rule
-    fscanf(file, "S%c", &c);
+  // rules
+  fgets(buff, buffsize, file);
 
-    while (c!='\032' && c!='\n')
-    {
-	if (set_9(c-'0',S))
-	{
-	    printf("Bad S rule\n");
-	    return NULL;
-	}
-	fscanf(file, "%c", &c);
-    }
+  r = 0;
+  i = 0;
 
-    if ( NULL == (life = malloc(a*sizeof(int*))) )
-    {
-	printf("Not enough memory\n");
-	return NULL;
-    }
+  // B rule
+  if (buff[i++] != 'B')
+  {
+    printf("in read_gol(): Expected rule 'B*/S*'\n");
+    return NULL;
+  }
 
-    //map
-    for (i=0 ; i<a ; i++)
-    {
-	if ( NULL == (life[i] = malloc(b*sizeof(int))) )
-	{
-	    printf("Not enough memory\n");
+  while (buff[i] >= '0' && buff[i] <= '8')
+    r |= 1 << (buff[i++] - '0');
+
+  //S rule
+  if (buff[i] != '/' || buff[i+1] != 'S')
+  {
+    printf("in read_gol(): Expected rule 'B*/S*'\n");
+    return NULL;
+  }
+
+  i += 2;
+
+  while (buff[i] >= '0' && buff[i] <= '8')
+    r |= 1 << (buff[i++] - '0' + 9);
+
+  //map
+  char buff2[b+2];
+
+  if (NULL == (life = malloc(a * sizeof(int*))))
+  {
+	  printf("in read_gol(): Not enough memory\n");
+	  return NULL;
+  }
+
+  for (i = 0 ; i < a ; i++)
+  {
+	  if (NULL == (life[i] = malloc(b * sizeof(int))))
+	  {
+	    printf("in read_gol(): Not enough memory\n");
 	    while (i-- > 0)
-		free(life[i]);
+		    free(life[i]);
 	    return NULL;
-	}
-	for (j=0 ; j<b ; j++)
-	{
-	    fscanf(file, "%c ", &c);
-	    switch (c)
+	  }
+
+    fgets(buff2, b + 1, file);
+
+	  for (j = 0 ; j < b ; j++)
+	  {
+	    switch (buff2[j])
 	    {
-		case '0':
-		    life[i][j] = 0;
-		    break;
-		case '1':
-		    life[i][j] = 1;
-                    break;
-		default:
-		    printf("Bad map\n");
-		    i++;
-		    while (i-->0)
-			free(life[i]);
-		    return NULL;
+		    case '0':
+		      life[i][j] = 0;
+		      break;
+		    case '1':
+		      life[i][j] = 1;
+          break;
+		    default:
+		      printf("in read_gol(): Bad map, unrecognized character\n");
+		      i++;
+		      while (i-->0)
+			      free(life[i]);
+		      return NULL;
 	    }
-	}
-    }
+	  }
+  }
 
-    fclose(file);
-
-    return life;
+  return life;
 }
 
-void print_map(int** map, int m, int n)
+void print_map(int **map, int m, int n, FILE *file)
 {
-    int i,j;
-    for (i=0 ; i<m ; i++)
-    {
-	for (j=0 ; j<n ; j++)
-	    printf("%d", map[i][j]);
-	printf("\n");
-    }
-    return;
+  int i,j;
+  for (i = 0 ; i < m ; i++)
+  {
+	  for (j = 0 ; j < n ; j++)
+      fputc(map[i][j] ? '0' : '1', file);
+    fputc('\n', file);
+  }
 }
-
