@@ -2,10 +2,10 @@
 #include "hashlife.h"
 #include "hbitmaps.h"
 
-Quad* map_to_quad_(int** map, int m, int n,
+Quad *map_to_quad_(int **map, int m, int n,
                    int mmin, int mmax, int nmin, int nmax, int d);
 
-Quad* map_to_quad(int** map, int m, int n)
+Quad *map_to_quad(int **map, int m, int n)
 {
   int side = 2, d = 0;
 
@@ -18,7 +18,7 @@ Quad* map_to_quad(int** map, int m, int n)
   return map_to_quad_(map,m,n, 0,side, 0,side, d);
 }
 
-Quad* map_to_quad_(int** map, int m, int n,
+Quad *map_to_quad_(int **map, int m, int n,
                 int mmin, int mmax,
                 int nmin, int nmax, int d)
 {
@@ -52,10 +52,10 @@ Quad* map_to_quad_(int** map, int m, int n,
   }
 }
 
-void quad_to_map_(int** map, int m, int n, int mmin, int mmax, int nmin, int nmax, Quad* q, int s);
+void quad_to_map_(int **map, int m, int n, int mmin, int mmax, int nmin, int nmax, Quad *q, int s);
 int clip(int a, int b, int c);
 
-void quad_to_map(int** map, int mmin, int mmax, int nmin, int nmax, Quad* q)
+void quad_to_map(int **map, int mmin, int mmax, int nmin, int nmax, Quad *q)
 {
   int s = 2, d = 0;
 
@@ -71,7 +71,7 @@ void quad_to_map(int** map, int mmin, int mmax, int nmin, int nmax, Quad* q)
       q, s);
 }
 
-int clip(int a, int b, int c)
+inline int clip(int a, int b, int c)
 {
   if (a < b)
     return b;
@@ -81,9 +81,9 @@ int clip(int a, int b, int c)
     return a;
 }
 
-void quad_to_map_(int** map, int m, int n,
+void quad_to_map_(int **map, int m, int n,
     int mmin, int mmax, int nmin, int nmax,
-    Quad* q, int s)
+    Quad *q, int s)
 {
   if (mmax == 0 || nmax == 0 || mmin == s || nmin == s || mmin >= mmax || nmin >= nmax)
   {

@@ -5,7 +5,7 @@ hashlife: $(OBJ)
 	$(CC) $(OBJ) -o $@
 
 %.o: %.c %.h
-	$(CC) -c $<
+	$(CC) -c $^
 
 .INTERMEDIATE: $(OBJ)
 
