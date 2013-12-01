@@ -76,7 +76,13 @@ void print_quad(Quad *q)
     printf("\n");
   }
   else
+  {
     printf("QUAD depth: %d\n", q->depth);
+
+    int i;
+    for (i = 0 ; i < 4 ; i++)
+      print_quad(q->node.n.sub[i]);
+  }
 }
 
 int list_length(Quad *list)

@@ -208,16 +208,17 @@ void hashlife_init(rule r)
 
   for (i = 0 ; i < leaves_n ; i++)
   {
-    Node n;
+    Quad *n = &leaves[i];
+
     int j, i_ = i;
-    for (j=3 ; j>=0 ; j--)
+    for (j = 3 ; j >= 0 ; j--)
     {
-      n.l.map[j] = i_ & 1;
+      n->node.l.map[j] = i_ & 1;
       i_ >>= 1;
     }
-    leaves[i].depth = 0;
-    leaves[i].node = n;
-    leaves[i].tl = NULL;
+    
+    n->depth = 0;
+    n->tl = NULL;
   }
 
   dead_quad[0] = &leaves[0];
@@ -233,8 +234,8 @@ void hashlife_init(rule r)
         for (k[3] = 0 ; k[3] < leaves_n ; k[3]++)
         {
           Quad *quad[4];
-          int j;
 
+          int j;
           for (j = 0 ; j < 4 ; j++)
             quad[j] = leaves + k[j];
 

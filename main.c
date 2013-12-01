@@ -5,11 +5,14 @@
 #include "hbitmaps.h"
 #include "read_gol.h"
 
+void test();
+
 int main(int argc, char **argv)
 {
   rule r = 6148;
   FILE *file;
   int m, n, **map;
+  int i,j;
 
   hashlife_init(r);
 
@@ -17,6 +20,7 @@ int main(int argc, char **argv)
   {
     case 1:
       hash_info();
+      test();
       break;
     case 2:
       file = fopen(argv[1], "r");
@@ -26,7 +30,14 @@ int main(int argc, char **argv)
       fputc('\n', stdout);
 
       Quad *q = map_to_quad(map, m, n);
-      quad_to_map(map, 0, 0, 0, m, 0, n, q);
+
+      // print_quad(q);
+
+      for (i = 0 ; i < m ; i++)
+        for (j = 0 ; j < m ; j++)
+          map[i][j] = 0;
+
+      quad_to_map(map, 0, 0, 0, 0, m, n, q);
       print_map(map, m, n, stdout);
       break;
   }
