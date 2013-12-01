@@ -5,9 +5,9 @@
 
 #define DEBUG
 
-Quad* alloc_quad();
+Quad *alloc_quad();
 
-void quad_d1(Quad* quad[4], rule r);
+void quad_d1(Quad *quad[4], rule r);
 
 Hashtbl htbl;
 
@@ -34,7 +34,7 @@ int stack_size = 0;
 
 // Prerequisite : the four sub trees were computed and hashed.
 // This is the only constructor of quadtrees
-Quad* cons_quad(Quad* quad[4], int d)
+Quad *cons_quad(Quad *quad[4], int d)
 {
   int h = hash(quad);
 
@@ -59,7 +59,7 @@ Quad* cons_quad(Quad* quad[4], int d)
   return q;
 }
 
-Quad* alloc_quad()
+Quad *alloc_quad()
 {
   if (quad_block_count < quad_block_size)
     return quad_block + quad_block_count++;
@@ -85,7 +85,7 @@ Quad* alloc_quad()
   }
 }
 
-Quad* fate(Quad* q)
+Quad *fate(Quad *q)
 {
   // quad->depth > 0
   const int subtrees[5][4][2] = {
@@ -149,7 +149,7 @@ Quad* fate(Quad* q)
   return q->node.n.next;
 }
 
-Quad* dead_space(int d)
+Quad *dead_space(int d)
 {
   if (dead_size <= d)
   {
@@ -245,7 +245,7 @@ void hashlife_init(rule r)
 /* Depth 1 nodes are computed at the beginning of the program */
 // rule : B/S
 // Create depth 1 node
-void quad_d1(Quad* quad[4], rule r)
+void quad_d1(Quad *quad[4], rule r)
 {
   const int coord[4][8][2] = {
     {{0,0},{0,1},{1,0},{0,2},{1,2},{2,0},{2,1},{3,0}},
@@ -288,7 +288,7 @@ void hash_info()
   htbl_stat(htbl);
 }
 
-const int* step(int state[4])
+const int *step(int state[4])
 {
   Quad *quad[4];
   int i;

@@ -8,17 +8,17 @@ typedef int rule;
 // To be called before any other function
 void hashlife_init(rule r);
 
-Quad* cons_quad(Quad *quad[4], int d);
+Quad *cons_quad(Quad *quad[4], int d);
 
-Quad* fate(Quad* quad);
+Quad *fate(Quad *quad);
 
-Quad* dead_space(int d);
+Quad *dead_space(int d);
 
 int nb_nodes();
 
 void hash_info();
 
-const int* step(int state[4]);
+const int *step(int state[4]);
 
 Quad *leaves;
 

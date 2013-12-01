@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include "hashtbl.h"
 
-#define BUCKET_COUNT 8
-
 const signed int init_addr_size = 20;
 const signed int init_size = 1 << 20;
 
@@ -22,7 +20,7 @@ Hashtbl hashtbl_new()
   return h;
 }
 
-int hash(Quad* key[4])
+int hash(Quad *key[4])
 {
   long int a[4], x;
   int i;
@@ -35,19 +33,19 @@ int hash(Quad* key[4])
   return (unsigned int) x & (init_size - 1);
 }
 
-Quad* hashtbl_find(Hashtbl hashtbl, int h, Quad* key[4])
+Quad *hashtbl_find(Hashtbl hashtbl, int h, Quad *key[4])
 {
   return list_find(key, hashtbl->tbl[h]);
 }
 
-void hashtbl_add(Hashtbl hashtbl, int h, Quad* elt)
+void hashtbl_add(Hashtbl hashtbl, int h, Quad *elt)
 {
   hashtbl->len++;
   elt->tl = hashtbl->tbl[h];
   hashtbl->tbl[h] = elt;
 }
 
-Quad* list_find(Quad* key[4], Quad* list)
+Quad *list_find(Quad *key[4], Quad *list)
 {
   if (list != NULL) // left to right lazy evaluation
   {
@@ -67,7 +65,7 @@ void hashtbl_free(Hashtbl hashtbl)
   free(hashtbl);
 }
 
-void print_quad(Quad* q)
+void print_quad(Quad *q)
 {
   if (q->depth == 0)
   {
@@ -81,7 +79,7 @@ void print_quad(Quad* q)
     printf("QUAD depth: %d\n", q->depth);
 }
 
-int list_length(Quad* list)
+int list_length(Quad *list)
 {
   if (list == NULL)
     return 0;
@@ -89,13 +87,15 @@ int list_length(Quad* list)
     return 1 + list_length(list->tl);
 }
 
+#define BUCKET_COUNT 8
+
 void htbl_stat(Hashtbl htbl)
 {
-  int i, max[BUCKET_COUNT]={0};
+  int i, max[BUCKET_COUNT] = {0};
   for (i = 0 ; i < init_size ; i++)
   {
     int l = list_length(htbl->tbl[i]);
-    max[(l>=BUCKET_COUNT) ? BUCKET_COUNT-1 : l]++;
+    max[l >= BUCKET_COUNT ? BUCKET_COUNT - 1 : l]++;
   }
 
   printf("LENGTH: %d\n", htbl->len);
