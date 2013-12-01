@@ -3,7 +3,7 @@
 #include<string.h>
 #include "read_gol.h"
 
-int** read_gol(int *m, int *n, rule r, FILE *file)
+int** read_gol(int *m, int *n, rule *r, FILE *file)
 {
   int **life, i, j;
 
@@ -25,7 +25,7 @@ int** read_gol(int *m, int *n, rule r, FILE *file)
   // rules
   fgets(buff, buffsize, file);
 
-  r = 0;
+  *r = 0;
   i = 0;
 
   // B rule
@@ -36,7 +36,7 @@ int** read_gol(int *m, int *n, rule r, FILE *file)
   }
 
   while (buff[i] >= '0' && buff[i] <= '8')
-    r |= 1 << (buff[i++] - '0');
+    *r |= 1 << (buff[i++] - '0');
 
   //S rule
   if (buff[i] != '/' || buff[i+1] != 'S')
@@ -48,7 +48,7 @@ int** read_gol(int *m, int *n, rule r, FILE *file)
   i += 2;
 
   while (buff[i] >= '0' && buff[i] <= '8')
-    r |= 1 << (buff[i++] - '0' + 9);
+    *r |= 1 << (buff[i++] - '0' + 9);
 
   //map
   char buff2[b+2];
@@ -69,7 +69,7 @@ int** read_gol(int *m, int *n, rule r, FILE *file)
 	    return NULL;
 	  }
 
-    fgets(buff2, b + 1, file);
+    fgets(buff2, b + 2, file);
 
 	  for (j = 0 ; j < b ; j++)
 	  {
@@ -82,7 +82,7 @@ int** read_gol(int *m, int *n, rule r, FILE *file)
 		      life[i][j] = 1;
           break;
 		    default:
-		      printf("in read_gol(): Bad map, unrecognized character\n");
+		      printf("in read_gol(): Bad map, unrecognized character, ascii %d\n", buff2[j]);
 		      i++;
 		      while (i-->0)
 			      free(life[i]);
@@ -100,7 +100,7 @@ void print_map(int **map, int m, int n, FILE *file)
   for (i = 0 ; i < m ; i++)
   {
 	  for (j = 0 ; j < n ; j++)
-      fputc(map[i][j] ? '0' : '1', file);
+      fputc(map[i][j] ? '1' : '0', file);
     fputc('\n', file);
   }
 }
