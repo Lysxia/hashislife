@@ -3,7 +3,7 @@
 
 #include "hashtbl.h"
 
-typedef rule int;
+typedef int rule;
 
 // To be called before any other function
 void hashlife_init(rule r);

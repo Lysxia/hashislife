@@ -272,7 +272,7 @@ void quad_d1(Quad* quad[4], rule r)
       sum += quad[coord[i][j][0]]->node.l.map[coord[i][j][1]];
     
     if (quad[pos[i][0]]->node.l.map[pos[i][1]])
-      acc += (r >> sum + 8) & 1;
+      acc += (r >> (sum + 8)) & 1;
     else
       acc += (r >> sum) & 1;
   }
