@@ -7,6 +7,6 @@ Quad *map_to_quad(int **map, int m, int n);
 
 // Draw the map described by q at the specified location
 // It is assumed that map has size [mmax-mmin][nmax-nmin]
-void quad_to_map(int **map, int mmin, int mmax, int nmin, int nmax, Quad *q);
+void quad_to_map(int **map, int m, int n, int mmin, int mlen, int nmin, int nlen, Quad *q);
 
 #endif

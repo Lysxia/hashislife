@@ -1,9 +1,10 @@
 #include "hashtbl.h"
 #include "hashlife.h"
 #include "hbitmaps.h"
+#include <stdio.h>
 
 Quad *map_to_quad_(int **map, int m, int n,
-                   int mmin, int mmax, int nmin, int nmax, int d);
+                   int mmin, int nmin, int d, int s);
 
 Quad *map_to_quad(int **map, int m, int n)
 {
@@ -15,12 +16,11 @@ Quad *map_to_quad(int **map, int m, int n)
     d++;
   }
 
-  return map_to_quad_(map,m,n, 0,side, 0,side, d);
+  return map_to_quad_(map,m,n, 0, 0, d, side);
 }
 
 Quad *map_to_quad_(int **map, int m, int n,
-                int mmin, int mmax,
-                int nmin, int nmax, int d)
+                   int mmin, int nmin, int d, int s)
 {
   if (mmin >= m || nmin >= n)
   {
@@ -34,28 +34,36 @@ Quad *map_to_quad_(int **map, int m, int n,
       {
         acc <<= 1;
         if (mmin + i >= 0 && mmin + i < m && nmin + j >= 0 && nmin + j < n)
-          acc += map[mmin+i][nmin+j] != 0; // 0 if cell is 0, 1 otherwise
+          acc |= !!map[mmin+i][nmin+j];
+        putchar('0' + (acc & 1));
       }
+    putchar('\n');
+
     return leaves + acc;
   }
   else
   {
     Quad *quad[4];
-    int mmid = (mmin + mmax) / 2, nmid = (nmin + nmax) / 2;
 
-    quad[0] = map_to_quad_(map,m,n, mmin,mmid, nmin,nmid, d-1);
-    quad[1] = map_to_quad_(map,m,n, mmin,mmid, nmid,nmax, d-1);
-    quad[2] = map_to_quad_(map,m,n, mmid,mmax, nmin,nmid, d-1);
-    quad[3] = map_to_quad_(map,m,n, mmid,mmax, nmid,nmax, d-1);
+    int i;
+
+    s /= 2;
+
+    for (i = 0 ; i < 4 ; i++)
+      quad[i] = map_to_quad_(map,m,n,
+          mmin + (i & 2 ? s : 0),
+          nmin + (i & 1 ? s : 0),
+          d-1, s);
 
     return cons_quad(quad,d);
   }
 }
 
-void quad_to_map_(int **map, int m, int n, int mmin, int mmax, int nmin, int nmax, Quad *q, int s);
+void zero_(int **map, int m, int mlen, int nlen);
 int clip(int a, int b, int c);
+void quad_to_map_(int **map, int m, int n, int mmin, int mlen, int nmin, int nlen, Quad *q, int s);
 
-void quad_to_map(int **map, int mmin, int mmax, int nmin, int nmax, Quad *q)
+void quad_to_map(int **map, int m, int n, int mmin, int mlen, int nmin, int nlen, Quad *q)
 {
   int s = 2, d = 0;
 
@@ -65,39 +73,75 @@ void quad_to_map(int **map, int mmin, int mmax, int nmin, int nmax, Quad *q)
     s *= 2;
   }
 
-  quad_to_map_(map, 0, 0,
-      clip(mmin, 0, s), clip(mmax, 0, s),
-      clip(nmin, 0, s), clip(nmax, 0, s),
+  if (mlen <= 0 || nlen <= 0)
+    return;
+  if (mmin < 0)
+  {
+    int mlen2 = mmin + mlen <= 0 ? mlen : -mmin;
+
+    zero_(map, m, mlen2, n, nlen);
+
+    m += mlen2;
+    mmin = 0;
+    mlen -= mlen2;
+  }
+  if (mmin+mlen > s)
+  {
+    int mmin2 = mmin < s ? s : mmin;
+    int m2 = m + mmin2 - mmin,
+        mlen2 = mlen - mmin2 + mmin;
+
+    zero_(map, m2, mlen2, n, nlen);
+
+    mlen -= mlen2;
+  }
+  if (nmin < 0)
+  {
+    int nlen2 = nmin + nlen <= 0 ? nlen : -nmin;
+
+    zero_(map, m, mlen, n, nlen2);
+
+    n += nlen2;
+    nmin = 0;
+    nlen -= nlen2;
+  }
+  if (nmin + nlen > s)
+  {
+    int nmin2 = nmin < s ? s : nmin;
+    int n2 = n + nmin2 - nmin,
+        nlen2 = nlen - nmin2 + nmin;
+
+    zero_(map, m, mlen, n2, nlen2);
+
+    nlen -= nlen2;
+  }
+
+  if (mlen == 0 || nlen == 0)
+    return;
+  else
+    quad_to_map_(map, m, n,
+      mmin, mlen, nmin, nlen,
       q, s);
 }
 
-inline int clip(int a, int b, int c)
+void zero_(int **map, int m, int mlen, int n, int nlen)
 {
-  if (a < b)
-    return b;
-  else if (a > c)
-    return c;
-  else
-    return a;
+  int i, j;
+  for (i = 0 ; i < mlen ; i++)
+    for (j = 0 ; j < nlen ; j++)
+      map[m+i][n+j] = 0;
 }
 
 void quad_to_map_(int **map, int m, int n,
-    int mmin, int mmax, int nmin, int nmax,
-    Quad *q, int s)
+                  int mmin, int mlen, int nmin, int nlen,
+                  Quad *q, int s)
 {
-  if (mmax == 0 || nmax == 0 || mmin == s || nmin == s || mmin >= mmax || nmin >= nmax)
+  if (s == 2)
   {
     int i, j;
-    for (i = 0 ; i < mmax - mmin ; i++)
-      for (j = 0 ; j < nmax - nmin ; j++)
-        map[i][j] = 0;
-  }
-  else if (s == 2)
-  {
-    int i, j;
-    for (i = mmin ; i < mmax ; i++)
+    for (i = mmin ; i < m ; i++)
       for (j = nmin ; j < nmax ; j++)
-        map[i][j] = q->node.l.map[2*i+j];
+        map[m+i][n+j] = q->node.l.map[2*i+j];
   }
   else
   {
