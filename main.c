@@ -26,7 +26,7 @@ int main(int argc, char **argv)
       fputc('\n', stdout);
 
       Quad *q = map_to_quad(map, m, n);
-      quad_to_map(map, 0, m, 0, n, q);
+      quad_to_map(map, 0, 0, 0, m, 0, n, q);
       print_map(map, m, n, stdout);
       break;
   }

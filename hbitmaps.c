@@ -59,8 +59,7 @@ Quad *map_to_quad_(int **map, int m, int n,
   }
 }
 
-void zero_(int **map, int m, int mlen, int nlen);
-int clip(int a, int b, int c);
+void zero_(int **map, int m, int mlen, int n, int nlen);
 void quad_to_map_(int **map, int m, int n, int mmin, int mlen, int nmin, int nlen, Quad *q, int s);
 
 void quad_to_map(int **map, int m, int n, int mmin, int mlen, int nmin, int nlen, Quad *q)
@@ -75,6 +74,7 @@ void quad_to_map(int **map, int m, int n, int mmin, int mlen, int nmin, int nlen
 
   if (mlen <= 0 || nlen <= 0)
     return;
+
   if (mmin < 0)
   {
     int mlen2 = mmin + mlen <= 0 ? mlen : -mmin;
@@ -85,6 +85,7 @@ void quad_to_map(int **map, int m, int n, int mmin, int mlen, int nmin, int nlen
     mmin = 0;
     mlen -= mlen2;
   }
+
   if (mmin+mlen > s)
   {
     int mmin2 = mmin < s ? s : mmin;
@@ -95,6 +96,7 @@ void quad_to_map(int **map, int m, int n, int mmin, int mlen, int nmin, int nlen
 
     mlen -= mlen2;
   }
+
   if (nmin < 0)
   {
     int nlen2 = nmin + nlen <= 0 ? nlen : -nmin;
@@ -105,6 +107,7 @@ void quad_to_map(int **map, int m, int n, int mmin, int mlen, int nmin, int nlen
     nmin = 0;
     nlen -= nlen2;
   }
+
   if (nmin + nlen > s)
   {
     int nmin2 = nmin < s ? s : nmin;
@@ -136,25 +139,55 @@ void quad_to_map_(int **map, int m, int n,
                   int mmin, int mlen, int nmin, int nlen,
                   Quad *q, int s)
 {
+  if (mlen <= 0 || nlen <= 0)
+    return;
+
   if (s == 2)
   {
     int i, j;
-    for (i = mmin ; i < m ; i++)
-      for (j = nmin ; j < nmax ; j++)
+    for (i = mmin ; i < mmin + mlen ; i++)
+      for (j = nmin ; j < nmin + nlen ; j++)
         map[m+i][n+j] = q->node.l.map[2*i+j];
   }
   else
   {
     s /= 2;
 
+    int mlen2 = 0, nlen2 = 0;
+
+    if (mlen > s)
+    {
+      mlen2 = mlen - s;
+      mlen = s;
+    }
+
+    if (nlen > s)
+    {
+      nlen2 = nlen - s;
+      nlen = s;
+    }
+
     int i;
 
     for (i = 0 ; i < 4 ; i++)
     {
-      int mshift = (i & 1) ? s : 0, nshift = (i & 2) ? s : 0;
-      quad_to_map_(map,m + mshift, n + nshift,
-        clip(mmin - mshift, 0, s), clip(mmax - mshift, 0, s),
-        clip(nmin - nshift, 0, s), clip(nmax - nshift, 0, s),
+      int mshift = 0, mlen_ = mlen, nshift = 0, nlen_ = nlen;
+
+      if (i & 2)
+      {
+        mshift = s;
+        mlen_ = mlen2;
+      }
+
+      if (i & 1)
+      {
+        nshift = s;
+        nlen_ = nlen2;
+      }
+
+      quad_to_map_(map, m + mshift, n + nshift,
+        mmin - mshift, mlen_,
+        nmin - nshift, nlen_,
         q, s);
     }
   }
