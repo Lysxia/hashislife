@@ -53,7 +53,7 @@ Quad *map_to_quad_(int **map, int m, int n,
           nmin + (i & 1 ? s : 0),
           d-1, s);
 
-    return cons_quad(quad);
+    return cons_quad(quad, d);
   }
 }
 
@@ -193,7 +193,7 @@ void quad_to_map_(int **map, int m, int n,
 
     for (i = 0 ; i < 4 ; i++)
     {
-      const int x = (i & 2) >> 1, y = i & 1;
+      const int x = i >> 1, y = i & 1;
 
       quad_to_map_(map, m_[x], n_[y],
         mmin_[x], nmin_[y],

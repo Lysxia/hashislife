@@ -34,14 +34,13 @@ int stack_size = 0;
 
 // Prerequisite : the four sub trees were computed and hashed.
 // This is the only constructor of quadtrees to be used
-Quad *cons_quad(Quad *quad[4])
+Quad *cons_quad(Quad *quad[4], int d)
 {
-  int i, d = -1;
+  int i;
   for (i = 0 ; i < 4 ; i++)
   {
-    if (quad[i] == NULL || (d != -1 && quad[i]->depth != d))
+    if (quad[i] == NULL || quad[i]->depth != d - 1)
       return NULL;
-    d = quad[i]->depth;
   }
   
   int h = hash(quad);
@@ -51,8 +50,6 @@ Quad *cons_quad(Quad *quad[4])
 
   if (q == NULL)
   {
-    d++;
-
     q = alloc_quad();
 
     q->depth = d;
@@ -98,62 +95,55 @@ Quad *alloc_quad()
 Quad *fate(Quad *q)
 {
   // quad->depth > 0
-  const int subtrees[5][4][2] = {
-    {{0,1},{1,0},{0,3},{1,2}},
-    {{0,2},{0,3},{2,0},{2,1}},
-    {{0,3},{1,2},{2,1},{3,0}},
-    {{1,2},{1,3},{3,0},{3,1}},
-    {{2,1},{3,0},{2,3},{3,2}}
-  },
-  subtrees2[4][4] = {
-    {0,4,5,6},
-    {4,1,6,7},
-    {5,6,2,8},
-    {6,7,8,3}
-  };
-
   if (q->node.n.next == NULL)
   {
     // Unwrap quad tree
-    Quad *qs[4][4], *q1[9], *tmp[4], *nxt[4],
+    Quad *qs[4][4], *q1[3][3], *nxt[4],
          **quad = q->node.n.sub;
 
-    int i, j;
+    int i, j, d = q->depth;
 
     /* qs is the array of depth d-2 subtrees
-         00 01 10 11
-         02 03 12 13
-         20 21 30 31
-         22 23 32 33
+         00 01 02 03
+         10 11 12 13
+         20 21 22 23
+         30 31 32 33
        q1 represents step 2^(d-1)
-         0 4 1
-         5 6 7
-         2 8 3 */
-    for (i=0 ; i<4 ; i++)
-    {
-      for (j=0 ; j<4 ; j++)
-        qs[i][j] = quad[i]->node.n.sub[j];
-      // here we can immediately get q1[0..3]
-      q1[i] = quad[i]->node.n.next;
-    }
+         00 01 02
+         10 11 12
+         20 21 22 */
 
-    // we compute q1[4..8]
-    for (i=0 ; i<5 ; i++)
-    {
-      for (j=0 ; j<4 ; j++)
-        tmp[j] = qs[subtrees[i][j][0]][subtrees[i][j][1]];
-      q1[i+4] = fate(cons_quad(tmp));
-    }
+    for (i = 0 ; i < 4 ; i++)
+      for (j = 0 ; j < 4 ; j++)
+        qs[2 * (i / 2) + j / 2][2 * (i % 2) + j % 2] = quad[i]->node.n.sub[j];
+
+    // we compute q1
+    for (i = 0 ; i < 3 ; i++)
+      for (j = 0 ; j < 3 ; j++)
+      {
+        Quad *tmp[4];
+        int k;
+
+        for (k = 0 ; k < 4 ; k++)
+          tmp[k] = qs[i + (k >> 1)][j + (k & 1)];
+
+        q1[i][j] = fate(cons_quad(tmp, d - 1));
+      }
 
     // nxt=q->node.n.sub holds the quad tree pointer to step 2^d
-    for (i=0 ; i<4 ; i++)
-    {
-      for (j=0 ; j<4 ; j++)
-        tmp[i] = q1[subtrees2[i][j]];
-      nxt[i] = fate(cons_quad(tmp));
-    }
+    for (i = 0 ; i < 2 ; i++)
+      for (j = 0 ; j < 2 ; j++)
+      {
+        Quad *tmp[4];
+        int k;
 
-    q->node.n.next = cons_quad(nxt);
+        for (k = 0 ; k < 4 ; k++)
+          tmp[k] = q1[i + (k >> 1)][j + (k & 1)];
+
+        nxt[2 * i + j] = fate(cons_quad(tmp, d - 1));
+      }
+
+    q->node.n.next = cons_quad(nxt, d - 1);
   }
 
   return q->node.n.next;
@@ -193,7 +183,7 @@ Quad *dead_space(int d)
     Quad *ds = dead_space(d-1);
     Quad *zero[4] = {ds, ds, ds, ds};
 
-    return dead_quad[d] = cons_quad(zero);
+    return dead_quad[d] = cons_quad(zero, d);
   }
   else
     return dead_quad[d];
@@ -279,7 +269,7 @@ void quad_d1(Quad *quad[4], rule r)
     acc <<= 1;
     
     // Count alive neighbors
-    for (j=0 ; j<8 ; ++j)
+    for (j = 0 ; j < 8 ; j++)
       sum += quad[coord[i][j][0]]->node.l.map[coord[i][j][1]];
     
     if (quad[pos[i][0]]->node.l.map[pos[i][1]])
