@@ -3,8 +3,10 @@
 
 #include "hashtbl.h"
 
+typedef rule int;
+
 // To be called before any other function
-void hashlife_init(int rule[16]);
+void hashlife_init(rule r);
 
 Quad* cons_quad(Quad *quad[4], int d);
 

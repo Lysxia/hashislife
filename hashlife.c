@@ -7,7 +7,7 @@
 
 Quad* alloc_quad();
 
-void quad_d1(Quad* quad[4], int rule[16]);
+void quad_d1(Quad* quad[4], rule r);
 
 Hashtbl htbl;
 
@@ -189,7 +189,7 @@ Quad* dead_space(int d)
     return dead_quad[d];
 }
 
-void hashlife_init(int rule[16])
+void hashlife_init(rule r)
 {
   const int leaves_n = 16;
   int i;
@@ -238,14 +238,14 @@ void hashlife_init(int rule[16])
           for (j = 0 ; j < 4 ; j++)
             quad[j] = leaves + k[j];
 
-          quad_d1(quad,rule);
+          quad_d1(quad, r);
         }
 }
 
 /* Depth 1 nodes are computed at the beginning of the program */
 // rule : B/S
 // Create depth 1 node
-void quad_d1(Quad* quad[4], int rule[16])
+void quad_d1(Quad* quad[4], rule r)
 {
   const int coord[4][8][2] = {
     {{0,0},{0,1},{1,0},{0,2},{1,2},{2,0},{2,1},{3,0}},
@@ -272,9 +272,9 @@ void quad_d1(Quad* quad[4], int rule[16])
       sum += quad[coord[i][j][0]]->node.l.map[coord[i][j][1]];
     
     if (quad[pos[i][0]]->node.l.map[pos[i][1]])
-      acc += rule[sum+8];
+      acc += (r >> sum + 8) & 1;
     else
-      acc += rule[sum];
+      acc += (r >> sum) & 1;
   }
 
   q->node.n.next = leaves + acc;
