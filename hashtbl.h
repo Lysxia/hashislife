@@ -3,24 +3,18 @@
 #ifndef HASHTBL_H
 #define HASHTBL_H
 
-typedef struct Hashtbl *Hashtbl;
+typedef int rule;
+typedef Hashtbl;
+typedef QuadList;
+typedef QuadMap;
 
-/* Internal node or leaf */
-typedef union Node Node;
-
-/* List like type */
-typedef struct Quad Quad;
-
-struct Hashtbl {
-  int size;
-  int len;
-  struct Quad **tbl;
-};
+typedef struct Quad *Quad;
 
 union Node {
   // internal node
   struct {
-    struct Quad *sub[4], *next; // subtrees : 0-upperleft, 1-upperright, 2-bottomleft, 3-bottomright
+    Quad sub[4]; // subtrees : 0-upperleft, 1-upperright, 2-bottomleft, 3-bottomright
+    QuadMap *next;
   } n;
 
   // leaf
@@ -33,27 +27,21 @@ union Node {
 };
 
 struct Quad {
-  int depth; // head information,
-             // quad tree for a square map with side 2^(depth+1)
+  int depth; // quad tree for a square map with side 2^(depth+1)
   union Node node;
-  struct Quad *tl; // tail
 };
 
-int hash(Quad*[4]);
-
-Hashtbl hashtbl_new();
-
-/* Hash is computed before calling find and/or add */
-Quad *hashtbl_find(Hashtbl hashtbl, int h, Quad *key[4]);
-
-void hashtbl_add(Hashtbl hashtbl, int h, Quad *elt);
-
-Quad *list_find(Quad *key[4], Quad *list);
-
+Hashtbl hashlife_init(rule r);
 void hashtbl_free(Hashtbl);
 
-void print_quad(Quad *q);
+Quad leaf(int);
+Quad dead_space(int d);
+Quad cons_quad(Hashtbl htbl, Quad quad[4], int d);
 
-void htbl_stat(Hashtbl htbl);
+void print_quad(Quad);
+void htbl_stat(Hashtbl);
+int nb_nodes(Hashtbl);
+void hash_info(Hashtbl);
+const int *step(Hashtbl, int[4]);
 
 #endif
