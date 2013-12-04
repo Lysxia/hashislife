@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "bigint.h"
 #include "hashtbl.h"
 #include "hashlife.h"
 
 #define DEBUG
 
 Quad *center(Hashtbl *htbl, Quad *quad[4], int d);
+
+Quad *expand(Hashtbl *htbl, Quad *q, int d);
 
 Quad *fate(Hashtbl *htbl, Quad *q, int t)
 {
@@ -72,6 +75,40 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
   return f;
 }
 
+Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
+{
+  const int int_size = 32;
+
+  int d = q->depth;
+  while (bi.len > d + 1)
+  {
+    Quad *ds = dead_space(htbl, d);
+    Quad *quad[4] = {q, ds, ds, ds};
+
+    q = cons_quad(htbl, quad, ++d);
+  }
+
+  Quad *ds = dead_space(htbl, d);
+  Quad *quad[4] = {ds, ds, ds, q};
+
+  q = cons_quad(htbl, quad, ++d);
+
+  *shift_e = q->depth;
+
+  ds = dead_space(htbl, d);
+  Quad *quad_[4] = {q, ds, ds, ds};
+
+  q = cons_quad(htbl, quad_, ++d);
+
+  for (bi.len = bi.len ; bi.len > 0 ; bi.len--)
+  {
+    if (bi.digits[(bi.len - 1) / int_size] >> (bi.len - 1) % int_size)
+      q = fate(htbl, expand(htbl, q, d + 1), bi.len);
+  }
+
+  return q;
+}
+
 Quad *center(Hashtbl *htbl, Quad *quad[4], int d)
 {
   if (d == 1)
@@ -90,4 +127,10 @@ Quad *center(Hashtbl *htbl, Quad *quad[4], int d)
 
     return cons_quad(htbl, quad, d);
   }
+}
+
+Quad *expand(Hashtbl *htbl, Quad *q, int d)
+{
+  printf("in expand(...): not implemented.\n");
+  exit(2);
 }
