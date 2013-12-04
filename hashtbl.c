@@ -319,12 +319,9 @@ void hashlife_init()
   {
     Quad *n = &leaves[i];
 
-    int j, i_ = i;
-    for (j = 3 ; j >= 0 ; j--)
-    {
-      n->node.l.map[j] = i_ & 1;
-      i_ >>= 1;
-    }
+    int j;
+    for (j = 0 ; j < 4 ; j--)
+      n->node.l.map[j] = (i >> (3 - j)) & 1;
     
     n->depth = 0;
   }
@@ -353,16 +350,14 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
 
     q->node.n.sub[i] = quad[i];
 
-    acc <<= 1;
-    
     // Count alive neighbors
     for (j = 0 ; j < 8 ; j++)
       sum += quad[coord[i][j][0]]->node.l.map[coord[i][j][1]];
     
     if (quad[pos[i][0]]->node.l.map[pos[i][1]])
-      acc += (r >> (sum + 9)) & 1;
+      acc |= ((r >> (sum + 9)) & 1) << (3 - i);
     else
-      acc += (r >> sum) & 1;
+      acc |= ((r >> sum) & 1) << (3 - i);
   }
 
   q->node.n.next = malloc(sizeof(QuadMap));

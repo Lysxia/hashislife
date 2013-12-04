@@ -3,25 +3,7 @@
 
 #include "hashtbl.h"
 
-typedef int rule;
+Quad *fate(Hashtbl *htbl, Quad *q, int t);
 
-// To be called before any other function
-void hashlife_init(rule r);
-
-Quad *cons_quad(Quad *quad[4], int d);
-
-Quad *fate(Quad *q);
-
-Quad *effect(Quad *q, int t);
-
-Quad *dead_space(int d);
-
-int nb_nodes();
-
-void hash_info();
-
-const int *step(int state[4]);
-
-Quad *leaves;
 
 #endif
