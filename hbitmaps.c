@@ -3,28 +3,28 @@
 #include "hbitmaps.h"
 #include <stdio.h>
 
-Quad *map_to_quad_(int **map, int m, int n,
+Quad *map_to_quad_(Hashtbl *htbl, int **map, int mlen, int nlen,
                    int mmin, int nmin, int d, int s);
 
-Quad *map_to_quad(int **map, int m, int n)
+Quad *map_to_quad(Hashtbl *htbl, int **map, int mlen, int nlen)
 {
   int side = 2, d = 0;
 
-  while (side < m || side < n)
+  while (side < mlen || side < nlen)
   {
     side <<= 1;
     d++;
   }
 
-  return map_to_quad_(map,m,n, 0, 0, d, side);
+  return map_to_quad_(htbl, map,mlen,nlen, 0, 0, d, side);
 }
 
-Quad *map_to_quad_(int **map, int m, int n,
+Quad *map_to_quad_(Hashtbl *htbl, int **map, int mlen, int nlen,
                    int mmin, int nmin, int d, int s)
 {
-  if (mmin >= m || nmin >= n)
+  if (mmin >= mlen || nmin >= nlen)
   {
-    return dead_space(d);
+    return dead_space(htbl, d);
   }
   else if (d == 0)
   {
@@ -32,12 +32,12 @@ Quad *map_to_quad_(int **map, int m, int n,
     for (i = 0 ; i < 2 ; i++)
       for (j = 0 ; j < 2 ; j++)
       {
-        acc <<= 1;
-        if (mmin + i >= 0 && mmin + i < m && nmin + j >= 0 && nmin + j < n)
-          acc |= !!map[mmin+i][nmin+j];
+        if (mmin + i >= 0 && mmin + i < mlen &&
+            nmin + j >= 0 && nmin + j < nlen)
+          acc |= !!map[mmin+i][nmin+j] << (i + 2 * j);
       }
 
-    return leaves + acc;
+    return leaf(acc);
   }
   else
   {
@@ -48,19 +48,20 @@ Quad *map_to_quad_(int **map, int m, int n,
     s /= 2;
 
     for (i = 0 ; i < 4 ; i++)
-      quad[i] = map_to_quad_(map,m,n,
+      quad[i] = map_to_quad_(htbl, map,mlen,nlen,
           mmin + (i & 2 ? s : 0),
           nmin + (i & 1 ? s : 0),
           d-1, s);
 
-    return cons_quad(quad, d);
+    return cons_quad(htbl, quad, d);
   }
 }
 
 void zero_(int **map, int m, int n, int mlen, int nlen);
-void quad_to_map_(int **map, int m, int n, int mmin, int nmin, int mlen, int nlen, Quad *q, int s);
+void quad_to_map_(int **map, int m, int n, int mlen, int nlen,
+    BigInt mmin, BigInt nmin, Quad *q, int s);
 
-void quad_to_map(int **map, int m, int n, int mmin, int nmin, int mlen, int nlen, Quad *q)
+void quad_to_map(int **map, int m, int n, int mlen, int nlen, BigInt mmin, BigInt nmin, Quad *q)
 {
   int s = 2, d = 0;
 
