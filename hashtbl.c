@@ -4,7 +4,8 @@
 
 typedef struct QuadList QuadList;
 
-struct Hashtbl {
+struct Hashtbl
+{
   QuadList **tbl;
   int size;
   int count;
@@ -12,13 +13,15 @@ struct Hashtbl {
   int dead_size;
 };
 
-struct QuadList {
+struct QuadList
+{
   Quad *head;
   struct QuadList *tail;
 };
 
 typedef struct QuadMap QuadMap;
-struct QuadMap {
+struct QuadMap
+{
   int k;
   Quad *v;
   QuadMap *map_tail;

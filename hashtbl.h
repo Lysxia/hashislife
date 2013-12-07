@@ -9,15 +9,18 @@ typedef struct QuadMap QuadMap;
 
 typedef struct Quad Quad;
 
-union Node {
+union Node
+{
   // internal node
-  struct {
+  struct
+  {
     Quad *sub[4]; // subtrees : 0-upperleft, 1-upperright, 2-bottomleft, 3-bottomright
     QuadMap *next;
   } n;
 
   // leaf
-  struct {
+  struct
+  {
     int map[4];
     /* 0 1
      * 2 3
@@ -25,7 +28,8 @@ union Node {
   } l;
 };
 
-struct Quad {
+struct Quad
+{
   int depth; // quad tree for a square map with side 2^(depth+1)
   union Node node;
 };
