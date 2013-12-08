@@ -57,7 +57,6 @@ Quad *map_to_quad_(Hashtbl *htbl, int **map, int mlen, int nlen,
   }
 }
 
-void zero_(int **map, int m, int n, int mlen, int nlen);
 void quad_to_map_(int **map, int m, int n, int mlen, int nlen,
     BigInt mmin, BigInt nmin, Quad *q, int s);
 
@@ -71,65 +70,11 @@ void quad_to_map(int **map, int m, int n, int mlen, int nlen, BigInt mmin, BigIn
     s *= 2;
   }
 
-  if (mlen <= 0 || nlen <= 0)
-    return;
-
-  if (mmin < 0)
-  {
-    int mlen2 = mmin + mlen <= 0 ? mlen : -mmin;
-
-    zero_(map, m, n, mlen2, nlen);
-
-    m += mlen2;
-    mmin = 0;
-    mlen -= mlen2;
-  }
-
-  if (mmin+mlen > s)
-  {
-    int mmin2 = mmin < s ? s : mmin;
-    int m2 = m + mmin2 - mmin,
-        mlen2 = mlen - mmin2 + mmin;
-
-    zero_(map, m2, n, mlen2, nlen);
-
-    mlen -= mlen2;
-  }
-
-  if (nmin < 0)
-  {
-    int nlen2 = nmin + nlen <= 0 ? nlen : -nmin;
-
-    zero_(map, m, n, mlen, nlen2);
-
-    n += nlen2;
-    nmin = 0;
-    nlen -= nlen2;
-  }
-
-  if (nmin + nlen > s)
-  {
-    int nmin2 = nmin < s ? s : nmin;
-    int n2 = n + nmin2 - nmin,
-        nlen2 = nlen - nmin2 + nmin;
-
-    zero_(map, m, n2, mlen, nlen2);
-
-    nlen -= nlen2;
-  }
-
   quad_to_map_(map, m, n,
     mmin, nmin, mlen, nlen,
     q, s);
 }
 
-void zero_(int **map, int m, int n, int mlen, int nlen)
-{
-  int i, j;
-  for (i = 0 ; i < mlen ; i++)
-    for (j = 0 ; j < nlen ; j++)
-      map[m+i][n+j] = 0;
-}
 int count = 0;
 
 void quad_to_map_(int **map, int m, int n,
