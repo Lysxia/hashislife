@@ -124,6 +124,11 @@ void hashtbl_free(Hashtbl *hashtbl)
   free(hashtbl);
 }
 
+Quad *leaf(int k)
+{
+  return &leaves[k];
+}
+
 Quad *dead_space(Hashtbl *htbl, int d)
 {
   if (htbl->dead_size <= d)

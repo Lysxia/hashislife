@@ -1,5 +1,3 @@
-/* Hashtable of Quad using a Node as key */
-
 #ifndef HASHTBL_H
 #define HASHTBL_H
 

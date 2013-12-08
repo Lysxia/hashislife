@@ -1,4 +1,4 @@
-OBJ=hashtbl.o hashlife.o hbitmaps.o read_gol.o
+OBJ=bigint.o hashtbl.o hashlife.o hbitmaps.o read_gol.o
 MAIN=main.c
 CC=gcc -W -Wall
 

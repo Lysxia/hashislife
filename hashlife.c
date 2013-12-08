@@ -77,10 +77,10 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
 
 Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
 {
-  const int int_size = 32;
-
   int d = q->depth;
-  while (bi.len > d + 1)
+  int len = bi_length(bi);
+
+  while (len > d + 1)
   {
     Quad *ds = dead_space(htbl, d);
     Quad *quad[4] = {q, ds, ds, ds};
@@ -100,10 +100,10 @@ Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
 
   q = cons_quad(htbl, quad_, ++d);
 
-  for (bi.len = bi.len ; bi.len > 0 ; bi.len--)
+  for (; len > 0 ; len--)
   {
-    if (bi.digits[(bi.len - 1) / int_size] >> (bi.len - 1) % int_size)
-      q = fate(htbl, expand(htbl, q, d + 1), bi.len);
+    if (bi_digit(bi, len - 1))
+      q = fate(htbl, expand(htbl, q, d + 1), len);
   }
 
   return q;
