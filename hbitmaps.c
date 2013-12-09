@@ -71,6 +71,7 @@ void quad_to_matrix(int **matrix, int m, int n,
                     int mlen, int nlen,
                     BigInt mmin, BigInt nmin, Quad *q)
 {
+  //printf("*** %d %d : %d %d : %d %d\n", mlen, nlen, bi_to_int(mmin), bi_to_int(nmin), q->depth, 1 << q->depth+1);
   BigInt mmax = bi_plus_int(mmin, mlen);
   BigInt nmax = bi_plus_int(nmin, nlen);
   BigInt two_[q->depth+1];
@@ -94,6 +95,7 @@ void quad_to_matrix_(int **matrix, int m, int n,
                          BigInt mmax, BigInt nmax,
                          Quad *q, BigInt *two_, int d)
 {
+  //printf("%d %d : %d %d : %d %d\n", bi_to_int(mmin), bi_to_int(mmax), bi_to_int(nmax), bi_to_int(nmin), q->depth, 1 << q->depth+1);
   if (d == 0)
   {
     int i, j;

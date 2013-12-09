@@ -12,8 +12,8 @@ Quad *expand(Hashtbl *htbl, Quad *q, int d);
 
 Quad *fate(Hashtbl *htbl, Quad *q, int t)
 {
-  printf("%d %d\n", q->depth, t);
   Quad *f = map_assoc(q->node.n.next, t);
+
   // quad->depth > t
   if (f == NULL)
   {
@@ -37,7 +37,7 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
 
     for (i = 0 ; i < 4 ; i++)
       for (j = 0 ; j < 4 ; j++)
-        qs[2 * (i / 2) + j / 2][2 * (i % 2) + j % 2] = quad[i]->node.n.sub[j];
+        qs[i][j] = quad[(i & 2) + (j >> 1)]->node.n.sub[2 * (i & 1) + (j & 1)];
 
     // we compute q1
     for (i = 0 ; i < 3 ; i++)
@@ -65,12 +65,7 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
         for (k = 0 ; k < 4 ; k++)
           tmp[k] = q1[i + (k >> 1)][j + (k & 1)];
 
-        printf("4\n");
-        printf("%d\n", tmp[0]->depth);
         Quad *tmpq = cons_quad(htbl, tmp, d - 1);
-
-        printf("5\n");
-        fflush(stdout);
 
         nxt[2 * i + j] = fate(htbl, tmpq, t_);
       }
@@ -79,7 +74,6 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
 
     map_add(&q->node.n.next, t, f);
   }
-
   return f;
 }
 
@@ -108,9 +102,9 @@ Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
 
   q = cons_quad(htbl, quad_, ++d);
 
-  for (; len > 0 ; len--)
+  for (len-- ; len >= 0 ; len--)
   {
-    if (bi_digit(bi, len - 1))
+    if (bi_digit(bi, len))
       q = fate(htbl, expand(htbl, q, d + 1), len);
   }
 
@@ -119,11 +113,11 @@ Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
 
 Quad *center(Hashtbl *htbl, Quad *quad[4], int d)
 {
-  if (d == 1)
+  if (d == 0)
   {
     int i, l = 0;
     for (i = 0 ; i < 4 ; i++)
-      l |= quad[i]->node.l.map[3-i] << (3 - i);
+      l |= quad[i]->node.l.map[3-i] << (3-i);
 
     return leaf(l);
   }
@@ -139,7 +133,7 @@ Quad *center(Hashtbl *htbl, Quad *quad[4], int d)
 
 Quad *expand(Hashtbl *htbl, Quad *q, int d)
 {
-  Quad *ds = dead_space(htbl, d-2);
+  Quad *ds = dead_space(htbl, d - 2);
   Quad *quad[4] = {ds, ds, ds, ds};
 
   Quad *quad2[4];

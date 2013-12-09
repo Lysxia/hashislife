@@ -35,7 +35,7 @@ int** read_gol(int *m, int *n, rule *r, FILE *file)
     return NULL;
   }
 
-  while (buff[i] >= '0' && buff[i] <= '8')
+  while ('0' <= buff[i] && buff[i] <= '8')
     *r |= 1 << (buff[i++] - '0');
 
   //S rule
@@ -47,7 +47,7 @@ int** read_gol(int *m, int *n, rule *r, FILE *file)
 
   i += 2;
 
-  while (buff[i] >= '0' && buff[i] <= '8')
+  while ('0' <= buff[i] && buff[i] <= '8')
     *r |= 1 << (buff[i++] - '0' + 9);
 
   //matrix

@@ -186,7 +186,6 @@ Quad *dead_space(Hashtbl *htbl, int d)
 // This is the only constructor of quadtrees to be used
 Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
 {
-  printf("-- %d\n", d);
   if (quad[0]->depth != quad[1]->depth ||
       quad[0]->depth != quad[2]->depth ||
       quad[0]->depth != quad[3]->depth ||
@@ -419,6 +418,7 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
 
   q->node.n.next = malloc(sizeof(QuadMap));
   q->node.n.next->k = 0;
+
   q->node.n.next->v = &leaves[acc];
   q->depth = 1;
 
@@ -434,7 +434,7 @@ void print_quad(Quad *q)
   {
     int i;
     printf(" ");
-    for (i=0 ; i<4 ; i++)
+    for (i = 0 ; i < 4 ; i++)
       printf("%d", q->node.l.map[i]);
     printf(" ");
   }

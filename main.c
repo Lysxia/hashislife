@@ -37,6 +37,7 @@ int main(int argc, char **argv)
 
 void test_matrix(int** mat, int m, int n, int r)
 {
+  printf("%d\n", r);
   print_matrix(mat, m, n, stdout);
 
   Hashtbl *htbl = hashtbl_new(r);
@@ -46,19 +47,26 @@ void test_matrix(int** mat, int m, int n, int r)
   //print_quad(q);
   
   int shift_e;
-  BigInt one = bi_plus_int(bi_zero, 1);
+  BigInt one = bi_plus_int(bi_zero, 900);
 
   q = destiny(htbl, q, one, &shift_e);
 
   printf("Destiny.\n");
 
-  int l = 1 << shift_e;
+  int l = 1 << shift_e ;
 
-  int **mat2 = alloc_matrix(l, l);
+  const int side_m = 50;
+  const int side_n = 128;
+  int **mat2 = alloc_matrix(side_m, side_n);
 
-  quad_to_matrix(mat2, 0, 0, l, l, bi_zero, bi_zero, q);
+  BigInt bi_l = bi_plus_int(bi_zero,l);
 
-  print_matrix(mat, m, n, stdout);
+  quad_to_matrix(mat2, 0, 0, side_m, side_n, bi_l, bi_l, q);
 
+  print_matrix(mat2, side_m, side_n, stdout);
+
+  bi_free(one);
+  bi_free(bi_l);
+  free_matrix(mat2, side_m);
   free(htbl);
 }
