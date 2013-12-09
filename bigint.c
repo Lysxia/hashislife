@@ -5,14 +5,19 @@
 
 const BigInt bi_zero = {.digits = NULL, .len = 0};
 
-int bi_length(BigInt b)
+/* Number of bits */
+int bi_log2(BigInt b)
 {
-  return b.len;
+  int d = b.len * 31;
+
+  while (d > 0 && !(b.digits[(d - 1) / 31] & (1 << ((d - 1) % 31)))) d--;
+
+  return d;
 }
 
 int bi_digit(BigInt b, int d)
 {
-  return 0 <= d && d < b.len ? (b.digits[d / 31] >> (d % 31)) & 1 : 0;
+  return d < b.len * 31 ? (b.digits[d / 31] >> (d % 31)) & 1 : 0;
 }
 
 int bi_iszero(BigInt b)
@@ -27,10 +32,10 @@ BigInt bi_copy(BigInt b)
 
   BigInt c = {
     .len = b.len,
-    .digits = malloc(1 + (b.len - 1) / 31)
+    .digits = malloc(b.len * sizeof(int)),
   };
 
-  memcpy(c.digits, b.digits, (1 + (b.len - 1) / 31) * sizeof(int));
+  memcpy(c.digits, b.digits, b.len * sizeof(int));
 
   return c;
 }
@@ -42,7 +47,7 @@ int bi_flip(BigInt b, int d)
 
 BigInt *bi_canonize(BigInt *b)
 {
-  while (b->len > 0 && !bi_digit(*b, b->len - 1)) b->len--;
+  while (b->len > 0 && !b->digit[b->len - 1]) b->len--;
 
   return b;
 }
@@ -50,8 +55,8 @@ BigInt *bi_canonize(BigInt *b)
 BigInt bi_power_2(int k)
 {
   BigInt s = {
-    .digits = calloc(1 + k / 31, sizeof(int)),
-    .len = k + 1
+    .digits = calloc(k / 31 + 1, sizeof(int)),
+    .len = k / 31 + 1
   };
 
   if (s.digits == NULL)
@@ -65,11 +70,15 @@ BigInt bi_power_2(int k)
   return s;
 }
 
+int *bi_smooth(int *digits, int start, int end);
+
 BigInt bi_plus_int(BigInt b, int i)
 {
+  const int size = b.len + 1;
+
   BigInt s = {
-    .digits = malloc((2 + b.len / 31) * sizeof(int)),
-    .len = 0
+    .digits = malloc(size * sizeof(int)),
+    .len = size,
   };
 
   if (s.digits == NULL)
@@ -81,38 +90,65 @@ BigInt bi_plus_int(BigInt b, int i)
   if (b.len == 0)
   {
     s.digits[0] = i;
+    bi_canonize(&s)
     
-    for (s.len = 31 ; s.len > 0 && !bi_digit(s, s.len - 1) ; s.len--) {}
     return s;
   }
 
-  int k;
-
-  s.digits[0] = i;
-
-  for (k = 0, s.len = 0 ; s.len < b.len ; k++, s.len += 31)
-  {
-    s.digits[k] += b.digits[k];
-    s.digits[k + 1] = (s.digits[k] >> 31) & 1;
-    s.digits[k] ^= 1 << 31;
-  }
-
-  s.len++;
-
-  while (s.len > 0 && !bi_digit(s, s.len - 1)) s.len--;
+  s.digits[size - 1] = 0;
+  memcpy(s.digits, d.digits, b.len * sizeof(int));
+  s.digits[0] += i;
+  bi_smooth(s.digits, 0, b.len);
+  bi_canonize(&s);
 
   return s;
 }
 
+BigInt *bi_add_to(BigInt *a, BigInt b)
+{
+  if (bi_iszero(*a) && bi_iszero(b))
+  {
+    free(a->digits);
+    a->digits = NULL;
+    return *a = bi_zero;
+  }
+
+  if (a->len <= b.len)
+  {
+    if (a->digits == NULL)
+      a->digits = malloc((b.len + 1) * sizeof(int));
+    else
+      a->digits = realloc(a->digits, (b.len + 1) * sizeof(int));
+    a->len = b.len+1;
+  }
+
+  int i;
+  for (i = 0 ; i < b.len ; i++)
+    a->digits[i] += b.digits[i];
+
+  a->digits[b.len] = 0;
+
+  bi_smooth(a->digits, 0, b.len);
+  bi_canonize(a);
+
+  return *a;
+}
+
+int *bi_smooth(int *digits, int start, int len)
+{
+  int i;
+  for (i = 0 ; i < len ; i++)
+  {
+    digits[start+i+1] += (digits[start+i] >> 31) & 1;
+    digits[start+i] &= -1 ^ (1 << 31);
+  }
+
+  return digits;
+}
+
 int bi_to_int(BigInt b)
 {
-  if (b.len == 0)
-    return 0;
-
-  if (b.len > 31)
-    b.len = 31;
-
-  return b.digits[0] & ((1 << b.len) - 1);
+  return b.len ? b.digits[0] : 0;
 }
 
 void bi_free(BigInt b)
@@ -123,7 +159,7 @@ void bi_free(BigInt b)
 void bi_print(BigInt b)
 {
   int d;
-  for (d = 0 ; d < b.len ; d++)
+  for (d = 0 ; d < 31 * b.len ; d++)
   {
     putchar(bi_digit(b, d) ? '1' : '0');
   }
@@ -135,15 +171,13 @@ void bi_test()
   const int len = 3;
   BigInt b = {
     .digits = malloc(len * sizeof(int)),
-    .len = len * 31,
+    .len = len,
   };
 
   int i;
 
   for (i = 0 ; i < len ; i++)
     b.digits[i] = (-1 ^ (1 << 31));
-
-  while (!bi_digit(b, b.len - 1)) b.len--;
 
   bi_print(b);
 
