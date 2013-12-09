@@ -40,14 +40,14 @@ BigInt bi_copy(BigInt b)
   return c;
 }
 
-int bi_flip(BigInt b, int d)
+void bi_flip(BigInt b, int d)
 {
   return b.digits[d / 31] ^= (1 << (d % 31));
 }
 
 BigInt *bi_canonize(BigInt *b)
 {
-  while (b->len > 0 && !b->digit[b->len - 1]) b->len--;
+  while (b->len > 0 && !b->digits[b->len - 1]) b->len--;
 
   return b;
 }
@@ -90,13 +90,13 @@ BigInt bi_plus_int(BigInt b, int i)
   if (b.len == 0)
   {
     s.digits[0] = i;
-    bi_canonize(&s)
+    bi_canonize(&s);
     
     return s;
   }
 
   s.digits[size - 1] = 0;
-  memcpy(s.digits, d.digits, b.len * sizeof(int));
+  memcpy(s.digits, b.digits, b.len * sizeof(int));
   s.digits[0] += i;
   bi_smooth(s.digits, 0, b.len);
   bi_canonize(&s);
@@ -109,8 +109,8 @@ BigInt *bi_add_to(BigInt *a, BigInt b)
   if (bi_iszero(*a) && bi_iszero(b))
   {
     free(a->digits);
-    a->digits = NULL;
-    return *a = bi_zero;
+    *a = bi_zero;
+    return a;
   }
 
   if (a->len <= b.len)
@@ -129,9 +129,7 @@ BigInt *bi_add_to(BigInt *a, BigInt b)
   a->digits[b.len] = 0;
 
   bi_smooth(a->digits, 0, b.len);
-  bi_canonize(a);
-
-  return *a;
+  return bi_canonize(a);
 }
 
 int *bi_smooth(int *digits, int start, int len)
@@ -149,6 +147,18 @@ int *bi_smooth(int *digits, int start, int len)
 int bi_to_int(BigInt b)
 {
   return b.len ? b.digits[0] : 0;
+}
+
+BigInt bi_from_int(int i)
+{
+  BigInt s = {
+    .digits = malloc(sizeof(int)),
+    .len = 1,
+  };
+
+  s.digits[0] = i;
+
+  return s;
 }
 
 void bi_free(BigInt b)

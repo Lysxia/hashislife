@@ -46,8 +46,12 @@ void test_matrix(int** mat, int m, int n, int r)
 
   //print_quad(q);
   
+  //quad_to_matrix(mat, 0, 0, m, n, bi_zero, bi_zero, q);
+  //print_matrix(mat, m, n, stdout);
+  //exit(2);
+  
   int shift_e;
-  BigInt one = bi_plus_int(bi_zero, 900);
+  BigInt one = bi_from_int(1);
 
   q = destiny(htbl, q, one, &shift_e);
 
@@ -59,7 +63,7 @@ void test_matrix(int** mat, int m, int n, int r)
   const int side_n = 128;
   int **mat2 = alloc_matrix(side_m, side_n);
 
-  BigInt bi_l = bi_plus_int(bi_zero,l);
+  BigInt bi_l = bi_from_int(l);
 
   quad_to_matrix(mat2, 0, 0, side_m, side_n, bi_l, bi_l, q);
 

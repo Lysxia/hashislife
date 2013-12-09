@@ -15,6 +15,7 @@ BigInt life_count(Quad *q)
 
 void life_count_add(Quad *q, BigInt c)
 {
+
 }
 
 void life_matrix(BigInt **mat, int corner, int depth, Quad *q)

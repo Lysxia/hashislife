@@ -17,12 +17,6 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
   // quad->depth > t
   if (f == NULL)
   {
-    // Unwrap quad tree
-    Quad *qs[4][4], *q1[3][3], *nxt[4],
-         **quad = q->node.n.sub;
-
-    int i, j, d = q->depth;
-
     /* qs is the array of depth d-2 subtrees
          00 01 02 03
          10 11 12 13
@@ -33,6 +27,12 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
          10 11 12
          20 21 22 */
 
+    Quad *qs[4][4], *q1[3][3], *nxt[4],
+         **quad = q->node.n.sub;
+
+    int i, j;
+    
+    const int d = q->depth;
     const int t_ = d == t + 1 ? t - 1 : t;
 
     for (i = 0 ; i < 4 ; i++)
@@ -74,13 +74,14 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
 
     map_add(&q->node.n.next, t, f);
   }
+
   return f;
 }
 
 Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
 {
   int d = q->depth;
-  int len = bi_length(bi);
+  int len = bi_log2(bi);
 
   while (len > d + 1)
   {
@@ -95,7 +96,7 @@ Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
 
   q = cons_quad(htbl, quad, ++d);
 
-  *shift_e = q->depth;
+  *shift_e = d;
 
   ds = dead_space(htbl, d);
   Quad *quad_[4] = {q, ds, ds, ds};

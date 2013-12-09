@@ -66,6 +66,7 @@ int ge_exponent(BigInt b, int e);
 void split_(BigInt min, BigInt max, BigInt two_e, int e, BigInt min_[2], BigInt max_[2], int *m2,
             int *trunc_min, int *trunc_max);
 BigInt truncate(BigInt b, int e);
+//void recover(BigInt b, int e);
 
 void quad_to_matrix(int **matrix, int m, int n,
                     int mlen, int nlen,
@@ -80,12 +81,12 @@ void quad_to_matrix(int **matrix, int m, int n,
   for (e = 0 ; e <= q->depth ; e++)
     two_[e] = bi_power_2(e);
 
-  bi_canonize(&mmax);
-  bi_canonize(&nmax);
-
   quad_to_matrix_(matrix, m, n,
     mmin, nmin, mmax, nmax,
     q, two_, q->depth);
+
+  bi_free(mmax);
+  bi_free(nmax);
 }
 
 int count = 0;
@@ -95,7 +96,9 @@ void quad_to_matrix_(int **matrix, int m, int n,
                          BigInt mmax, BigInt nmax,
                          Quad *q, BigInt *two_, int d)
 {
-  //printf("%d %d : %d %d : %d %d\n", bi_to_int(mmin), bi_to_int(mmax), bi_to_int(nmax), bi_to_int(nmin), q->depth, 1 << q->depth+1);
+  //printf("%d %d \t| m %d %d \t: n %d %d \t: d %d %d\n", m, n,
+  //    bi_to_int(mmin), bi_to_int(mmax), bi_to_int(nmin), bi_to_int(nmax), q->depth, 1 << q->depth+1);
+  fflush(stdout);
   if (d == 0)
   {
     int i, j;
@@ -135,29 +138,23 @@ void quad_to_matrix_(int **matrix, int m, int n,
         q->node.n.sub[i], two_, d-1);
     }
 
+    /* Some linear complexity garbage
     if (trunc_mmax)
-    {
-      bi_free(mmax_[1]);
-      if (trunc_mmin)
-      {
-        bi_free(mmin_[1]);
-      }
-    }
+      recover(mmax, d);
+    if (trunc_mmin)
+        recover(mmin, d);
     if (trunc_nmax)
-    {
-      bi_free(nmax_[1]);
-      if (trunc_nmin)
-      {
-        bi_free(nmin_[1]);
-      }
-    }
+      recover(nmax, d);
+    if (trunc_nmin)
+      recover(nmin, d);
+      */
   }
 }
 
 // b > 2^e
 int ge_exponent(BigInt b, int e)
 {
-  return bi_length(b) >= e + 1;
+  return bi_log2(b) >= e + 1;
 }
 
 /* min <= max <= 2^(e+1) */
@@ -201,15 +198,31 @@ void split_(BigInt min, BigInt max, BigInt two_e, int e, BigInt min_[2], BigInt 
   }
 }
 
+BigInt minus_pow2(BigInt b, int e)
+{
+  if ((b.digits[e / 31] -= 1 << (e % 31)) < 0)
+  {
+    b.digits[e / 31 + 1] -= 1;
+    b.digits[e / 31] ^= 1 << 31;
+  }
+
+  bi_canonize(&b);
+
+  return b;
+}
+
 BigInt truncate(BigInt b, int e)
 {
-  BigInt c = bi_copy(b);
-
-  bi_flip(c, e);
-  bi_flip(c, e+1);
-
-  c.len--;
-  bi_canonize(&c);
-
-  return c;
+  return minus_pow2(bi_copy(b), e);
 }
+
+/*
+void recover(BigInt b, int e)
+{
+  if ((b.digits[e / 31] += 1 << (e % 31)) < 0)
+  {
+    b.digits[e / 31 + 1] += 1;
+    b.digits[e / 31] ^= 1 << 31;
+  }
+}
+*/

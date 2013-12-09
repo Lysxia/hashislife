@@ -14,7 +14,7 @@ int bi_digit(BigInt b, int d);
 int bi_iszero(BigInt b);
 
 BigInt bi_copy(BigInt b);
-int bi_flip(BigInt b, int d);
+void bi_flip(BigInt b, int d);
 
 BigInt *bi_canonize(BigInt *b);
 
@@ -23,6 +23,7 @@ BigInt bi_plus_int(BigInt b, int i);
 BigInt *bi_add_to(BigInt *a, BigInt b);
 
 int bi_to_int(BigInt b);
+BigInt bi_from_int(int i);
 
 void bi_free(BigInt b);
 

@@ -1,5 +1,6 @@
 #ifndef HASHTBL_H
 #define HASHTBL_H
+#include <stdint.h>
 
 typedef int rule;
 typedef struct Hashtbl Hashtbl;

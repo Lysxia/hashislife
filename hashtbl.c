@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "hashtbl.h"
 
 typedef struct QuadList QuadList;
@@ -30,15 +31,14 @@ struct QuadMap
 /*** Auxiliary functions ***/
 
 void hashlife_init();
-int hash(Quad*[4]);
 Quad* alloc_quad();
 // create depth 1 nodes. Part of hashlife_init() logic.
 void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r); 
 
-int hash(Quad *key[4]);
-Quad *hashtbl_find(Hashtbl *hashtbl, int h, Quad *key[4]);
+int hash(Quad*[4]);
+Quad *hashtbl_find(Hashtbl *hashtbl, int h, Quad* key[4]);
 void hashtbl_add(Hashtbl *hashtbl, int h, Quad *elt);
-Quad *list_find(Quad *key[4], QuadList *list);
+Quad *list_find(Quad* key[4], QuadList *list);
 
 void free_list(QuadList *ql);
 void free_map(QuadMap *qm); 
@@ -277,20 +277,20 @@ Quad *alloc_quad()
 
 /*** Hashtable function ***/
 
-int hash(Quad *key[4])
+int hash(Quad* key[4])
 {
-  long int a[4], x;
+  intptr_t a[4], x;
   int i;
 
   for (i = 0 ; i < 4 ; i++)
-    a[i] = (long int) key[i] >> 2;
+    a[i] = (intptr_t) key[i] >> 2;
 
   x = (a[0] << 15) ^ (a[1] << 10) ^ (a[2] << 5) ^ a[3];
 
-  return (unsigned int) x & (init_size - 1);
+  return (int) x & (init_size - 1);
 }
 
-Quad *hashtbl_find(Hashtbl *hashtbl, int h, Quad *key[4])
+Quad *hashtbl_find(Hashtbl *hashtbl, int h, Quad* key[4])
 {
   return list_find(key, hashtbl->tbl[h]);
 }
@@ -305,14 +305,14 @@ void hashtbl_add(Hashtbl *hashtbl, int h, Quad *elt)
   hashtbl->count++;
 }
 
-Quad *list_find(Quad *key[4], QuadList *list)
+Quad *list_find(Quad* key[4], QuadList *list)
 {
   if (list == NULL)
     return NULL;
   else
   {
     int i;
-    for (i = 0; i < 4 ; i++)
+    for (i = 0 ; i < 4 ; i++)
       if (key[i] != list->head->node.n.sub[i])
         return list_find(key, list->tail);
     return list->head;
