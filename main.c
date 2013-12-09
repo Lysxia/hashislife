@@ -6,14 +6,14 @@
 #include "hbitmaps.h"
 #include "read_gol.h"
 
-void test_map(int**, int, int, int);
+void test_matrix(int**, int, int, int);
 
 int main(int argc, char **argv)
 {
   //const rule conway = 6148;
   rule r;
   FILE *file;
-  int m, n, **map;
+  int m, n, **mat;
   int i,j;
 
   switch (argc)
@@ -23,34 +23,42 @@ int main(int argc, char **argv)
       break;
     case 2:
       file = fopen(argv[1], "r");
-      map = read_gol(&m, &n, &r, file);
+      mat = read_gol(&m, &n, &r, file);
 
-      test_map(map, m, n, r);
+      test_matrix(mat, m, n, r);
+      
+      free_matrix(mat, m);
+
       break;
   }
 
   return 0;
 }
 
-void test_map(int** map, int m, int n, int r)
+void test_matrix(int** mat, int m, int n, int r)
 {
-  print_map(map, m, n, stdout);
+  print_matrix(mat, m, n, stdout);
 
   Hashtbl *htbl = hashtbl_new(r);
 
-  Quad *q = map_to_quad(htbl, map, m, n);
+  Quad *q = matrix_to_quad(htbl, mat, m, n);
 
   //print_quad(q);
+  
+  int shift_e;
+  BigInt one = bi_plus_int(bi_zero, 1);
 
-  int i, j;
+  q = destiny(htbl, q, one, &shift_e);
 
-  for (i = 0 ; i < m ; i++)
-    for (j = 0 ; j < m ; j++)
-      map[i][j] = 0;
+  printf("Destiny.\n");
 
-  quad_to_map(map, 0, 0, m, n, bi_zero, bi_zero, q);
+  int l = 1 << shift_e;
 
-  print_map(map, m, n, stdout);
+  int **mat2 = alloc_matrix(l, l);
+
+  quad_to_matrix(mat2, 0, 0, l, l, bi_zero, bi_zero, q);
+
+  print_matrix(mat, m, n, stdout);
 
   free(htbl);
 }

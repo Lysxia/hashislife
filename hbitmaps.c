@@ -4,10 +4,10 @@
 #include "hashlife.h"
 #include "hbitmaps.h"
 
-Quad *map_to_quad_(Hashtbl *htbl, int **map, int mlen, int nlen,
-                   int mmin, int nmin, int d, int s);
+Quad *matrix_to_quad_(Hashtbl *htbl, int **matrix, int mlen, int nlen,
+                      int mmin, int nmin, int d, int s);
 
-Quad *map_to_quad(Hashtbl *htbl, int **map, int mlen, int nlen)
+Quad *matrix_to_quad(Hashtbl *htbl, int **matrix, int mlen, int nlen)
 {
   int side = 2, d = 0;
 
@@ -17,11 +17,11 @@ Quad *map_to_quad(Hashtbl *htbl, int **map, int mlen, int nlen)
     d++;
   }
 
-  return map_to_quad_(htbl, map,mlen,nlen, 0, 0, d, side);
+  return matrix_to_quad_(htbl, matrix,mlen,nlen, 0, 0, d, side);
 }
 
-Quad *map_to_quad_(Hashtbl *htbl, int **map, int mlen, int nlen,
-                   int mmin, int nmin, int d, int s)
+Quad *matrix_to_quad_(Hashtbl *htbl, int **matrix, int mlen, int nlen,
+                      int mmin, int nmin, int d, int s)
 {
   if (mmin >= mlen || nmin >= nlen)
   {
@@ -35,7 +35,7 @@ Quad *map_to_quad_(Hashtbl *htbl, int **map, int mlen, int nlen,
       {
         if (mmin + i >= 0 && mmin + i < mlen &&
             nmin + j >= 0 && nmin + j < nlen)
-          acc |= !!map[mmin+i][nmin+j] << (3 - 2 * i - j);
+          acc |= !!matrix[mmin+i][nmin+j] << (3 - 2 * i - j);
       }
 
     return leaf(acc);
@@ -49,7 +49,7 @@ Quad *map_to_quad_(Hashtbl *htbl, int **map, int mlen, int nlen,
     s /= 2;
 
     for (i = 0 ; i < 4 ; i++)
-      quad[i] = map_to_quad_(htbl, map,mlen,nlen,
+      quad[i] = matrix_to_quad_(htbl, matrix,mlen,nlen,
           mmin + (i & 2 ? s : 0),
           nmin + (i & 1 ? s : 0),
           d-1, s);
@@ -58,18 +58,18 @@ Quad *map_to_quad_(Hashtbl *htbl, int **map, int mlen, int nlen,
   }
 }
 
-void quad_to_map_(int **map, int m, int n,
-                  BigInt mmin, BigInt nmin,
-                  BigInt mmax, BigInt nmax,
-                  Quad *q, BigInt *two_, int d);
+void quad_to_matrix_(int **matrix, int m, int n,
+                     BigInt mmin, BigInt nmin,
+                     BigInt mmax, BigInt nmax,
+                     Quad *q, BigInt *two_, int d);
 int ge_exponent(BigInt b, int e);
 void split_(BigInt min, BigInt max, BigInt two_e, int e, BigInt min_[2], BigInt max_[2], int *m2,
             int *trunc_min, int *trunc_max);
 BigInt truncate(BigInt b, int e);
 
-void quad_to_map(int **map, int m, int n,
-                 int mlen, int nlen,
-                 BigInt mmin, BigInt nmin, Quad *q)
+void quad_to_matrix(int **matrix, int m, int n,
+                    int mlen, int nlen,
+                    BigInt mmin, BigInt nmin, Quad *q)
 {
   BigInt mmax = bi_plus_int(mmin, mlen);
   BigInt nmax = bi_plus_int(nmin, nlen);
@@ -82,20 +82,18 @@ void quad_to_map(int **map, int m, int n,
   bi_canonize(&mmax);
   bi_canonize(&nmax);
 
-  quad_to_map_(map, m, n,
+  quad_to_matrix_(matrix, m, n,
     mmin, nmin, mmax, nmax,
     q, two_, q->depth);
 }
 
 int count = 0;
 
-#define toint(a) a.len ? a.digits[0] & ((1 << a.len) -1) : 0
-void quad_to_map_(int **map, int m, int n,
+void quad_to_matrix_(int **matrix, int m, int n,
                          BigInt mmin, BigInt nmin,
                          BigInt mmax, BigInt nmax,
                          Quad *q, BigInt *two_, int d)
 {
-  printf("%d %d : %d %d : %d %d : %d\n", m, n, toint(mmin), toint(nmin), toint(mmax), toint(nmax), d);
   if (d == 0)
   {
     int i, j;
@@ -108,7 +106,7 @@ void quad_to_map_(int **map, int m, int n,
 
     for (i = 0 ; i < mlen ; i++)
       for (j = 0 ; j < nlen ; j++)
-        map[m+i][n+j] = q->node.l.map[2*(mmin_+i)+(nmin_+j)];
+        matrix[m+i][n+j] = q->node.l.map[2*(mmin_+i)+(nmin_+j)];
   }
   else if (bi_iszero(mmax) || bi_iszero(nmax))
   {
@@ -129,7 +127,7 @@ void quad_to_map_(int **map, int m, int n,
     {
       const int x = i >> 1, y = i & 1;
 
-      quad_to_map_(map, m_[x], n_[y],
+      quad_to_matrix_(matrix, m_[x], n_[y],
         mmin_[x], nmin_[y],
         mmax_[x], nmax_[y],
         q->node.n.sub[i], two_, d-1);
@@ -164,10 +162,8 @@ int ge_exponent(BigInt b, int e)
 void split_(BigInt min, BigInt max, BigInt two_e, int e, BigInt min_[2], BigInt max_[2], int *m2,
             int *trunc_min, int *trunc_max)
 {
-  printf(": %d %d %d %d\n", toint(min), toint(max), toint(two_e), e);
   if (ge_exponent(min, e))
   {
-    printf("0\n");
     min_[0] = max_[0] = bi_zero;
     min_[1] = truncate(min, e);
     max_[1] = truncate(max, e);
@@ -177,7 +173,6 @@ void split_(BigInt min, BigInt max, BigInt two_e, int e, BigInt min_[2], BigInt 
   }
   else if (ge_exponent(max, e))
   {
-    printf("1\n");
     min_[0] = min;
     max_[0] = two_e;
     min_[1] = bi_zero;
@@ -195,7 +190,6 @@ void split_(BigInt min, BigInt max, BigInt two_e, int e, BigInt min_[2], BigInt 
   }
   else
   {
-    printf("2\n");
     min_[0] = min;
     max_[0] = max;
     min_[1] = max_[1] = bi_zero;

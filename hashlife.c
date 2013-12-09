@@ -12,6 +12,7 @@ Quad *expand(Hashtbl *htbl, Quad *q, int d);
 
 Quad *fate(Hashtbl *htbl, Quad *q, int t)
 {
+  printf("%d %d\n", q->depth, t);
   Quad *f = map_assoc(q->node.n.next, t);
   // quad->depth > t
   if (f == NULL)
@@ -48,10 +49,10 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
         for (k = 0 ; k < 4 ; k++)
           tmp[k] = qs[i + (k >> 1)][j + (k & 1)];
 
-        if (d == t+1)
-          q1[i][j] = fate(htbl, cons_quad(htbl, tmp, d-1), t-1);
+        if (d == t + 1)
+          q1[i][j] = fate(htbl, cons_quad(htbl, tmp, d - 1), t - 1);
         else
-          q1[i][j] = center(htbl, tmp, d-2);
+          q1[i][j] = center(htbl, tmp, d - 2);
       }
 
     // nxt=q->node.n.sub holds the quad tree pointer to step 2^d
@@ -64,7 +65,14 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
         for (k = 0 ; k < 4 ; k++)
           tmp[k] = q1[i + (k >> 1)][j + (k & 1)];
 
-        nxt[2 * i + j] = fate(htbl, cons_quad(htbl, tmp, d - 1), t_);
+        printf("4\n");
+        printf("%d\n", tmp[0]->depth);
+        Quad *tmpq = cons_quad(htbl, tmp, d - 1);
+
+        printf("5\n");
+        fflush(stdout);
+
+        nxt[2 * i + j] = fate(htbl, tmpq, t_);
       }
 
     f = cons_quad(htbl, nxt, d-1);
@@ -131,6 +139,20 @@ Quad *center(Hashtbl *htbl, Quad *quad[4], int d)
 
 Quad *expand(Hashtbl *htbl, Quad *q, int d)
 {
-  printf("in expand(...): not implemented.\n");
-  exit(2);
+  Quad *ds = dead_space(htbl, d-2);
+  Quad *quad[4] = {ds, ds, ds, ds};
+
+  Quad *quad2[4];
+
+  int i;
+
+  for (i = 0 ; i < 4 ; i++)
+  {
+    quad[3-i] = q->node.n.sub[i];
+    quad2[i] = cons_quad(htbl, quad, d-1);
+    quad[3-i] = ds;
+  }
+
+  return cons_quad(htbl, quad2, d);
 }
+

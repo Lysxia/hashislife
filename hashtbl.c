@@ -16,7 +16,7 @@ struct Hashtbl
 struct QuadList
 {
   Quad *head;
-  struct QuadList *tail;
+  QuadList *tail;
 };
 
 typedef struct QuadMap QuadMap;
@@ -39,6 +39,10 @@ int hash(Quad *key[4]);
 Quad *hashtbl_find(Hashtbl *hashtbl, int h, Quad *key[4]);
 void hashtbl_add(Hashtbl *hashtbl, int h, Quad *elt);
 Quad *list_find(Quad *key[4], QuadList *list);
+
+void free_list(QuadList *ql);
+void free_map(QuadMap *qm); 
+void free_quad(Quad *q);
 
 const int init_size = 1 << 20; // start size of hashtbl
 const int init_dead_size = 32;
@@ -124,7 +128,12 @@ Hashtbl *hashtbl_new(rule r)
 
 void hashtbl_free(Hashtbl *hashtbl)
 {
+  int i;
+  for (i = 0 ; i < hashtbl->size ; i++)
+    free_list(hashtbl->tbl[i]);
+
   free(hashtbl->tbl);
+  free(hashtbl->dead_quad);
   free(hashtbl);
 }
 
@@ -177,6 +186,13 @@ Quad *dead_space(Hashtbl *htbl, int d)
 // This is the only constructor of quadtrees to be used
 Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
 {
+  printf("-- %d\n", d);
+  if (quad[0]->depth != quad[1]->depth ||
+      quad[0]->depth != quad[2]->depth ||
+      quad[0]->depth != quad[3]->depth ||
+      quad[0]->depth != d-1)
+    exit(2);
+
   int h = hash(quad);
 
   // Check if we didn't already memoize requested node
@@ -302,6 +318,32 @@ Quad *list_find(Quad *key[4], QuadList *list)
         return list_find(key, list->tail);
     return list->head;
   }
+}
+
+void free_list(QuadList *ql)
+{
+  if (ql != NULL)
+  {
+    free_list(ql->tail);
+    free_quad(ql->head);
+    free(ql);
+  }
+}
+
+void free_map(QuadMap *qm)
+{
+  if (qm != NULL)
+  {
+    free_map(qm->map_tail);
+    // v member is freed outside as it should be in the hashtbl
+    free(qm);
+  }
+}
+
+void free_quad(Quad *q)
+{
+  free_map(q->node.n.next);
+  free(q);
 }
 
 /*** Initialize hashlife ***/

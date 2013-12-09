@@ -13,7 +13,7 @@ int** read_gol(int *m, int *n, rule *r, FILE *file)
   const int buffsize = 20;
   char buff[buffsize];
 
-  // map size on two lines
+  // matrix size on two lines
   int a, b;
 
   fgets(buff, buffsize, file);
@@ -50,25 +50,17 @@ int** read_gol(int *m, int *n, rule *r, FILE *file)
   while (buff[i] >= '0' && buff[i] <= '8')
     *r |= 1 << (buff[i++] - '0' + 9);
 
-  //map
+  //matrix
   char buff2[b+2];
 
-  if (NULL == (life = malloc(a * sizeof(int*))))
+  if ((life = alloc_matrix(a, b)) == NULL)
   {
 	  printf("in read_gol(): Not enough memory\n");
-	  return NULL;
+    return NULL;
   }
 
   for (i = 0 ; i < a ; i++)
   {
-	  if (NULL == (life[i] = malloc(b * sizeof(int))))
-	  {
-	    printf("in read_gol(): Not enough memory\n");
-	    while (i-- > 0)
-		    free(life[i]);
-	    return NULL;
-	  }
-
     fgets(buff2, b + 2, file);
 
 	  for (j = 0 ; j < b ; j++)
@@ -82,10 +74,8 @@ int** read_gol(int *m, int *n, rule *r, FILE *file)
 		      life[i][j] = 1;
           break;
 		    default:
-		      printf("in read_gol(): Bad map, unrecognized character, ascii %d\n", buff2[j]);
-		      i++;
-		      while (i-->0)
-			      free(life[i]);
+		      printf("in read_gol(): Bad matrix, unrecognized character, ascii %d\n", buff2[j]);
+          free_matrix(life, a);
 		      return NULL;
 	    }
 	  }
@@ -94,13 +84,40 @@ int** read_gol(int *m, int *n, rule *r, FILE *file)
   return life;
 }
 
-void print_map(int **map, int m, int n, FILE *file)
+void print_matrix(int **matrix, int m, int n, FILE *file)
 {
   int i,j;
   for (i = 0 ; i < m ; i++)
   {
 	  for (j = 0 ; j < n ; j++)
-      fputc(map[i][j] ? '1' : '0', file);
+      fputc(matrix[i][j] ? '1' : '0', file);
     fputc('\n', file);
   }
+}
+
+int **alloc_matrix(int m, int n)
+{
+  int **matrix, i;
+
+  if (NULL == (matrix = malloc(m * sizeof(int*))))
+	  return NULL;
+
+  for (i = 0 ; i < m ; i++)
+	  if (NULL == (matrix[i] = malloc(n * sizeof(int))))
+	  {
+      free_matrix(matrix, i);
+	    return NULL;
+	  }
+
+  return matrix;
+}
+
+void free_matrix(int **matrix, int m)
+{
+  int i;
+
+  for (i = 0 ; i < m ; i++)
+    free(matrix[i]);
+
+  free(matrix);
 }

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "bigint.h"
 
 const BigInt bi_zero = {.digits = NULL, .len = 0};
