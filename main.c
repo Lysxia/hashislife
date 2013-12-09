@@ -3,7 +3,7 @@
 #include "bigint.h"
 #include "hashtbl.h"
 #include "hashlife.h"
-#include "hbitmaps.h"
+#include "conversion.h"
 #include "read_gol.h"
 
 void test_matrix(int**, int, int, int);
