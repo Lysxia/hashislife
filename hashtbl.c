@@ -68,6 +68,8 @@ Hashtbl *hashtbl_new(rule r)
   if (leaves == NULL) // Must initialize
     hashlife_init();
 
+  printf("Creating new hashtable... Allocating memory.\n");
+
   Hashtbl *htbl = malloc(sizeof(Hashtbl));
 
   if (htbl == NULL)
@@ -88,6 +90,8 @@ Hashtbl *hashtbl_new(rule r)
     printf("in hashtbl_new(...): Not enough memory.\n");
     exit(1);
   }
+
+  printf("Generating atoms.\n");
 
   int i;
 
@@ -303,6 +307,7 @@ Quad *list_find(Quad *key[4], QuadList *list)
 /*** Initialize hashlife ***/
 void hashlife_init()
 {
+  printf("Initializing...");
   int i;
 
   leaves = malloc(leaves_count * sizeof(Quad));
@@ -328,11 +333,13 @@ void hashlife_init()
     Quad *n = &leaves[i];
 
     int j;
-    for (j = 0 ; j < 4 ; j--)
+    for (j = 0 ; j < 4 ; j++)
       n->node.l.map[j] = (i >> (3 - j)) & 1;
-    
+
     n->depth = 0;
   }
+
+  printf("Done.\n");
 }
 
 /* Depth 1 nodes are computed at the beginning of the program */
@@ -384,10 +391,10 @@ void print_quad(Quad *q)
   if (q->depth == 0)
   {
     int i;
-    printf("LEAF ");
+    printf(" ");
     for (i=0 ; i<4 ; i++)
       printf("%d", q->node.l.map[i]);
-    printf("\n");
+    printf(" ");
   }
   else
   {
@@ -396,6 +403,8 @@ void print_quad(Quad *q)
     int i;
     for (i = 0 ; i < 4 ; i++)
       print_quad(q->node.n.sub[i]);
+
+    printf("\n");
   }
 }
 
