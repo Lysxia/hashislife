@@ -51,7 +51,7 @@ void test_matrix(int** mat, int m, int n, int r)
   //exit(2);
   
   int shift_e;
-  BigInt one = bi_from_int(1);
+  BigInt one = bi_from_int(910);
 
   q = destiny(htbl, q, one, &shift_e);
 
