@@ -3,7 +3,32 @@
 #include<string.h>
 #include "read_gol.h"
 
-int** read_gol(int *m, int *n, rule *r, FILE *file)
+int **read_rle(int *m, int *n, rule *r, FILE *file);
+
+int parse_rule(char *buff)
+{
+  int r = 0, i = 0;
+
+  // s rule
+  if (buff[i++] != 's')
+    return -1;
+
+  while ('0' <= buff[i] && buff[i] <= '8')
+    r |= 1 << (buff[i++] - '0' + 9);
+
+  // b rule
+  if (buff[i] != '/' || buff[i+1] != 'b')
+    return -1;
+
+  i += 2;
+
+  while ('0' <= buff[i] && buff[i] <= '8')
+    r |= 1 << (buff[i++] - '0');
+
+  return r;
+}
+
+int **read_gol(int *m, int *n, rule *r, FILE *file)
 {
   int **life, i, j;
 
@@ -25,30 +50,13 @@ int** read_gol(int *m, int *n, rule *r, FILE *file)
   // rules
   fgets(buff, buffsize, file);
 
-  *r = 0;
-  i = 0;
+  *r = parse_rule(buff);
 
-  // B rule
-  if (buff[i++] != 'B')
+  if (r == -1)
   {
     printf("in read_gol(): Expected rule 'B*/S*'\n");
     return NULL;
   }
-
-  while ('0' <= buff[i] && buff[i] <= '8')
-    *r |= 1 << (buff[i++] - '0');
-
-  //S rule
-  if (buff[i] != '/' || buff[i+1] != 'S')
-  {
-    printf("in read_gol(): Expected rule 'B*/S*'\n");
-    return NULL;
-  }
-
-  i += 2;
-
-  while ('0' <= buff[i] && buff[i] <= '8')
-    *r |= 1 << (buff[i++] - '0' + 9);
 
   //matrix
   char buff2[b+2];
@@ -67,10 +75,10 @@ int** read_gol(int *m, int *n, rule *r, FILE *file)
 	  {
 	    switch (buff2[j])
 	    {
-		    case '0':
+		    case '.':
 		      life[i][j] = 0;
 		      break;
-		    case '1':
+		    case 'o':
 		      life[i][j] = 1;
           break;
 		    default:
@@ -90,7 +98,7 @@ void print_matrix(int **matrix, int m, int n, FILE *file)
   for (i = 0 ; i < m ; i++)
   {
 	  for (j = 0 ; j < n ; j++)
-      fputc(matrix[i][j] ? '1' : '0', file);
+      fputc(matrix[i][j] ? 'o' : '.', file);
     fputc('\n', file);
   }
 }
