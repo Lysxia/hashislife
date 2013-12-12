@@ -40,11 +40,6 @@ BigInt bi_copy(BigInt b)
   return c;
 }
 
-void bi_flip(BigInt b, int d)
-{
-  return b.digits[d / 31] ^= (1 << (d % 31));
-}
-
 BigInt *bi_canonize(BigInt *b)
 {
   while (b->len > 0 && !b->digits[b->len - 1]) b->len--;
