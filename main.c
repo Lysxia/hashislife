@@ -19,10 +19,16 @@ int main(int argc, char **argv)
   switch (argc)
   {
     case 1:
-      bi_test();
+      //bi_test();
       break;
     case 2:
       file = fopen(argv[1], "r");
+
+      BitMap *bmp = read_rle(file);
+
+      print_rle(bmp, stdout);
+
+      return 0;
       mat = read_gol(&m, &n, &r, file);
 
       test_matrix(mat, m, n, r);
