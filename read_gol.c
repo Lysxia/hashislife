@@ -40,6 +40,56 @@ int parse_rule(char *buff)
   return (s << 9) | b;
 }
 
+BitMap *bm_new(enum MapType t)
+{
+  BitMap *map = malloc(sizeof(BitMap));
+
+  map->map_type = t;
+
+  map->x = map->y = map->r = 0;
+
+  map->map = NULL;
+  map->len = 0;
+  map->line_num = NULL;
+  map->line_len = NULL;
+  
+  return map;
+}
+
+void bm_rle_newline(BitMap *map)
+{
+  if (map->len == 0)
+  {
+    map->map = malloc(sizeof(int*));
+    map->line_num = malloc(sizeof(int));
+    map->line_len = malloc(sizeof(int));
+
+    map->map[0] = malloc(sizeof(int));
+
+    map->len++;
+  }
+  else if (!(map->len & (map->len - 1)))
+  {
+    map->map = realloc(map->map, 2 * map->len * sizeof(int*));
+    map->line_num = realloc(map->map, 2 * map->len * sizeof(int));
+    map->line_len = realloc(map->map, 2 * map->len * sizeof(int));
+
+    map->map[map->len] = malloc(sizeof(int));
+
+    map->len++;
+  }
+}
+
+void append(int **list, int i, int v)
+{
+  if (!(i & (i - 1)))
+  {
+    *list = realloc(*list, 2 * i);
+  }
+
+  (*list)[i] = v;
+}
+
 #define RLE_LINE_LENGTH 100
 
 int rle_token(FILE *file, char *tag)
@@ -48,13 +98,6 @@ int rle_token(FILE *file, char *tag)
 
   printf("Not implemented\n");
   exit(2);
-}
-
-#define SET(array, i, v, type) \
-{\
-  if (!(i & (i - 1))) \
-    array = realloc(array, 2 * i * sizeof(type)); \
-  array[i] = v;\
 }
 
 BitMap *read_rle(FILE *file)
@@ -85,25 +128,22 @@ BitMap *read_rle(FILE *file)
       return NULL;
   }
 
-  int l = 1, c = 0, i = 0, j = 0;
+  int c = 0, i = 0, j = 0;
 
-  BitMap *map = malloc(sizeof(BitMap));
+  BitMap *map = bm_new(RLE);
+  int run_len;
+  char tag;
 
   map->x = x;
   map->y = y;
   map->r = r;
-  map->map_type = RLE;
 
-  map->map = malloc(sizeof(int*));
-
-  int len;
-  char tag;
-
-  len = rle_token(file, &tag);
+  run_len = rle_token(file, &tag);
   
-  while (len)
+#define l map->len
+  while (run_len)
   {
-    if (len < 0)
+    if (run_len < 0)
     {
       printf("in read_rle(...): Invalid syntax\n");
       for (i = 0 ; i < l ; i++)
@@ -120,31 +160,29 @@ BitMap *read_rle(FILE *file)
         {
           if (c % 2 == 1)
           {
-            SET(map->map[l], c, j, int);
+            append(&(map->map[l]), c, j);
+            c++;
           }
-          map->map[l][1] = c + 1;
-          l++;
+          map->line_len[l] = c;
+          map->line_num[l] = i;
           c = 0;
         }
         i++;
+        break;
       case 'o':
         if (c % 2 == 0)
         {
-          if (map->map[l] == NULL)
-          {
-            c = 2;
-            map->map[l] = malloc(4 * sizeof(int));
-            map->map[l][0] = l;
-            //map->map[l][1] = 0; // will be erased
-          }
-          SET(map->map[l], c, j, int);
+          if (c == 0)
+            bm_rle_newline(map);
+          append(&(map->map[l]), c, j);
           c++;
         }
         j += len;
+        break;
       case 'b':
         if (c % 2 == 1)
         {
-          SET(map->map[l], c, j, int);
+          append(&(map->map[l]), c, j);
           c++;
         }
         j += len;
@@ -160,11 +198,10 @@ BitMap *read_rle(FILE *file)
 
     len = rle_token(NULL, &tag);
   }
+#undef l
 
   return map;
 }
-
-#undef SET
 
 int **read_gol(int *m, int *n, rule *r, FILE *file)
 {
