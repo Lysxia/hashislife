@@ -19,12 +19,7 @@ an arbitrary number of steps rather than powers of 2.
 
 - TODO:
 
-    1. Basic functionality would consist in reading a GoL configuration,
-computing the resulting configuration in t steps (for large t), write it out.
+    1. Garbage collecting ? Mark and sweep ? Stop & copy ?
 
-    1.a. Support very large t
-
-    2. Garbage collecting ? Mark and sweep ? Stop & copy ?
-
-    3. Graphic display (SDL)
+    2. Graphic display (SDL)
 
