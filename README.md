@@ -28,9 +28,11 @@ representing GoL configurations. (Raw and RLE)
 - *slowlife*: Naive cellular automaton simulation. (old)
 
 - *sparsemap*: A data type adapted to Life 1.06 format
-and more generally to sparse configurations (in terms of live cells)
+and more generally to sparse configurations (in terms of live cells) (old)
 
 - *main*, *Makefile* ...
+
+Currently unusable.
 
 ---
 
