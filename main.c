@@ -5,6 +5,7 @@
 #include "hashtbl.h"
 #include "hashlife.h"
 #include "conversion.h"
+#include "rleparser.h"
 #include "parsers.h"
 
 void test_matrix(int**, int, int, int);

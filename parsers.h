@@ -1,20 +1,13 @@
-#ifndef READ_GOL_H
-#define READ_GOL_H
+#ifndef PARSERS_H
+#define PARSERS_H
+
+#include "darray.h"
 
 typedef int rule;
 
-typedef struct BitMap BitMap;
-typedef struct BitMap_RLE_line Rle_line;
-
 enum MapType { RLE };
 
-struct BitMap_RLE_line
-{
-  Darray line_rle;
-  int line_num;
-};
-
-struct BitMap
+typedef struct BitMap
 {
   union
   {
@@ -29,14 +22,9 @@ struct BitMap
   int corner_x, corner_y; // position of top-left corner
   int x, y; // width and height of the map
   int r;
-};
+} BitMap;
 
-void bm_free(BitMap *map);
-
-int rle_token(FILE *new_file, char *tag);
-
-BitMap *read_rle(FILE *file);
-void print_rle(Darray *rle, FILE *file);
+int parse_rule(char *buff);
 
 int **read_gol(int *m, int *n, rule *r, FILE *file);
 void print_matrix(int **map, int m, int n, FILE *file);

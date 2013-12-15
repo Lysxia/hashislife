@@ -1,4 +1,4 @@
-OBJ=darray.o bigint.o hashtbl.o hashlife.o conversion.o parsers.o
+OBJ=darray.o bigint.o hashtbl.o hashlife.o conversion.o rleparser.o parsers.o
 MAIN=main.c
 CC=gcc -W -Wall
 
