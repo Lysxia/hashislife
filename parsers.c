@@ -234,61 +234,28 @@ int itoa(char *dest, int src)
   return i;
 }
 
-void bounded_lines(int run_count, char tag, FILE *new_file)
+void bounded_lines(int run_count, char tag, FILE *new_file);
+
+void print_rle(Darray *rle, FILE *file)
 {
-  static FILE *file = NULL;
-  static char a[20];
-  static int line;
+  int l, c;
 
-  if (new_file != NULL)
-  {
-    file = new_file;
-    line = 0;
-  }
-  else if (file == NULL)
-    return;
-
-  int written = itoa(a, run_count);
-
-  if (run_count == 1)
-    a[0] = tag;
-  else if (run_count > 1)
-  {
-    a[written] = tag;
-    a[written+1] = '\0';
-    written++;
-  }
-  else
-    return;
-
-  if ((line += written) > 70)
-  {
-    printf("\n");
-    line = 0;
-  }
-  
-  printf("%s", a);
-}
-
-void print_rle(BitMap *map, FILE *file)
-{
-  int l, c, line = 0;
+  Rle_line *lines = (Rle_line *) rle->da;
 
   bounded_lines(0, '\0', file);
 
-  for (l = 0 ; l < map->len ; l++)
+  for (l = 0 ; l < rle->array_length ; l++)
   {
     if (l > 0)
-      bounded_lines(map->line_num[l] - map->line_num[l-1], '$', NULL);
+      bounded_lines(lines[l].line_num - lines[l-1].line_num, '$', NULL);
+    int *columns = (int *) lines[l].line_rle.da;
 
-    for (c = 1 ; c < map->line_len[l] ; c++)
+    for (c = 0 ; c < lines[l].line_rle.array_length ; c++)
     {
       if (c == 0)
-        bounded_lines(map->map[l][0], 'b', NULL);
+        bounded_lines(columns[0], 'b', NULL);
       else
-        bounded_lines(map->map[l][c] - map->map[l][c-1],
-                      c % 2 ? 'o' : 'b',
-                      NULL);
+        bounded_lines(columns[c] - columns[c-1], c % 2 ? 'o' : 'b', NULL);
     }
   }
   printf("\n!\n");
@@ -425,7 +392,7 @@ void rle_map_free(Darray *rle)
 {
   int l;
   for (l = 0 ; l < rle->array_length ; l++)
-    da_clear(&((BitMap_RLE_line *) rle->da)[l].line_rle);
+    da_clear(&((Rle_line *) rle->da)[l].line_rle);
 
   da_clear(rle);
 }
@@ -438,6 +405,42 @@ Rle_line *bm_rle_newline(Darray *rle, int line_num)
   dest->line_num = line_num;
 
   return dest;
+}
+
+void bounded_lines(int run_count, char tag, FILE *new_file)
+{
+  static FILE *file = NULL;
+  static char a[20];
+  static int line;
+
+  if (new_file != NULL)
+  {
+    file = new_file;
+    line = 0;
+  }
+  else if (file == NULL)
+    return;
+
+  int written = itoa(a, run_count);
+
+  if (run_count == 1)
+    a[0] = tag;
+  else if (run_count > 1)
+  {
+    a[written] = tag;
+    a[written+1] = '\0';
+    written++;
+  }
+  else
+    return;
+
+  if ((line += written) > 70)
+  {
+    printf("\n");
+    line = 0;
+  }
+  
+  printf("%s", a);
 }
 
 #ifdef DEBUG

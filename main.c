@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "darray.h"
 #include "bigint.h"
 #include "hashtbl.h"
 #include "hashlife.h"
 #include "conversion.h"
-#include "read_gol.h"
+#include "parsers.h"
 
 void test_matrix(int**, int, int, int);
 
@@ -26,7 +27,7 @@ int main(int argc, char **argv)
 
       BitMap *bmp = read_rle(file);
 
-      print_rle(bmp, stdout);
+      print_rle(&bmp->map.rle, stdout);
 
       return 0;
       mat = read_gol(&m, &n, &r, file);

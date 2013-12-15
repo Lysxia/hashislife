@@ -36,7 +36,7 @@ void bm_free(BitMap *map);
 int rle_token(FILE *new_file, char *tag);
 
 BitMap *read_rle(FILE *file);
-void print_rle(BitMap *map, FILE *file);
+void print_rle(Darray *rle, FILE *file);
 
 int **read_gol(int *m, int *n, rule *r, FILE *file);
 void print_matrix(int **map, int m, int n, FILE *file);
