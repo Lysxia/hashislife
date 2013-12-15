@@ -3,21 +3,39 @@ hashislife
 
 C implementation of the Hashlife algorithm
 
-- 30/01/13 Initializing OKAY.
+---
 
-- 30/11/13 Rewrote hashlife.c and Cie.
+Project composition
+-------------------
 
-    1. for a more spaced writing style (`a+b` -> `a + b`)
+- *hashtbl*: Hashtables implement quad tree "smart constructor".
 
-    2. the computation of `next` (the configuration in 2^d steps) should be
-done by an explicit call rather than by a "smart constructor".
+- *hashlife*: Hashlife algorithm, supports arbitrarily large numbers of steps.
 
-- 02/12/13 I realized the hashlife algorithm must be modified to support
-an arbitrary number of steps rather than powers of 2.
+- *bigint*: Big integers.
+
+- *darray*: Dynamic arrays.
+
+- *parsers*: Read/write utilities. Currently contain definitions of data types
+representing GoL configurations. (Raw and RLE)
+
+- *rleparser*: Run Length Encoder / Decoder.
+
+- *conversion*: Converts to and from quad trees. Lossy formats TODO.
+
+- *lifecount*: Counting cells in a quadtree.
+
+- *slowlife*: Naive cellular automaton simulation. (old)
+
+- *sparsemap*: A data type adapted to Life 1.06 format
+and more generally to sparse configurations (in terms of live cells)
+
+- *main*, *Makefile* ...
 
 ---
 
-- TODO:
+TODO
+----
 
     1. Garbage collecting ? Mark and sweep ? Stop & copy ?
 
