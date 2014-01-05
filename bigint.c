@@ -156,18 +156,15 @@ BigInt *bi_plus_int(const BigInt *b, int i)
   return s;
 }
 
+#define MAX(a,b) (((a) < (b))?(b):(a))
+
 void bi_add_to(BigInt *a, const BigInt *b)
 {
   if ( bi_iszero(a) && bi_iszero(b) )
     return;
 
-  if ( a->len <= b->len )
-    a->len = b->len + 1;
-  else
-    a->len++;
-
+  a->len = MAX(a->len, b->len) + 1;
   a->digits = realloc(a->digits, a->len * sizeof(bi_block));
-
   a->digits[a->len-1] = 0;
 
   int i;
