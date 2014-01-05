@@ -95,7 +95,7 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
 // The original zone is located at the top left of 3,
 // (2^shift_e) is the width and height of 0, 1, 2 (and 3)
 
-Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
+Quad *destiny(Hashtbl *htbl, Quad *q, const BigInt *bi, int *shift_e)
 {
   int d = q->depth;
   int len = bi_log2(bi);
