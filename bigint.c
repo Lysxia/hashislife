@@ -47,7 +47,8 @@ BigInt *bi_new(int len)
 
 const BigInt bi_zero_ = {.digits = NULL, .len = 0}, *bi_zero = &bi_zero_;
 
-/* Number of bits */
+// Number of bits
+// floor(log(bi)) + 1
 int bi_log2(const BigInt *b)
 {
   int d = b->len * (bi_block_bit - 1);
