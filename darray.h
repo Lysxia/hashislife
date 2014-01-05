@@ -5,7 +5,7 @@
 
 typedef struct Darray {
   char *da;
-  const int data_size;
+  size_t data_size;
   int array_length;
 } Darray;
 
