@@ -10,6 +10,11 @@ Quad *center(Hashtbl *htbl, Quad *quad[4], int d);
 
 Quad *expand(Hashtbl *htbl, Quad *q, int d);
 
+/**************************************************/
+
+// Returns the configuration starting from q after 2^t steps
+// Accepts a tree with depth d > t
+
 Quad *fate(Hashtbl *htbl, Quad *q, int t)
 {
   Quad *f = map_assoc(q->node.n.next, t);
@@ -78,11 +83,25 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
   return f;
 }
 
+// Computes the configuration starting from q after bi steps
+// The returned quadtree will represent a greater zone than the original one
+// to enable keeping track of effects outside.
+// The map is assumed to be infinite in all directions, dead cells by default
+// so that extension is possible.
+// 
+//  0 1
+//  2 3
+// 
+// The original zone is located at the top left of 3,
+// (2^shift_e) is the width and height of 0, 1, 2 (and 3)
+
 Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
 {
   int d = q->depth;
   int len = bi_log2(bi);
 
+  // Increase the size of the quad tree so that the center square
+  // can contain all the effects of the starting configuration
   while (len > d + 1)
   {
     Quad *ds = dead_space(htbl, d);
@@ -103,6 +122,7 @@ Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
 
   q = cons_quad(htbl, quad_, ++d);
 
+  // Progress by powers of two
   for (len-- ; len >= 0 ; len--)
   {
     if (bi_digit(bi, len))
@@ -111,6 +131,51 @@ Quad *destiny(Hashtbl *htbl, Quad *q, BigInt bi, int *shift_e)
 
   return q;
 }
+
+// From the quad
+//
+//  0 1
+//  2 3
+//
+// returns the quad for
+//
+//  . . . .
+//  . 0 1 .
+//  . 2 3 .
+//  . . . .
+//
+// where . is all zeroes
+
+Quad *expand(Hashtbl *htbl, Quad *q, int d)
+{
+  Quad *ds = dead_space(htbl, d - 2);
+  Quad *quad[4] = {ds, ds, ds, ds};
+
+  Quad *quad2[4];
+
+  int i;
+
+  for (i = 0 ; i < 4 ; i++)
+  {
+    quad[3-i] = q->node.n.sub[i];
+    quad2[i] = cons_quad(htbl, quad, d-1);
+    quad[3-i] = ds;
+  }
+
+  return cons_quad(htbl, quad2, d);
+}
+
+// Inverse of expand,
+// accepts the four subquads of
+//
+//  * * * *
+//  * 0 1 *
+//  * 2 3 *
+//  * * * *
+//
+// and returns the middle square,
+// in particular does not require that the outer ring is all dead cells
+// although it is the case when used in destiny()
 
 Quad *center(Hashtbl *htbl, Quad *quad[4], int d)
 {
@@ -130,24 +195,5 @@ Quad *center(Hashtbl *htbl, Quad *quad[4], int d)
 
     return cons_quad(htbl, quad, d);
   }
-}
-
-Quad *expand(Hashtbl *htbl, Quad *q, int d)
-{
-  Quad *ds = dead_space(htbl, d - 2);
-  Quad *quad[4] = {ds, ds, ds, ds};
-
-  Quad *quad2[4];
-
-  int i;
-
-  for (i = 0 ; i < 4 ; i++)
-  {
-    quad[3-i] = q->node.n.sub[i];
-    quad2[i] = cons_quad(htbl, quad, d-1);
-    quad[3-i] = ds;
-  }
-
-  return cons_quad(htbl, quad2, d);
 }
 
