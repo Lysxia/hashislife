@@ -1,11 +1,9 @@
 #ifndef BIGINT_H
 #define BIGINT_H
 
-typedef struct BigInt BigInt;
+struct BigInt;
 
-struct BigInt {
-  int *digits, len;
-};
+typedef struct BigInt BigInt;
 
 const BigInt bi_zero;
 
@@ -15,7 +13,7 @@ int bi_iszero(BigInt b);
 
 BigInt bi_copy(BigInt b);
 
-BigInt *bi_canonize(BigInt *b);
+void bi_canonize(BigInt *b);
 
 BigInt bi_power_2(int k);
 BigInt bi_plus_int(BigInt b, int i);

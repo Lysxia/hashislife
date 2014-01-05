@@ -1,28 +1,50 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <limits.h>
 #include <string.h>
 #include "bigint.h"
+
+// Unsigned type for bitwise manipulation
+// We use max width integer type
+typedef uintmax_t bi_block;
+
+// Number of bits in the type bi_block
+const int bi_block_bit = CHAR_BIT * sizeof(bi_block);
+
+struct BigInt {
+  bi_block *digits;
+  int len;
+};
 
 const BigInt bi_zero = {.digits = NULL, .len = 0};
 
 /* Number of bits */
 int bi_log2(BigInt b)
 {
-  int d = b.len * 31;
+  int d = b.len * (bi_block_bit - 1);
 
-  while (d > 0 && !(b.digits[(d - 1) / 31] & (1 << ((d - 1) % 31)))) d--;
+  while ( d > 0 &&
+          !(
+            b.digits[(d - 1) / (bi_block_bit - 1)] == 0 &&
+            1 << ((d - 1) % (bi_block_bit - 1)) == 0) )
+    d--;
 
   return d;
 }
 
 int bi_digit(BigInt b, int d)
 {
-  return d < b.len * 31 ? (b.digits[d / 31] >> (d % 31)) & 1 : 0;
+  if ( d < b.len * (bi_block_bit - 1) )
+    return (b.digits[d / (bi_block_bit - 1)] >> (d % (bi_block_bit - 1))) & 1;
+  else
+    return 0;
 }
 
 int bi_iszero(BigInt b)
 {
-  return bi_canonize(&b)->len == 0;
+  bi_canonize(&b);
+  return b.len == 0;
 }
 
 BigInt bi_copy(BigInt b)
@@ -32,53 +54,62 @@ BigInt bi_copy(BigInt b)
 
   BigInt c = {
     .len = b.len,
-    .digits = malloc(b.len * sizeof(int)),
+    .digits = malloc(b.len * sizeof(bi_block)),
   };
 
-  memcpy(c.digits, b.digits, b.len * sizeof(int));
+  if ( c.digits == NULL )
+  {
+    perror("bi_copy()");
+    exit(1);
+  }
+
+  memcpy(c.digits, b.digits, b.len * sizeof(bi_block));
 
   return c;
 }
 
-BigInt *bi_canonize(BigInt *b)
+void bi_canonize(BigInt *b)
 {
-  while (b->len > 0 && !b->digits[b->len - 1]) b->len--;
+  while ( b->len > 0 && b->digits[b->len - 1] != 0 )
+    b->len--;
 
-  return b;
+  if ( b->len == 0 )
+  {
+    free(b->digits);
+    b->digits = NULL;
+  }
 }
 
 BigInt bi_power_2(int k)
 {
   BigInt s = {
-    .digits = calloc(k / 31 + 1, sizeof(int)),
-    .len = k / 31 + 1
+    .digits = calloc(k / (bi_block_bit - 1) + 1, sizeof(bi_block)),
+    .len = k / (bi_block_bit - 1) + 1
   };
 
   if (s.digits == NULL)
   {
-    printf("in bi_power_2(%d): Not enough memory\n", k);
+    perror("bi_power_2()");
     exit(1);
   }
 
-  s.digits[k / 31] |= 1 << (k % 31);
+  s.digits[k / (bi_block_bit - 1)] |= (bi_block) 1 << (k % (bi_block_bit - 1));
 
   return s;
 }
 
-int *bi_smooth(int *digits, int start, int end);
+void bi_smooth(bi_block *digits, int start, int end);
 
 BigInt bi_plus_int(BigInt b, int i)
 {
-  const int size = b.len + 1;
-
   BigInt s = {
-    .digits = malloc(size * sizeof(int)),
-    .len = size,
+    .digits = malloc((b.len + 1) * sizeof(bi_block)),
+    .len = b.len + 1,
   };
 
   if (s.digits == NULL)
   {
-    printf("in bi_plus_int(...): Not enough memory\n");
+    perror("bi_plus_int()");
     exit(1);
   }
 
@@ -86,12 +117,12 @@ BigInt bi_plus_int(BigInt b, int i)
   {
     s.digits[0] = i;
     bi_canonize(&s);
-    
+
     return s;
   }
 
-  s.digits[size - 1] = 0;
-  memcpy(s.digits, b.digits, b.len * sizeof(int));
+  memcpy(s.digits, b.digits, b.len * sizeof(bi_block));
+  s.digits[b.len] = 0;
   s.digits[0] += i;
   bi_smooth(s.digits, 0, b.len);
   bi_canonize(&s);
@@ -108,35 +139,38 @@ BigInt *bi_add_to(BigInt *a, BigInt b)
     return a;
   }
 
-  if (a->len <= b.len)
+  if (a->digits == NULL)
+    a->digits = malloc((b.len + 1) * sizeof(bi_block));
+  else
   {
-    if (a->digits == NULL)
-      a->digits = malloc((b.len + 1) * sizeof(int));
+    if (a->len <= b.len)
+      a->len = b.len + 1;
     else
-      a->digits = realloc(a->digits, (b.len + 1) * sizeof(int));
-    a->len = b.len+1;
+      a->len++;
+
+    a->digits = realloc(a->digits, a->len * sizeof(bi_block));
   }
+
+  a->digits[a->len-1] = 0;
 
   int i;
   for (i = 0 ; i < b.len ; i++)
     a->digits[i] += b.digits[i];
 
-  a->digits[b.len] = 0;
+  bi_smooth(a->digits, 0, a->len);
+  bi_canonize(a);
 
-  bi_smooth(a->digits, 0, b.len);
-  return bi_canonize(a);
+  return a;
 }
 
-int *bi_smooth(int *digits, int start, int len)
+void bi_smooth(bi_block *digits, int start, int len)
 {
   int i;
   for (i = 0 ; i < len ; i++)
   {
-    digits[start+i+1] += (digits[start+i] >> 31) & 1;
-    digits[start+i] &= -1 ^ (1 << 31);
+    digits[start+i+1] += (digits[start+i] >> (bi_block_bit - 1)) & 1;
+    digits[start+i] &= (bi_block) (-1) ^ ((bi_block) 1 << (bi_block_bit - 1));
   }
-
-  return digits;
 }
 
 int bi_to_int(BigInt b)
@@ -147,7 +181,7 @@ int bi_to_int(BigInt b)
 BigInt bi_from_int(int i)
 {
   BigInt s = {
-    .digits = malloc(sizeof(int)),
+    .digits = malloc(sizeof(bi_block)),
     .len = 1,
   };
 
@@ -164,9 +198,9 @@ void bi_free(BigInt b)
 void bi_print(BigInt b)
 {
   int d;
-  for (d = 0 ; d < 31 * b.len ; d++)
+  for (d = 0 ; d < (bi_block_bit - 1) * b.len ; d++)
   {
-    putchar(bi_digit(b, d) ? '1' : '0');
+    putchar('0' + bi_digit(b, d));
   }
   putchar('\n');
 }
@@ -182,7 +216,7 @@ void bi_test()
   int i;
 
   for (i = 0 ; i < len ; i++)
-    b.digits[i] = (-1 ^ (1 << 31));
+    b.digits[i] = (bi_block) (-1) ^ ((bi_block) 1 << (bi_block_bit - 1));
 
   bi_print(b);
 
