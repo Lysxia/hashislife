@@ -4,8 +4,9 @@
 #include "bigint.h"
 #include "hashtbl.h"
 #include "hashlife.h"
-#include "conversion.h"
+//#include "conversion.h"
 #include "rleparser.h"
+#include "plainparser.h"
 #include "parsers.h"
 
 void test_matrix(int**, int, int, int);
@@ -21,21 +22,16 @@ int main(int argc, char **argv)
   switch (argc)
   {
     case 1:
-      //bi_test();
+      bi_test();
       break;
     case 2:
       file = fopen(argv[1], "r");
 
-      BitMap *bmp = read_rle(file);
+      BitMap *bmp = read_plain(file);
 
-      print_rle(&bmp->map.rle, stdout);
+      printf("%d %d\n", bmp->x, bmp->y);
 
-      return 0;
-      mat = read_gol(&m, &n, &r, file);
-
-      test_matrix(mat, m, n, r);
-      
-      free_matrix(mat, m);
+      write_plain(stdout, bmp);
 
       break;
   }
@@ -43,6 +39,7 @@ int main(int argc, char **argv)
   return 0;
 }
 
+/*
 void test_matrix(int** mat, int m, int n, int r)
 {
   printf("%d\n", r);
@@ -81,4 +78,4 @@ void test_matrix(int** mat, int m, int n, int r)
   bi_free(bi_l);
   free_matrix(mat2, side_m);
   free(htbl);
-}
+}*/

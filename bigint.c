@@ -54,8 +54,9 @@ int bi_log2(const BigInt *b)
   int d = b->len * (bi_block_bit - 1);
 
   while ( d > 0 &&
-            b->digits[(d - 1) / (bi_block_bit - 1)] &
-            (bi_block) 1 << ((d - 1) % (bi_block_bit - 1)) == 0 )
+            ((b->digits[(d - 1) / (bi_block_bit - 1)]) &
+            ((bi_block) 1 << ((d - 1) % (bi_block_bit - 1))))
+              == 0 )
     d--;
 
   return d;

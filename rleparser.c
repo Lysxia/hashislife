@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "definitions.h"
+#include "bitmaps.h"
 #include "darray.h"
 #include "rleparser.h"
 #include "parsers.h"
@@ -45,20 +47,7 @@ int rle_token(FILE *new_file, char *tag)
 // bm: Bit Map
 // rle: Run Length Encoding
 
-BitMap *bm_new(enum MapType t);
-void rle_map_free(Darray *rle);
 int read_rle_(Darray *rle, FILE *file);
-Rle_line *bm_rle_newline(Darray *rle, int line_num);
-
-void bm_free(BitMap *map)
-{
-  switch (map->map_type)
-  {
-    case RLE:
-      rle_map_free(&map->map.rle);
-      break;
-  }
-}
 
 BitMap *read_rle(FILE *file)
 {
@@ -68,7 +57,7 @@ BitMap *read_rle(FILE *file)
   {
     if (fgets(buff, RLE_LINE_LENGTH, file) == NULL)
     {
-      printf("in read_rle(...): Error on input\n");
+      fprintf(stderr, "in read_rle(...): Error on input\n");
       return NULL;
     }
   } while (buff[0] == '#');
@@ -80,12 +69,12 @@ BitMap *read_rle(FILE *file)
   {
     case 3:
       map->r = parse_rule(s);
-      if (map->r != -1)
+      if (map->r != (rule) -1)
         break;
     case EOF:
     case 1:
       bm_free(map);
-      printf("in read_rle(...): Bad format\n");
+      fprintf(stderr, "in read_rle(...): Bad format\n");
       return NULL;
   }
 
@@ -115,7 +104,7 @@ int read_rle_(Darray *rle, FILE *file)
   {
     if (run_len < 0)
     {
-      printf("in read_rle(...): Invalid syntax\n");
+      fprintf(stderr, "in read_rle(...): Invalid syntax\n");
       rle_map_free(rle);
       return 0;
     }
@@ -153,7 +142,7 @@ int read_rle_(Darray *rle, FILE *file)
         j += run_len;
         break;
       default:
-        printf("in read_rle(): Unrecognized syntax\n");
+        fprintf(stderr, "in read_rle(): Unrecognized syntax\n");
         rle_map_free(rle);
         return 0;
     }
@@ -198,7 +187,7 @@ int itoa(char *dest, int src)
 
 void bounded_lines(int run_count, char tag, FILE *new_file);
 
-void print_rle(Darray *rle, FILE *file)
+void write_rle(Darray *rle, FILE *file)
 {
   int l, c;
 
@@ -225,45 +214,6 @@ void print_rle(Darray *rle, FILE *file)
 }
 
 /**/
-
-BitMap *bm_new(enum MapType t)
-{
-  BitMap *map = malloc(sizeof(BitMap));
-
-  switch (t)
-  {
-    case RLE:
-      da_init(&map->map.rle, sizeof(Rle_line));
-      break;
-  }
-
-  map->map_type = t;
-
-  map->corner_x = map->corner_y = 0;
-  map->x = map->y = 0;
-  map->r = 0;
-
-  return map;
-}
-
-void rle_map_free(Darray *rle)
-{
-  int l;
-  for (l = 0 ; l < rle->array_length ; l++)
-    da_clear(&((Rle_line *) rle->da)[l].line_rle);
-
-  da_clear(rle);
-}
-
-Rle_line *bm_rle_newline(Darray *rle, int line_num)
-{
-  Rle_line *dest = da_append(rle, NULL);
-
-  da_init(&dest->line_rle, sizeof(int));
-  dest->line_num = line_num;
-
-  return dest;
-}
 
 void bounded_lines(int run_count, char tag, FILE *new_file)
 {
