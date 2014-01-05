@@ -29,7 +29,7 @@ BitMap *bm_new(enum MapType t)
   if ( map == NULL )
     return NULL;
 
-  switch (t)
+  switch ( t )
   {
     case RLE:
       da_init(&map->map.rle, sizeof(Rle_line));
@@ -51,7 +51,7 @@ BitMap *bm_new(enum MapType t)
 void rle_map_free(Darray *rle)
 {
   int l;
-  for (l = 0 ; l < rle->array_length ; l++)
+  for ( l = 0 ; l < rle->array_length ; l++ )
     da_clear(&((Rle_line *) rle->da)[l].line_rle);
 
   da_clear(rle);

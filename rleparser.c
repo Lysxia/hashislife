@@ -15,24 +15,24 @@ int rle_token(FILE *new_file, char *tag)
   static char buff[RLE_LINE_LENGTH];
   static int i;
 
-  if (new_file != NULL)
+  if ( new_file != NULL )
   {
     file = new_file;
     buff[0] = '\0';
     i = 0;
   }
-  else if (file == NULL)
+  else if ( file == NULL )
     return -1;
 
   i += strspn(buff + i, " \n\t");
 
-  if (buff[i] == '\0')
+  if ( buff[i] == '\0' )
   {
     i = 0;
-    if (fgets(buff, RLE_LINE_LENGTH, file) == NULL)
+    if ( fgets(buff, RLE_LINE_LENGTH, file) == NULL )
       return -1;
   }
-  else if (buff[i] == '!')
+  else if ( buff[i] == '!' )
     return 0;
 
   int len;
@@ -55,21 +55,22 @@ BitMap *read_rle(FILE *file)
 
   do
   {
-    if (fgets(buff, RLE_LINE_LENGTH, file) == NULL)
+    if ( fgets(buff, RLE_LINE_LENGTH, file) == NULL )
     {
       fprintf(stderr, "in read_rle(...): Error on input\n");
       return NULL;
     }
-  } while (buff[0] == '#');
+  }
+  while ( buff[0] == '#' );
 
   char s[22];
   BitMap *map = bm_new(RLE);
 
-  switch (sscanf(buff, " x = %d , y = %d , r = %21s ", &map->x, &map->y, s))
+  switch ( sscanf(buff, " x = %d , y = %d , r = %21s ", &map->x, &map->y, s) )
   {
     case 3:
       map->r = parse_rule(s);
-      if (map->r != (rule) -1)
+      if ( map->r != (rule) -1 )
         break;
     case EOF:
     case 1:
@@ -78,7 +79,7 @@ BitMap *read_rle(FILE *file)
       return NULL;
   }
 
-  if (read_rle_(&map->map.rle, file))
+  if ( read_rle_(&map->map.rle, file) )
     return map;
   else
   {
@@ -100,21 +101,21 @@ int read_rle_(Darray *rle, FILE *file)
 
   run_len = rle_token(file, &tag);
 
-  while (run_len)
+  while ( run_len )
   {
-    if (run_len < 0)
+    if ( run_len < 0 )
     {
       fprintf(stderr, "in read_rle(...): Invalid syntax\n");
       rle_map_free(rle);
       return 0;
     }
 
-    switch (tag)
+    switch ( tag )
     {
-      case '$':
-        if (c > 0)
+      case NEWLINE_RLE_TOKEN:
+        if ( c > 0 )
         {
-          if (c % 2 == 1)
+          if ( c % 2 == 1 )
             da_append(&cur_line.line_rle, (char *) &j);
           cur_line.line_num = i;
           da_append(rle, (char *) &cur_line);
@@ -125,16 +126,16 @@ int read_rle_(Darray *rle, FILE *file)
         i += run_len;
         j = 0;
         break;
-      case 'o':
-        if (c % 2 == 0)
+      case ALIVE_RLE_TOKEN:
+        if ( c % 2 == 0 )
         {
           da_append(&cur_line.line_rle, (char *) &j);
           c++;
         }
         j += run_len;
         break;
-      case 'b':
-        if (c % 2 == 1)
+      case DEAD_RLE_TOKEN:
+        if ( c % 2 == 1 )
         {
           da_append(&cur_line.line_rle, (char *) &j);
           c++;
@@ -150,11 +151,11 @@ int read_rle_(Darray *rle, FILE *file)
     run_len = rle_token(NULL, &tag);
   }
 
-  if (c > 0)
+  if ( c > 0 )
   {
-    if (c % 2 == 1)
+    if ( c % 2 == 1 )
     {
-      if (c % 2 == 1)
+      if ( c % 2 == 1 )
         da_append(&cur_line.line_rle, (char *) &j);
       cur_line.line_num = i;
       da_append(rle, (char *) &cur_line);
@@ -171,9 +172,10 @@ int itoa(char *dest, int src)
   {
     dest[i++] = '0' + src % 10;
     src /= 10;
-  } while (src > 0);
+  }
+  while ( src > 0 );
 
-  for (j = 0 ; j < i / 2 ; j++)
+  for ( j = 0 ; j < i / 2 ; j++ )
   {
     char tmp = dest[i-j-1];
     dest[i-j-1] = dest[j];
@@ -195,18 +197,18 @@ void write_rle(Darray *rle, FILE *file)
 
   bounded_lines(0, '\0', file);
 
-  for (l = 0 ; l < rle->array_length ; l++)
+  for ( l = 0 ; l < rle->array_length ; l++ )
   {
-    if (l > 0)
-      bounded_lines(lines[l].line_num - lines[l-1].line_num, '$', NULL);
+    if ( l > 0 )
+      bounded_lines(lines[l].line_num - lines[l-1].line_num, NEWLINE_RLE_TOKEN, NULL);
     int *columns = (int *) lines[l].line_rle.da;
 
-    for (c = 0 ; c < lines[l].line_rle.array_length ; c++)
+    for ( c = 0 ; c < lines[l].line_rle.array_length ; c++ )
     {
-      if (c == 0)
-        bounded_lines(columns[0], 'b', NULL);
+      if ( c == 0 )
+        bounded_lines(columns[0], DEAD_RLE_TOKEN, NULL);
       else
-        bounded_lines(columns[c] - columns[c-1], c % 2 ? 'o' : 'b', NULL);
+        bounded_lines(columns[c] - columns[c-1], c % 2 ? ALIVE_RLE_TOKEN : DEAD_RLE_TOKEN, NULL);
     }
   }
   printf("\n!\n");
@@ -221,19 +223,19 @@ void bounded_lines(int run_count, char tag, FILE *new_file)
   static char a[20];
   static int line;
 
-  if (new_file != NULL)
+  if ( new_file != NULL )
   {
     file = new_file;
     line = 0;
   }
-  else if (file == NULL)
+  else if ( file == NULL )
     return;
 
   int written = itoa(a, run_count);
 
-  if (run_count == 1)
+  if ( run_count == 1 )
     a[0] = tag;
-  else if (run_count > 1)
+  else if ( run_count > 1 )
   {
     a[written] = tag;
     a[written+1] = '\0';
@@ -242,7 +244,7 @@ void bounded_lines(int run_count, char tag, FILE *new_file)
   else
     return;
 
-  if ((line += written) > 70)
+  if ( (line += written) > 70 )
   {
     printf("\n");
     line = 0;

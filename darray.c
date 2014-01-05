@@ -12,9 +12,9 @@ void da_init(Darray *da, size_t data_size)
 
 void *da_append(Darray *da, char *v)
 {
-  if (da->array_length == 0)
+  if ( da->array_length == 0 )
     da->da = malloc(da->data_size);
-  else if (!(da->array_length & (da->array_length - 1)))
+  else if ( !(da->array_length & (da->array_length - 1)) )
   {
     da->da = realloc(da->da, 2 * da->array_length * da->data_size);
     if ( da->da == NULL )
@@ -26,7 +26,7 @@ void *da_append(Darray *da, char *v)
 
   char *dest = da->da + da->data_size * da->array_length;
 
-  if (v != NULL)
+  if ( v != NULL )
     memcpy(dest, v, da->data_size);
 
   da->array_length++;
@@ -36,7 +36,7 @@ void *da_append(Darray *da, char *v)
 
 void da_clear(Darray *da)
 {
-  if (da->array_length > 0)
+  if ( da->array_length > 0 )
     free(da->da);
   da->da = NULL;
   da->array_length = 0;

@@ -9,7 +9,7 @@ rule parse_digit_string(char *buff, int *i)
 {
   rule r = 0;
 
-  while ('0' <= buff[*i] && buff[*i] <= '8')
+  while ( '0' <= buff[*i] && buff[*i] <= '8' )
   {
     r |= 1 << (buff[(*i)++] - '0');
   }
@@ -20,25 +20,25 @@ rule parse_digit_string(char *buff, int *i)
 rule parse_rule(char *buff)
 {
   // s rule
-  if (buff[0] != 's')
+  if ( buff[0] != 's' )
     return -1;
 
   int i = 1;
 
   rule s = parse_digit_string(buff, &i);
 
-  if (s >> 9)
+  if ( s >> 9 )
     return -1;
 
   // b rule
-  if (buff[i] != '/' || buff[i+1] != 'b')
+  if ( buff[i] != '/' || buff[i+1] != 'b' )
     return -1;
 
   i += 2;
 
   rule b = parse_digit_string(buff, &i);
 
-  if (b >> 9)
+  if ( b >> 9 )
     return -1;
 
   return (s << 9) | b;
@@ -49,15 +49,15 @@ rule parse_rule(char *buff)
 void test_rle_token(char *filename)
 {
   FILE *file;
-  if ((file = fopen(filename, "r")) == NULL)
+  if ( (file = fopen(filename, "r")) == NULL )
     return;
 
   char tag;
   int len = rle_token(file, &tag);
 
-  while (len)
+  while ( len )
   {
-    if (len == -1)
+    if ( len == -1 )
     {
       printf("///\n");
       return;

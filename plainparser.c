@@ -74,9 +74,9 @@ void write_plain(FILE *file, BitMap *bm)
 void write_matrix(FILE *file, char **matrix, int m, int n)
 {
   int i,j;
-  for (i = 0 ; i < m ; i++)
+  for ( i = 0 ; i < m ; i++ )
   {
-	  for (j = 0 ; j < n ; j++)
+	  for ( j = 0 ; j < n ; j++ )
       fputc(matrix[i][j], file);
     fputc('\n', file);
   }
@@ -87,11 +87,11 @@ int **alloc_matrix(int m, int n)
 {
   int **matrix, i;
 
-  if (NULL == (matrix = malloc(m * sizeof(int*))))
+  if ( NULL == (matrix = malloc(m * sizeof(int*))) )
 	  return NULL;
 
-  for (i = 0 ; i < m ; i++)
-	  if (NULL == (matrix[i] = malloc(n * sizeof(int))))
+  for ( i = 0 ; i < m ; i++ )
+	  if ( NULL == (matrix[i] = malloc(n * sizeof(int))) )
 	  {
       free_matrix(matrix, i);
 	    return NULL;
@@ -100,11 +100,11 @@ int **alloc_matrix(int m, int n)
   return matrix;
 }
 
-void free_matrix(int **matrix, int m)
+void free_matrix(char **matrix, int m)
 {
   int i;
 
-  for (i = 0 ; i < m ; i++)
+  for ( i = 0 ; i < m ; i++ )
     free(matrix[i]);
 
   free(matrix);

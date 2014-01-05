@@ -19,7 +19,7 @@ int main(int argc, char **argv)
   int m, n, **mat;
   int i,j;
 
-  switch (argc)
+  switch ( argc )
   {
     case 1:
       bi_test();
