@@ -2,17 +2,19 @@
 #define DARRAY_H
 
 /* (Generic) dynamic array implementation. (Well, as generic as C allows) */
+// Implements a stack
+// push elements, then recover the array of pushed elements
 
-typedef struct Darray {
-  char *da;
-  size_t data_size;
-  int array_length;
-} Darray;
+struct Darray;
 
-void da_init(Darray *da, size_t data_size);
+typedef struct Darray Darray;
 
-void *da_append(Darray *da, char *v);
+Darray *da_init(size_t data_size);
 
-void da_clear(Darray *da);
+void da_push(Darray *da, char *v);
+
+char *da_recover(Darray *da, int *length);
+
+char *da_unpack(Darray *da, int *length);
 
 #endif
