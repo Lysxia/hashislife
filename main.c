@@ -5,19 +5,16 @@
 #include "hashtbl.h"
 #include "hashlife.h"
 //#include "conversion.h"
-#include "rleparser.h"
-#include "plainparser.h"
 #include "parsers.h"
+//#include "rleparser.h"
+#include "matrix.h"
 
-void test_matrix(int**, int, int, int);
+//void test_matrix(int**, int, int, int);
 
 int main(int argc, char **argv)
 {
   //const rule conway = 6148;
-  rule r;
   FILE *file;
-  int m, n, **mat;
-  int i,j;
 
   switch ( argc )
   {
@@ -27,11 +24,11 @@ int main(int argc, char **argv)
     case 2:
       file = fopen(argv[1], "r");
 
-      BitMap *bmp = read_plain(file);
+      Matrix *mat = read_matrix(file);
 
-      printf("%d %d\n", bmp->x, bmp->y);
+      printf("%d %d\n", mat->m, mat->n);
 
-      write_plain(stdout, bmp);
+      write_matrix(stdout, mat);
 
       break;
   }

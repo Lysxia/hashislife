@@ -9,7 +9,7 @@ struct Darray {
   int array_length;
 };
 
-Darray *da_init(size_t data_size)
+Darray *da_new(size_t data_size)
 {
   Darray *da = malloc(sizeof(Darray));
 
@@ -48,7 +48,7 @@ void da_push(Darray *da, char *v)
   da->array_length++;
 }
 
-char *da_unpack(Darray *da, int *length)
+void *da_unpack(Darray *da, int *length)
 {
   char *a = NULL;
 
@@ -63,6 +63,7 @@ char *da_unpack(Darray *da, int *length)
   }
   
   *length = da->array_length;
+
   free(da);
   return a;
 }

@@ -1,4 +1,4 @@
-OBJ=darray.o bigint.o hashtbl.o hashlife.o bitmaps.o parsers.o rleparser.o plainparser.o
+OBJ=darray.o bigint.o hashtbl.o hashlife.o parsers.o matrix.o
 MAIN=main.c
 CC=gcc -W -Wall
 

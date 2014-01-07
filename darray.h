@@ -9,12 +9,10 @@ struct Darray;
 
 typedef struct Darray Darray;
 
-Darray *da_init(size_t data_size);
+Darray *da_new(size_t data_size);
 
 void da_push(Darray *da, char *v);
 
-char *da_recover(Darray *da, int *length);
-
-char *da_unpack(Darray *da, int *length);
+void *da_unpack(Darray *da, int *length);
 
 #endif
