@@ -1,13 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "runlength.h"
 #include "definitions.h"
-#include "bitmaps.h"
 #include "darray.h"
-#include "rleparser.h"
 #include "parsers.h"
 
 #define RLE_LINE_LENGTH 100
+
+int rle_token(FILE *new_file, char *tag);
 
 int rle_token(FILE *new_file, char *tag)
 {
@@ -44,12 +45,9 @@ int rle_token(FILE *new_file, char *tag)
   return len ? len : 1;
 }
 
-// bm: Bit Map
-// rle: Run Length Encoding
+Rle *read_rle_(FILE *file, Rle *rle);
 
-int read_rle_(Darray *rle, FILE *file);
-
-BitMap *read_rle(FILE *file)
+Rle *read_rle(FILE *file)
 {
   char buff[RLE_LINE_LENGTH];
 
@@ -57,44 +55,50 @@ BitMap *read_rle(FILE *file)
   {
     if ( fgets(buff, RLE_LINE_LENGTH, file) == NULL )
     {
-      fprintf(stderr, "in read_rle(...): Error on input\n");
+      fprintf(stderr, "read_rle(): Error on input\n");
       return NULL;
     }
   }
   while ( buff[0] == '#' );
 
   char s[22];
-  BitMap *map = bm_new(RLE);
+  Rle *rle = malloc(sizeof(Rle));
 
-  switch ( sscanf(buff, " x = %d , y = %d , r = %21s ", &map->x, &map->y, s) )
+  if ( rle == NULL )
   {
+    perror("read_rle()");
+    return NULL;
+  }
+
+  switch ( sscanf(buff, "x = %d , y = %d , r = %21s ",
+                        &rle->rle_meta.rle_x,
+                        &rle->rle_meta.rle_y,
+                        s) )
+  {
+    case 2:
+      rle->rle_meta.rle_r = 0;
+      break;
     case 3:
-      map->r = parse_rule(s);
-      if ( map->r != (rule) -1 )
+      if ( (rle->rle_meta.rle_r = parse_rule(s)) != (rule) -1 )
         break;
     case EOF:
     case 1:
-      bm_free(map);
-      fprintf(stderr, "in read_rle(...): Bad format\n");
+      free(rle);
+      fprintf(stderr, "read_rle(): Bad format\n");
       return NULL;
   }
 
-  if ( read_rle_(&map->map.rle, file) )
-    return map;
-  else
-  {
-    free(map);
-    return NULL;
-  }
+  return read_rle_(file, rle);
 }
 
-int read_rle_(Darray *rle, FILE *file)
+Rle *read_rle_(FILE *file, Rle *rle)
 {
   int c = 0, i = 0, j = 0;
 
   Rle_line cur_line;
 
-  da_init(&cur_line.line_rle, sizeof(int));
+  Darray *lines = da_new(sizeof(Rle_line));
+  Darray *a_line = da_new(sizeof(int));
 
   int run_len;
   char tag;
