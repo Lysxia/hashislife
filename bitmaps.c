@@ -3,52 +3,53 @@
 #include "darray.h"
 #include "bitmaps.h"
 
-void bm_free(BitMap *map)
+void bm_free(BitMap *bm)
 {
-  switch ( map->map_type )
+  switch ( bm->map_type )
   {
     case RLE:
-      rle_map_free(&map->map.rle);
+      if ( bm->map.rle != NULL)
+        rle_map_free(bm->map.rle);
       break;
     case RAW:
-      if ( map->map.raw != NULL )
-      {
-        int i;
-        for ( i = 0 ; i < map->y ; i++ )
-          free(map->map.raw[i]);
-        free(map->map.raw);
-      }
+      if ( bm->map.raw != NULL )
+        free_matrix(bm->map.raw, bm->y);
       break;
   }
+
+  free(bm);
 }
 
 BitMap *bm_new(enum MapType t)
 {
-  BitMap *map = malloc(sizeof(BitMap));
+  BitMap *bm = malloc(sizeof(BitMap));
 
-  if ( map == NULL )
-    return NULL;
+  if ( bm == NULL )
+  {
+    perror("bm_new()");
+    exit(1);
+  }
 
   switch ( t )
   {
     case RLE:
-      da_init(&map->map.rle, sizeof(Rle_line));
+      bm->map.rle = NULL;
       break;
     case RAW:
-      map->map.raw = NULL;
+      bm->map.raw = NULL;
       break;
   }
 
-  map->map_type = t;
+  bm->map_type = t;
 
-  map->corner_x = map->corner_y = 0;
-  map->x = map->y = 0;
-  map->r = 0;
+  bm->corner_x = bm->corner_y = 0;
+  bm->x = bm->y = 0;
+  bm->r = 0;
 
-  return map;
+  return bm;
 }
 
-void rle_map_free(Darray *rle)
+void rle_map_free(Rle_line *rle)
 {
   int l;
   for ( l = 0 ; l < rle->array_length ; l++ )

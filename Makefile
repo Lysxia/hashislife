@@ -1,8 +1,9 @@
-OBJ=darray.o bigint.o hashtbl.o hashlife.o parsers.o matrix.o
+HDR=definitions.h
+OBJ=darray.o bigint.o hashtbl.o hashlife.o parsers.o runlength.o matrix.o
 MAIN=main.c
 CC=gcc -W -Wall
 
-hashlife: $(OBJ) $(MAIN)
+hashlife: $(HDR) $(OBJ) $(MAIN)
 	$(CC) $(OBJ) $(MAIN) -o $@
 
 %.o: %.c %.h

@@ -1,19 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "darray.h"
 #include "bigint.h"
 #include "hashtbl.h"
 #include "hashlife.h"
 //#include "conversion.h"
 #include "parsers.h"
-//#include "rleparser.h"
+#include "runlength.h"
 #include "matrix.h"
 
 //void test_matrix(int**, int, int, int);
 
-int main(int argc, char **argv)
+const char *get_filename_ext(const char *filename)
+{
+  const char *dot = strrchr(filename, '.');
+  if ( !dot || dot == filename) return "";
+  return dot + 1;
+}
+
+int main(int argc, char *argv[])
 {
   //const rule conway = 6148;
+  const char *filename = argv[1];
   FILE *file;
 
   switch ( argc )
@@ -22,13 +31,24 @@ int main(int argc, char **argv)
       bi_test();
       break;
     case 2:
-      file = fopen(argv[1], "r");
+      file = fopen(filename, "r");
 
-      Matrix *mat = read_matrix(file);
+      if ( strcmp(get_filename_ext(filename), "rle") == 0 )
+      {
+        Rle *rle = read_rle(file);
 
-      printf("%d %d\n", mat->m, mat->n);
+        write_rle(stdout, rle);
 
-      write_matrix(stdout, mat);
+        free_rle(rle);
+      }
+      else
+      {
+        Matrix *mat = read_matrix(file);
+
+        write_matrix(stdout, mat);
+
+        free_matrix(mat);
+      }
 
       break;
   }

@@ -29,6 +29,7 @@ typedef struct Rle
 } Rle;
 
 Rle *read_rle(FILE *file);
-void write_rle(Rle *rle, FILE *file);
+void write_rle(FILE *file, Rle *rle);
+void free_rle(Rle *rle);
 
 #endif

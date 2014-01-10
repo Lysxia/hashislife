@@ -6,11 +6,23 @@
 
 enum MapType { RAW, RLE };
 
+typedef struct Rle_line
+{
+  int *line_rle;
+  int line_length;
+  int line_num;
+} Rle_line;
+
 typedef struct
 {
   union
   {
-    Darray rle;
+    struct
+    {
+      Rle_line *rle_lines;
+      int rle_lines_c;
+    } rle;
+
     char **raw;
   } map;
 
@@ -18,22 +30,17 @@ typedef struct
 
   // x increasing towards the right
   // y towards the bottom
+  int x, y;
   int corner_x, corner_y; // position of top-left corner
-  int x, y; // width, height
   rule r;
 } BitMap;
-
-typedef struct Rle_line
-{
-  Darray line_rle;
-  int line_num;
-} Rle_line;
 
 void bm_free(BitMap *map);
 
 BitMap *bm_new(enum MapType t);
 
-void rle_map_free(Darray *rle);
-Rle_line *bm_rle_newline(Darray *rle, int line_num);
+void rle_map_free(Rle_line *rle);
+
+//Rle_line *bm_rle_newline(Darray *rle, int line_num);
 
 #endif
