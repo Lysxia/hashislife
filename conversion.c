@@ -4,10 +4,11 @@
 #include "hashlife.h"
 #include "conversion.h"
 
-Quad *matrix_to_quad_(Hashtbl *htbl, int **matrix, int mlen, int nlen,
-                      int mmin, int nmin, int d, int s);
+Quad *matrix_to_quad_(Hashtbl *htbl,
+                      char **matrix, int mlen, int nlen,
+                      int mmin, int nmin, int d);
 
-Quad *matrix_to_quad(Hashtbl *htbl, int **matrix, int mlen, int nlen)
+Quad *matrix_to_quad(Hashtbl *htbl, const Matrix *matrix)
 {
   int side = 2, d = 0;
 
@@ -17,11 +18,14 @@ Quad *matrix_to_quad(Hashtbl *htbl, int **matrix, int mlen, int nlen)
     d++;
   }
 
-  return matrix_to_quad_(htbl, matrix,mlen,nlen, 0, 0, d, side);
+  return matrix_to_quad_(htbl,
+                         matrix->matrix,matrix->m,matrix->n,
+                         0, 0, d);
 }
 
-Quad *matrix_to_quad_(Hashtbl *htbl, int **matrix, int mlen, int nlen,
-                      int mmin, int nmin, int d, int s)
+Quad *matrix_to_quad_(Hashtbl *htbl,
+                      char **matrix, int mlen, int nlen,
+                      int mmin, int nmin, int d)
 {
   if (mmin >= mlen || nmin >= nlen)
   {
@@ -46,13 +50,14 @@ Quad *matrix_to_quad_(Hashtbl *htbl, int **matrix, int mlen, int nlen,
 
     int i;
 
-    s /= 2;
+    s = 1 << d;
 
     for (i = 0 ; i < 4 ; i++)
-      quad[i] = matrix_to_quad_(htbl, matrix,mlen,nlen,
-          mmin + (i & 2 ? s : 0),
-          nmin + (i & 1 ? s : 0),
-          d-1, s);
+      quad[i] = matrix_to_quad_(htbl,
+                                matrix,mlen,nlen,
+                                mmin + (i & 2 ? s : 0),
+                                nmin + (i & 1 ? s : 0),
+                                d-1);
 
     return cons_quad(htbl, quad, d);
   }
