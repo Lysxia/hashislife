@@ -205,17 +205,18 @@ BigInt *bi_minus_pow(const BigInt *b, int e, int *neg)
 
   int loc = e / bi_block_bit, ofs = e % bi_block_bit;
 
-  if ( loc >= b->len )
+  if ( loc > b->len || (loc == b->len && ofs != 0) )
   {
     *neg = INT_MAX;
     return bi_zero();
   }
-  else
+
+  BigInt *c = bi_copy(b);
+
+  int block_pos;
+
+  if ( loc < b->len )
   {
-    BigInt *c = bi_copy(b);
-
-    int block_pos;
-
     for ( block_pos = loc ; block_pos < c->len ; block_pos++ )
     {
       if ( block_pos == loc )
@@ -231,21 +232,26 @@ BigInt *bi_minus_pow(const BigInt *b, int e, int *neg)
           break;
       }
     }
+  }
+  else
+    block_pos = c->len;
 
-    // Overflow
-    if ( block_pos == c->len )
-    {
-      int i;
-      for ( i = c->len - 1 ; i > 0 ; i-- )
-      {
-        if ( c->digits[i] != bi_block_max )
-          break;
-      }
-      *neg = i == 1 ? ~c->digits[0] + 1 : INT_MAX;
-      bi_free(c);
-      return bi_zero();
-    }
+  // Overflow
+  if ( block_pos == c->len )
+  {
+    int i;
+    for ( i = c->len ; i > 0 ; i-- )
+      if ( c->digits[i-1] != bi_block_max )
+        break;
 
+    bi_block neg_ = ~c->digits[0] + 1;
+    *neg = i <= 1 && neg_ < INT_MAX ? neg_ : INT_MAX;
+
+    bi_free(c);
+    return bi_zero();
+  }
+  else
+  {
     bi_canonize(c);
     *neg = 0;
     return c;
@@ -322,7 +328,8 @@ void bi_test()
 
   int i;
 
-  for ( i = 0 ; i < len ; i++ )
+  b->digits[0] = -1 ^ 36;
+  for ( i = 1 ; i < len ; i++ )
     b->digits[i] = -1;
 
   bi_canonize(b);
@@ -336,7 +343,7 @@ void bi_test()
 
   int neg;
 
-  BigInt *d = bi_minus_pow(c, 33, &neg);
+  BigInt *d = bi_minus_pow(b, 192, &neg);
 
   bi_print(d);
   printf("%d\n", neg);
