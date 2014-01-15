@@ -19,26 +19,26 @@ rule parse_digit_string(char *buff, int *i)
 
 rule parse_rule(char *buff)
 {
-  // s rule
-  if ( buff[0] != 's' )
+  // b rule
+  if ( buff[0] != 'b' && buff[0] != 'B' )
     return -1;
 
   int i = 1;
 
-  rule s = parse_digit_string(buff, &i);
+  rule b = parse_digit_string(buff, &i);
 
-  if ( s >> 9 )
+  if ( b >> 9 )
     return -1;
 
   // b rule
-  if ( buff[i] != '/' || buff[i+1] != 'b' )
+  if ( buff[i] != '/' || (buff[i+1] != 's' && buff[i+1] != 'S') )
     return -1;
 
   i += 2;
 
-  rule b = parse_digit_string(buff, &i);
+  rule s = parse_digit_string(buff, &i);
 
-  if ( b >> 9 )
+  if ( s >> 9 )
     return -1;
 
   return (s << 9) | b;

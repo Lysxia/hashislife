@@ -129,7 +129,7 @@ Hashtbl *hashtbl_new(rule r)
 void hashtbl_free(Hashtbl *hashtbl)
 {
   int i;
-  for (i = 0 ; i < hashtbl->size ; i++)
+  for ( i = 0 ; i < hashtbl->size ; i++ )
     free_list(hashtbl->tbl[i]);
 
   free(hashtbl->tbl);
@@ -144,34 +144,34 @@ Quad *leaf(int k)
 
 Quad *dead_space(Hashtbl *htbl, int d)
 {
-  if (htbl->dead_size <= d)
+  if ( htbl->dead_size <= d )
   {
     const int old_size = htbl->dead_size;
     int i;
 
     do htbl->dead_size *= 2;
-    while (htbl->dead_size <= d);
+    while ( htbl->dead_size <= d );
 
     Quad **old_quad = htbl->dead_quad;
     
     htbl->dead_quad = malloc(htbl->dead_size * sizeof(Quad*));
 
-    if (htbl->dead_quad == NULL)
+    if ( !htbl->dead_quad )
     {
       printf("in dead_space(%d): not enough memory.\n", d);
       exit(1);
     }
 
-    for (i = 0 ; i < old_size ; i++)
+    for ( i = 0 ; i < old_size ; i++ )
       htbl->dead_quad[i] = old_quad[i];
 
-    for (i = old_size ; i < htbl->dead_size ; i++)
+    for ( i = old_size ; i < htbl->dead_size ; i++ )
       htbl->dead_quad[i] = NULL;
 
     free(old_quad);
   }
 
-  if (htbl->dead_quad[d] == NULL)
+  if ( !htbl->dead_quad[d] )
   {
     Quad *ds = dead_space(htbl, d-1);
     Quad *zero[4] = {ds, ds, ds, ds};
@@ -186,10 +186,10 @@ Quad *dead_space(Hashtbl *htbl, int d)
 // This is the only constructor of quadtrees to be used
 Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
 {
-  if (quad[0]->depth != quad[1]->depth ||
-      quad[0]->depth != quad[2]->depth ||
-      quad[0]->depth != quad[3]->depth ||
-      quad[0]->depth != d-1)
+  if ( quad[0]->depth != quad[1]->depth ||
+       quad[0]->depth != quad[2]->depth ||
+       quad[0]->depth != quad[3]->depth ||
+       quad[0]->depth != d-1 )
     exit(2);
 
   int h = hash(quad);
@@ -197,7 +197,7 @@ Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
   // Check if we didn't already memoize requested node
   Quad *q = hashtbl_find(htbl, h, quad);
 
-  if (q == NULL)
+  if ( !q )
   {
     q = alloc_quad();
 
@@ -206,7 +206,7 @@ Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
 
     int i;
 
-    for (i = 0 ; i < 4 ; i++)
+    for ( i = 0 ; i < 4 ; i++ )
       q->node.n.sub[i] = quad[i];
  
     hashtbl_add(htbl, h, q);
@@ -219,9 +219,9 @@ Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
 
 Quad *map_assoc(QuadMap *map, int k)
 {
-  if (map == NULL || map->k > k)
+  if ( !map || map->k > k )
     return NULL;
-  else if (map->k == k)
+  else if ( map->k == k )
     return map->v;
   else
     return map_assoc(map->map_tail, k);
@@ -229,7 +229,7 @@ Quad *map_assoc(QuadMap *map, int k)
 
 QuadMap* map_add(QuadMap **map, int k, Quad* v)
 {
-  if (*map == NULL || (*map)->k > k)
+  if ( !*map || (*map)->k > k )
   {
     QuadMap *new_map = malloc(sizeof(QuadMap));
     new_map->k = k;
@@ -248,11 +248,11 @@ QuadMap* map_add(QuadMap **map, int k, Quad* v)
 Quad *alloc_quad()
 {
 #ifdef ALLOC_QUAD
-  if (quad_block_count < quad_block_size)
+  if ( quad_block_count < quad_block_size )
     return &quad_block[quad_block_count++];
-  else if (stack_size == stack_max_size)
+  else if ( stack_size == stack_max_size )
   {
-    printf("in alloc_quad(): Not enough stack space.\n");
+    fprintf(stderr, "alloc_quad(): Not enough stack space.\n");
     exit(1);
   }
   else
@@ -260,9 +260,9 @@ Quad *alloc_quad()
     quad_block = malloc(quad_block_size * sizeof(Quad));
     stack[stack_size++] = quad_block;
 
-    if (quad_block == NULL)
+    if ( !quad_block )
     {
-      printf("in alloc_quad(): Not enough memory.\n");
+      perror("alloc_quad()");
       exit(1);
     }
 
@@ -282,7 +282,7 @@ int hash(Quad* key[4])
   intptr_t a[4], x;
   int i;
 
-  for (i = 0 ; i < 4 ; i++)
+  for ( i = 0 ; i < 4 ; i++ )
     a[i] = (intptr_t) key[i] >> 2;
 
   x = (a[0] << 15) ^ (a[1] << 10) ^ (a[2] << 5) ^ a[3];
@@ -307,12 +307,12 @@ void hashtbl_add(Hashtbl *hashtbl, int h, Quad *elt)
 
 Quad *list_find(Quad* key[4], QuadList *list)
 {
-  if (list == NULL)
+  if ( !list )
     return NULL;
   else
   {
     int i;
-    for (i = 0 ; i < 4 ; i++)
+    for ( i = 0 ; i < 4 ; i++ )
       if (key[i] != list->head->node.n.sub[i])
         return list_find(key, list->tail);
     return list->head;
@@ -321,7 +321,7 @@ Quad *list_find(Quad* key[4], QuadList *list)
 
 void free_list(QuadList *ql)
 {
-  if (ql != NULL)
+  if ( ql )
   {
     free_list(ql->tail);
     free_quad(ql->head);
@@ -331,7 +331,7 @@ void free_list(QuadList *ql)
 
 void free_map(QuadMap *qm)
 {
-  if (qm != NULL)
+  if ( qm )
   {
     free_map(qm->map_tail);
     // v member is freed outside as it should be in the hashtbl
@@ -353,7 +353,7 @@ void hashlife_init()
 
   leaves = malloc(leaves_count * sizeof(Quad));
 
-  if (leaves == NULL)
+  if ( !leaves )
   {
     printf("in hashlife_init(...): Not enough memory. (lol)\n");
     exit(1);
@@ -362,7 +362,7 @@ void hashlife_init()
 #ifdef ALLOC_QUAD
   stack = malloc(sizeof(Quad*) * stack_max_size);
 
-  if (stack == NULL)
+  if ( !stack )
   {
     printf("in hashlife_init(...): Not enough memory. (lol)\n");
     exit(1);
@@ -374,7 +374,7 @@ void hashlife_init()
     Quad *n = &leaves[i];
 
     int j;
-    for (j = 0 ; j < 4 ; j++)
+    for ( j = 0 ; j < 4 ; j++ )
       n->node.l.map[j] = (i >> (3 - j)) & 1;
 
     n->depth = 0;
@@ -400,17 +400,17 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
 
   int acc = 0, i;
 
-  for (i = 0 ; i < 4 ; ++i)
+  for ( i = 0 ; i < 4 ; ++i )
   {
     int j, sum = 0; 
 
     q->node.n.sub[i] = quad[i];
 
     // Count alive neighbors
-    for (j = 0 ; j < 8 ; j++)
+    for ( j = 0 ; j < 8 ; j++ )
       sum += quad[coord[i][j][0]]->node.l.map[coord[i][j][1]];
     
-    if (quad[pos[i][0]]->node.l.map[pos[i][1]])
+    if ( quad[pos[i][0]]->node.l.map[pos[i][1]] )
       acc |= ((r >> (sum + 9)) & 1) << (3 - i);
     else
       acc |= ((r >> sum) & 1) << (3 - i);
@@ -430,11 +430,11 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
 
 void print_quad(Quad *q)
 {
-  if (q->depth == 0)
+  if ( q->depth == 0 )
   {
     int i;
     printf(" ");
-    for (i = 0 ; i < 4 ; i++)
+    for ( i = 0 ; i < 4 ; i++ )
       printf("%d", q->node.l.map[i]);
     printf(" ");
   }
@@ -443,7 +443,7 @@ void print_quad(Quad *q)
     printf("QUAD depth: %d\n", q->depth);
 
     int i;
-    for (i = 0 ; i < 4 ; i++)
+    for ( i = 0 ; i < 4 ; i++ )
       print_quad(q->node.n.sub[i]);
 
     printf("\n");
@@ -452,7 +452,7 @@ void print_quad(Quad *q)
 
 int list_length(QuadList *list)
 {
-  if (list == NULL)
+  if ( !list )
     return 0;
   else 
     return 1 + list_length(list->tail);
@@ -463,14 +463,14 @@ int list_length(QuadList *list)
 void htbl_stat(Hashtbl *htbl)
 {
   int i, max[BUCKET_COUNT] = {0};
-  for (i = 0 ; i < init_size ; i++)
+  for ( i = 0 ; i < init_size ; i++ )
   {
     int l = list_length(htbl->tbl[i]);
     max[l >= BUCKET_COUNT ? BUCKET_COUNT - 1 : l]++;
   }
 
   printf("LENGTH: %d\n", htbl->count);
-  for (i = 0 ; i < BUCKET_COUNT ; i++)
+  for ( i = 0 ; i < BUCKET_COUNT ; i++ )
     printf("%d %d\n", i, max[i]);
 
   return;
@@ -481,7 +481,7 @@ const int *step(Hashtbl *htbl, int state[4])
   Quad *quad[4];
   int i;
 
-  for (i = 0 ; i < 4 ; i++)
+  for ( i = 0 ; i < 4 ; i++ )
     quad[i] = &leaves[state[i]];
 
   Quad *q = hashtbl_find(htbl, hash(quad), quad);

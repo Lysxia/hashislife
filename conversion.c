@@ -130,7 +130,6 @@ void quad_to_matrix_(Matrix *matrix,
                      int mlen, int nlen,
                      Quad *q)
 {
-  printf("00 %d %d %d %d\n", m_mmin, m_nmin, mlen, nlen);
   if ( mlen <= 0 || nlen <= 0 )
     return;
   else if ( q->depth == 0 )

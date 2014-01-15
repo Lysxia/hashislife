@@ -17,7 +17,10 @@ const char *get_filename_ext(const char *filename);
 
 int main(int argc, char *argv[])
 {
-  const rule conway = 6148;
+  const rule conway = 6152; // parse_rule("b3/s23");
+
+  printf("%d\n", conway);
+
   const char *filename = argv[1];
   FILE *file;
 
@@ -74,33 +77,28 @@ void test_matrix(Matrix* mat, rule r)
   
   Matrix *new_mat = quad_to_matrix(bi_z, bi_z, mat->m, mat->n, q);
 
-  printf("HEYY\n");
   write_matrix(stdout, new_mat);
-  exit(2);
   
-  /*
-  int shift_e;
-  BigInt one = bi_from_int(910);
+  free_matrix(new_mat);
 
-  q = destiny(htbl, q, one, &shift_e);
+  int shift_e;
+  BigInt *steps = bi_from_int(1291);
+
+  q = destiny(htbl, q, steps, &shift_e);
 
   printf("Destiny.\n");
 
-  int l = 1 << shift_e ;
+  const int side_m = 60;
+  const int side_n = 140;
 
-  const int side_m = 50;
-  const int side_n = 128;
-  int **mat2 = alloc_matrix(side_m, side_n);
+  BigInt *bi_l = bi_power_2(shift_e);
 
-  BigInt bi_l = bi_from_int(l);
+  Matrix *next_mat = quad_to_matrix(bi_l, bi_l, side_m, side_n, q);
 
-  quad_to_matrix(mat2, 0, 0, side_m, side_n, bi_l, bi_l, q);
+  write_matrix(stdout, next_mat);
 
-  print_matrix(mat2, side_m, side_n, stdout);
-
-  bi_free(one);
+  free_matrix(next_mat);
+  bi_free(steps);
   bi_free(bi_l);
-  free_matrix(mat2, side_m);
   free(htbl);
-  */
 }

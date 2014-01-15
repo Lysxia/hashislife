@@ -127,7 +127,7 @@ BigInt *bi_power_2(int k)
 {
   BigInt *s = bi_new(k / bi_block_bit + 1);
 
-  if ( s )
+  if ( !s )
   {
     perror("bi_power_2()");
     exit(1);
@@ -144,7 +144,7 @@ BigInt *bi_plus_int(const BigInt *b, int i)
 {
   BigInt *s = bi_new(b->len + 1);
 
-  if ( s == NULL )
+  if ( !s )
   {
     perror("bi_plus_int()");
     exit(1);
@@ -280,7 +280,7 @@ int bi_to_int(const BigInt *b)
   return b->len ? b->digits[0] : 0;
 }
 
-BigInt *int_to_bi(int i)
+BigInt *bi_from_int(int i)
 {
   if ( i == 0 )
     return bi_zero();
