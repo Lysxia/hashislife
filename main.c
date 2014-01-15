@@ -19,8 +19,6 @@ int main(int argc, char *argv[])
 {
   const rule conway = 6152; // parse_rule("b3/s23");
 
-  printf("%d\n", conway);
-
   const char *filename = argv[1];
   FILE *file;
 
@@ -64,8 +62,9 @@ const char *get_filename_ext(const char *filename)
 
 void test_matrix(Matrix* mat, rule r)
 {
-  printf("%d\n", r);
+#if 0
   write_matrix(stdout, mat);
+#endif
 
   Hashtbl *htbl = hashtbl_new(r);
 
@@ -75,27 +74,31 @@ void test_matrix(Matrix* mat, rule r)
 
   //print_quad(q);
   
+#if 0
   Matrix *new_mat = quad_to_matrix(bi_z, bi_z, mat->m, mat->n, q);
 
   write_matrix(stdout, new_mat);
   
   free_matrix(new_mat);
+#endif
 
   int shift_e;
-  BigInt *steps = bi_from_int(1291);
+  BigInt *steps = bi_from_int(123913012);
+
+  printf("Destiny...\n");
 
   q = destiny(htbl, q, steps, &shift_e);
 
-  printf("Destiny.\n");
-
-  const int side_m = 60;
-  const int side_n = 140;
+  const int side_m = 30;
+  const int side_n = 120;
 
   BigInt *bi_l = bi_power_2(shift_e);
 
   Matrix *next_mat = quad_to_matrix(bi_l, bi_l, side_m, side_n, q);
 
   write_matrix(stdout, next_mat);
+
+  //htbl_stat(htbl);
 
   free_matrix(next_mat);
   bi_free(steps);

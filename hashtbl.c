@@ -72,13 +72,14 @@ Hashtbl *hashtbl_new(rule r)
   if (leaves == NULL) // Must initialize
     hashlife_init();
 
-  printf("Creating new hashtable... Allocating memory.\n");
+  printf("Creating new hashtable...\n");
+  printf("Rule %d\n", r);
 
   Hashtbl *htbl = malloc(sizeof(Hashtbl));
 
   if (htbl == NULL)
   {
-    printf("in hashtbl_new(...): Not enough memory.\n");
+    perror("hashtbl_new()");
     exit(1);
   }
   
@@ -91,7 +92,7 @@ Hashtbl *hashtbl_new(rule r)
 
   if (htbl->tbl == NULL || htbl->dead_quad == NULL)
   {
-    printf("in hashtbl_new(...): Not enough memory.\n");
+    perror("hashtbl_new()");
     exit(1);
   }
 
@@ -158,7 +159,7 @@ Quad *dead_space(Hashtbl *htbl, int d)
 
     if ( !htbl->dead_quad )
     {
-      printf("in dead_space(%d): not enough memory.\n", d);
+      perror("dead_space()");
       exit(1);
     }
 
@@ -277,15 +278,37 @@ Quad *alloc_quad()
 
 /*** Hashtable function ***/
 
+void binary(intptr_t w)
+{
+  int k;
+  for ( k = 0 ; k < 64 ; k++, w >>= 1 )
+    printf("%d", (w & 1));
+  printf(" !\n");
+}
+
 int hash(Quad* key[4])
 {
   intptr_t a[4], x;
   int i;
 
   for ( i = 0 ; i < 4 ; i++ )
-    a[i] = (intptr_t) key[i] >> 2;
+    a[i] = (intptr_t) key[i];
 
-  x = (a[0] << 15) ^ (a[1] << 10) ^ (a[2] << 5) ^ a[3];
+  x = (a[0] * a[3]) / 1000 ^ (a[2] * a[1]) / 68 ^ (a[1] * a[3] >> 12) ^ (a[0] >> 4);
+
+  static int t = 0;
+
+  /* sample
+  t++;
+
+  if ( !(t % 20021) )
+  {
+    binary(a[0]);
+    binary(a[1]);
+    binary(a[2]);
+    binary(a[3]);
+  }
+  */
 
   return (int) x & (init_size - 1);
 }
@@ -355,7 +378,7 @@ void hashlife_init()
 
   if ( !leaves )
   {
-    printf("in hashlife_init(...): Not enough memory. (lol)\n");
+    perror("hashlife_init()");
     exit(1);
   }
 
@@ -364,7 +387,7 @@ void hashlife_init()
 
   if ( !stack )
   {
-    printf("in hashlife_init(...): Not enough memory. (lol)\n");
+    perror("hashlife_init()");
     exit(1);
   }
 #endif
@@ -458,7 +481,7 @@ int list_length(QuadList *list)
     return 1 + list_length(list->tail);
 }
 
-#define BUCKET_COUNT 8
+#define BUCKET_COUNT 100
 
 void htbl_stat(Hashtbl *htbl)
 {
@@ -471,7 +494,10 @@ void htbl_stat(Hashtbl *htbl)
 
   printf("LENGTH: %d\n", htbl->count);
   for ( i = 0 ; i < BUCKET_COUNT ; i++ )
-    printf("%d %d\n", i, max[i]);
+  {
+    if ( max[i] )
+      printf("%3d %d\n", i, max[i]);
+  }
 
   return;
 }

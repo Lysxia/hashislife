@@ -47,7 +47,6 @@ QuadMap *map_add(QuadMap**, int, Quad*);
 
 void print_quad(Quad*);
 void htbl_stat(Hashtbl*);
-int nb_nodes(Hashtbl*);
 const int *step(Hashtbl*, int[4]);
 
 #endif
