@@ -1,27 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "definitions.h"
 #include "darray.h"
 #include "bigint.h"
 #include "hashtbl.h"
 #include "hashlife.h"
-//#include "conversion.h"
+#include "conversion.h"
 #include "parsers.h"
 #include "runlength.h"
 #include "matrix.h"
 
-//void test_matrix(int**, int, int, int);
+void test_matrix(Matrix *, rule);
 
-const char *get_filename_ext(const char *filename)
-{
-  const char *dot = strrchr(filename, '.');
-  if ( !dot || dot == filename) return "";
-  return dot + 1;
-}
+const char *get_filename_ext(const char *filename);
 
 int main(int argc, char *argv[])
 {
-  //const rule conway = 6148;
+  const rule conway = 6148;
   const char *filename = argv[1];
   FILE *file;
 
@@ -45,7 +41,7 @@ int main(int argc, char *argv[])
       {
         Matrix *mat = read_matrix(file);
 
-        write_matrix(stdout, mat);
+        test_matrix(mat, conway);
 
         free_matrix(mat);
       }
@@ -56,22 +52,33 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-/*
-void test_matrix(int** mat, int m, int n, int r)
+const char *get_filename_ext(const char *filename)
+{
+  const char *dot = strrchr(filename, '.');
+  if ( !dot || dot == filename) return "";
+  return dot + 1;
+}
+
+void test_matrix(Matrix* mat, rule r)
 {
   printf("%d\n", r);
-  print_matrix(mat, m, n, stdout);
+  write_matrix(stdout, mat);
 
   Hashtbl *htbl = hashtbl_new(r);
 
-  Quad *q = matrix_to_quad(htbl, mat, m, n);
+  Quad *q = matrix_to_quad(htbl, mat);
+
+  BigInt *bi_z = bi_zero();
 
   //print_quad(q);
   
-  //quad_to_matrix(mat, 0, 0, m, n, bi_zero, bi_zero, q);
-  //print_matrix(mat, m, n, stdout);
-  //exit(2);
+  Matrix *new_mat = quad_to_matrix(bi_z, bi_z, mat->m, mat->n, q);
+
+  printf("HEYY\n");
+  write_matrix(stdout, new_mat);
+  exit(2);
   
+  /*
   int shift_e;
   BigInt one = bi_from_int(910);
 
@@ -95,4 +102,5 @@ void test_matrix(int** mat, int m, int n, int r)
   bi_free(bi_l);
   free_matrix(mat2, side_m);
   free(htbl);
-}*/
+  */
+}

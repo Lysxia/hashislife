@@ -190,8 +190,6 @@ BigInt *bi_plus_int(const BigInt *b, int i)
   return s;
 }
 
-#define MAX(a,b) (((a) < (b))?(b):(a))
-
 // b - 2^e.
 // If the result is positive, then return a BigInt and set *neg to 0
 // If the result is negative, return 0 and set *neg to min(MAX_INT, 2^e - b)

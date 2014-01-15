@@ -1,18 +1,19 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "bigint.h"
 #include "hashtbl.h"
 #include "hashlife.h"
 #include "conversion.h"
 
 Quad *matrix_to_quad_(Hashtbl *htbl,
-                      char **matrix, int mlen, int nlen,
+                      char **matrix, int m, int n,
                       int mmin, int nmin, int d);
 
 Quad *matrix_to_quad(Hashtbl *htbl, const Matrix *matrix)
 {
   int side = 2, d = 0;
 
-  while (side < mlen || side < nlen)
+  while ( side < matrix->m || side < matrix->n )
   {
     side <<= 1;
     d++;
@@ -24,22 +25,29 @@ Quad *matrix_to_quad(Hashtbl *htbl, const Matrix *matrix)
 }
 
 Quad *matrix_to_quad_(Hashtbl *htbl,
-                      char **matrix, int mlen, int nlen,
+                      char **matrix, int m, int n,
                       int mmin, int nmin, int d)
 {
-  if (mmin >= mlen || nmin >= nlen)
+  if ( mmin >= m || nmin >= n )
   {
     return dead_space(htbl, d);
   }
-  else if (d == 0)
+  else if ( d == 0 )
   {
     int i, j, acc = 0;
-    for (i = 0 ; i < 2 ; i++)
-      for (j = 0 ; j < 2 ; j++)
+    for ( i = 0 ; i < 2 && mmin + i < m ; i++ )
+      for ( j = 0 ; j < 2 && nmin + j < n ; j++ )
       {
-        if (mmin + i >= 0 && mmin + i < mlen &&
-            nmin + j >= 0 && nmin + j < nlen)
-          acc |= !!matrix[mmin+i][nmin+j] << (3 - 2 * i - j);
+          switch ( matrix[mmin+i][nmin+j] )
+          {
+            case ALIVE:
+              acc |= 1 << (3 - 2 * i - j);
+              break;
+            case DEAD:
+              break;
+            default:
+              fprintf(stderr, "Bad format detected\n");
+        }
       }
 
     return leaf(acc);
@@ -49,12 +57,11 @@ Quad *matrix_to_quad_(Hashtbl *htbl,
     Quad *quad[4];
 
     int i;
-
-    s = 1 << d;
+    int s = 1 << d;
 
     for (i = 0 ; i < 4 ; i++)
       quad[i] = matrix_to_quad_(htbl,
-                                matrix,mlen,nlen,
+                                matrix,m,n,
                                 mmin + (i & 2 ? s : 0),
                                 nmin + (i & 1 ? s : 0),
                                 d-1);
@@ -63,73 +70,100 @@ Quad *matrix_to_quad_(Hashtbl *htbl,
   }
 }
 
-void quad_to_matrix_(int **matrix, int m, int n,
-                     BigInt mmin, BigInt nmin,
-                     BigInt mmax, BigInt nmax,
-                     Quad *q, BigInt *two_, int d);
-int ge_exponent(BigInt b, int e);
-void split_(BigInt min, BigInt max, BigInt two_e, int e, BigInt min_[2], BigInt max_[2], int *m2,
-            int *trunc_min, int *trunc_max);
-BigInt truncate(BigInt b, int e);
-//void recover(BigInt b, int e);
+void quad_to_matrix_(Matrix *matrix,
+                     int m_mmin, int m_nmin,
+                     BigInt *mmin, BigInt *nmin,
+                     int mlen, int nlen,
+                     Quad *q);
 
-void quad_to_matrix(int **matrix, int m, int n,
-                    int mlen, int nlen,
-                    BigInt mmin, BigInt nmin, Quad *q)
+Matrix *quad_to_matrix(BigInt *mmin, BigInt *nmin,
+                       int mlen, int nlen,
+                       Quad *q)
 {
-  //printf("*** %d %d : %d %d : %d %d\n", mlen, nlen, bi_to_int(mmin), bi_to_int(nmin), q->depth, 1 << q->depth+1);
-  BigInt mmax = bi_plus_int(mmin, mlen);
-  BigInt nmax = bi_plus_int(nmin, nlen);
-  BigInt two_[q->depth+1];
+  Matrix *matrix = malloc(sizeof(Matrix));
 
-  int e;
-  for (e = 0 ; e <= q->depth ; e++)
-    two_[e] = bi_power_2(e);
+  if ( !matrix )
+  {
+    perror("quad_to_matrix()");
+    return NULL;
+  }
 
-  quad_to_matrix_(matrix, m, n,
-    mmin, nmin, mmax, nmax,
-    q, two_, q->depth);
+  matrix->matrix = malloc(mlen * sizeof(char *));
 
-  bi_free(mmax);
-  bi_free(nmax);
+  if ( !matrix->matrix )
+  {
+    perror("quad_to_matrix()");
+    free(matrix);
+    return NULL;
+  }
+  
+  int i;
+
+  for ( i = 0 ; i < mlen ; i++ )
+  {
+    matrix->matrix[i] = malloc(nlen * sizeof(char));
+    
+    if ( !matrix->matrix[i] )
+    {
+      perror("quad_to_matrix()");
+      matrix->m = i;
+      free_matrix(matrix);
+      return NULL;
+    }
+  }
+
+  matrix->m = mlen;
+  matrix->n = nlen;
+
+  quad_to_matrix_(matrix,
+    0, 0,
+    mmin, nmin,
+    mlen, nlen,
+    q);
+
+  return matrix;
 }
 
-int count = 0;
-
-void quad_to_matrix_(int **matrix, int m, int n,
-                         BigInt mmin, BigInt nmin,
-                         BigInt mmax, BigInt nmax,
-                         Quad *q, BigInt *two_, int d)
+void quad_to_matrix_(Matrix *matrix,
+                     int m_mmin, int m_nmin,
+                     BigInt *mmin, BigInt *nmin,
+                     int mlen, int nlen,
+                     Quad *q)
 {
-  //printf("%d %d \t| m %d %d \t: n %d %d \t: d %d %d\n", m, n,
-  //    bi_to_int(mmin), bi_to_int(mmax), bi_to_int(nmin), bi_to_int(nmax), q->depth, 1 << q->depth+1);
-  fflush(stdout);
-  if (d == 0)
+  printf("00 %d %d %d %d\n", m_mmin, m_nmin, mlen, nlen);
+  if ( mlen <= 0 || nlen <= 0 )
+    return;
+  else if ( q->depth == 0 )
   {
     int i, j;
     int mmin_ = bi_to_int(mmin),
         nmin_ = bi_to_int(nmin);
-    int mmax_ = bi_to_int(mmax),
-        nmax_ = bi_to_int(nmax);
-    int mlen = mmax_ - mmin_;
-    int nlen = nmax_ - nmin_;
 
-    for (i = 0 ; i < mlen ; i++)
-      for (j = 0 ; j < nlen ; j++)
-        matrix[m+i][n+j] = q->node.l.map[2*(mmin_+i)+(nmin_+j)];
-  }
-  else if (bi_iszero(mmax) || bi_iszero(nmax))
-  {
-    return;
+    for ( i = 0 ; i < mlen ; i++ )
+      for ( j = 0 ; j < nlen ; j++ )
+        matrix->matrix[m_mmin+i][m_nmin+j] = q->node.l.map[2*(mmin_+i)+(nmin_+j)] ? ALIVE : DEAD;
   }
   else
   {
-    int m_[2] = {m, m}, n_[2] = {n, n};
-    BigInt mmin_[2], nmin_[2], mmax_[2], nmax_[2];
-    int trunc_mmin, trunc_nmin, trunc_mmax, trunc_nmax;
+    int m_mmin_[2], m_nmin_[2];
+    BigInt *mmin_[2], *nmin_[2];
+    int mlen_[2], nlen_[2];
 
-    split_(mmin, mmax, two_[d], d, mmin_, mmax_, &m_[1], &trunc_mmin, &trunc_mmax);
-    split_(nmin, nmax, two_[d], d, nmin_, nmax_, &n_[1], &trunc_nmin, &trunc_nmax);
+    int diff = 0;
+
+    mmin_[0] = mmin;
+    mmin_[1] = bi_minus_pow(mmin, q->depth, &diff);
+    m_mmin_[0] = m_mmin;
+    m_mmin_[1] = m_mmin + diff;
+    mlen_[0] = mlen < diff ? mlen : diff;
+    mlen_[1] = mlen - diff;
+
+    nmin_[0] = nmin;
+    nmin_[1] = bi_minus_pow(nmin, q->depth, &diff);
+    m_nmin_[0] = m_nmin;
+    m_nmin_[1] = m_nmin + diff;
+    nlen_[0] = nlen < diff ? nlen : diff;
+    nlen_[1] = nlen - diff;
 
     int i;
 
@@ -137,97 +171,14 @@ void quad_to_matrix_(int **matrix, int m, int n,
     {
       const int x = i >> 1, y = i & 1;
 
-      quad_to_matrix_(matrix, m_[x], n_[y],
-        mmin_[x], nmin_[y],
-        mmax_[x], nmax_[y],
-        q->node.n.sub[i], two_, d-1);
+      quad_to_matrix_(matrix,
+                      m_mmin_[x], m_nmin_[y],
+                      mmin_[x], nmin_[y],
+                      mlen_[x], nlen_[y],
+                      q->node.n.sub[i]);
     }
 
-    /* Some linear complexity garbage
-    if (trunc_mmax)
-      recover(mmax, d);
-    if (trunc_mmin)
-        recover(mmin, d);
-    if (trunc_nmax)
-      recover(nmax, d);
-    if (trunc_nmin)
-      recover(nmin, d);
-      */
+    bi_free(mmin_[1]);
+    bi_free(nmin_[1]);
   }
 }
-
-// b > 2^e
-int ge_exponent(BigInt b, int e)
-{
-  return bi_log2(b) >= e + 1;
-}
-
-/* min <= max <= 2^(e+1) */
-void split_(BigInt min, BigInt max, BigInt two_e, int e, BigInt min_[2], BigInt max_[2], int *m2,
-            int *trunc_min, int *trunc_max)
-{
-  if (ge_exponent(min, e))
-  {
-    min_[0] = max_[0] = bi_zero;
-    min_[1] = truncate(min, e);
-    max_[1] = truncate(max, e);
-
-    *trunc_min = 1;
-    *trunc_max = 1;
-  }
-  else if (ge_exponent(max, e))
-  {
-    min_[0] = min;
-    max_[0] = two_e;
-    min_[1] = bi_zero;
-    max_[1] = truncate(max, e);
-
-    if (bi_iszero(min_[0]))
-      *m2 += 1 << e;
-    else if (e < 31)
-      *m2 += (1 << e) - min_[0].digits[0];
-    else
-      *m2 += (1 << 31) - min_[0].digits[0];
-
-    *trunc_min = 0;
-    *trunc_max = 1;
-  }
-  else
-  {
-    min_[0] = min;
-    max_[0] = max;
-    min_[1] = max_[1] = bi_zero;
-
-    *trunc_min = 0;
-    *trunc_max = 0;
-  }
-}
-
-BigInt minus_pow2(BigInt b, int e)
-{
-  if ((b.digits[e / 31] -= 1 << (e % 31)) < 0)
-  {
-    b.digits[e / 31 + 1] -= 1;
-    b.digits[e / 31] ^= 1 << 31;
-  }
-
-  bi_canonize(&b);
-
-  return b;
-}
-
-BigInt truncate(BigInt b, int e)
-{
-  return minus_pow2(bi_copy(b), e);
-}
-
-/*
-void recover(BigInt b, int e)
-{
-  if ((b.digits[e / 31] += 1 << (e % 31)) < 0)
-  {
-    b.digits[e / 31 + 1] += 1;
-    b.digits[e / 31] ^= 1 << 31;
-  }
-}
-*/

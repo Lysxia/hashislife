@@ -10,7 +10,7 @@
 Quad *matrix_to_quad(Hashtbl *htbl, const Matrix *matrix);
 
 // Draw the matrix described by q at the specified location
-Matrix *quad_to_matrix(BigInt mmin, BigInt nmin, 
+Matrix *quad_to_matrix(BigInt *mmin, BigInt *nmin,
                        int mlen, int nlen,
                        Quad *q);
 

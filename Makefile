@@ -1,5 +1,5 @@
 HDR=definitions.h
-OBJ=darray.o bigint.o hashtbl.o hashlife.o parsers.o runlength.o matrix.o
+OBJ=darray.o bigint.o hashtbl.o hashlife.o parsers.o runlength.o matrix.o conversion.o
 MAIN=main.c
 CC=gcc -W -Wall
 
