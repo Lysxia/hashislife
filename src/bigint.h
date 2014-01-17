@@ -23,7 +23,7 @@ BigInt *bi_from_int(int i);
 
 void bi_free(BigInt *b);
 
-void bi_print(BigInt *b);
+void bi_print(const BigInt *b);
 void bi_test();
 
 #endif

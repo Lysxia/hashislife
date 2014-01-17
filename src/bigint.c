@@ -324,7 +324,7 @@ void bi_free(BigInt *b)
   free(b);
 }
 
-void bi_print(BigInt *b)
+void bi_print(const BigInt *b)
 {
   int d;
   for ( d = 0 ; d < bi_log2(b) ; d++ )
