@@ -1,23 +1,11 @@
 #include <stdlib.h>
-
+#include <stdio.h>
+#include "lifecount.h"
 #include "bigint.h"
+#include "hashtbl.h"
 
-void life_count_add(Quad *q, BigInt c);
-
-BigInt life_count(Quad *q)
+BigInt *life_count(Quad *q)
 {
-  BigInt s = bi_zero;
-
-  life_count_add(q, s);
-
-  return s;
+  return q->cell_count;
 }
 
-void life_count_add(Quad *q, BigInt c)
-{
-
-}
-
-void life_matrix(BigInt **mat, int corner, int depth, Quad *q)
-{
-}

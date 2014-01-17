@@ -1,7 +1,9 @@
 #ifndef LIFECOUNT_H
 #define LIFECOUNT_H
 
-BigInt life_count(Quad *q);
+#include "bigint.h"
+#include "hashtbl.h"
 
-void life_matrix(BigInt **mat, int corner, int depth, Quad *q);
+BigInt *life_count(Quad *q);
 
+#endif

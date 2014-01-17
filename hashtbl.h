@@ -2,6 +2,7 @@
 #define HASHTBL_H
 #include <stdint.h>
 #include "definitions.h"
+#include "bigint.h"
 
 typedef struct Hashtbl Hashtbl;
 typedef struct QuadMap QuadMap;
@@ -13,8 +14,8 @@ union Node
   // internal node
   struct
   {
-    Quad *sub[4]; // subtrees : 0-upperleft, 1-upperright, 2-bottomleft, 3-bottomright
-    QuadMap *next;
+    Quad *sub[4];   // subtrees : 0:upper left,  1:upper right,
+    QuadMap *next;  //            2:bottom left, 3:bottom right
   } n;
 
   // leaf
@@ -29,7 +30,8 @@ union Node
 
 struct Quad
 {
-  int depth; // quad tree for a square map with side 2^(depth+1)
+  int depth;          // quad tree for a square map with side 2^(depth+1)
+  BigInt *cell_count;
   union Node node;
 };
 
@@ -37,6 +39,8 @@ struct Quad
 
 Hashtbl *hashtbl_new(rule r);
 void hashtbl_free(Hashtbl*);
+
+void hashlife_init(void);
 
 Quad *leaf(int k);
 Quad *dead_space(Hashtbl *hashtbl, int d);

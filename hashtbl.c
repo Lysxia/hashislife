@@ -30,8 +30,7 @@ struct QuadMap
 
 /*** Auxiliary functions ***/
 
-void hashlife_init();
-Quad* alloc_quad();
+Quad *alloc_quad(void);
 // create depth 1 nodes. Part of hashlife_init() logic.
 void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r); 
 
@@ -200,10 +199,15 @@ Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
 
   if ( !q )
   {
-    q = alloc_quad();
+    if ( !(q = alloc_quad()) )
+    {
+      perror("cons_quad()");
+      exit(1);
+    }
 
     q->depth = d;
     q->node.n.next = NULL;
+    q->cell_count = NULL;
 
     int i;
 
@@ -216,160 +220,8 @@ Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
   return q;
 }
 
-/*** Map functions ***/
-
-Quad *map_assoc(QuadMap *map, int k)
-{
-  if ( !map || map->k > k )
-    return NULL;
-  else if ( map->k == k )
-    return map->v;
-  else
-    return map_assoc(map->map_tail, k);
-}
-
-QuadMap* map_add(QuadMap **map, int k, Quad* v)
-{
-  if ( !*map || (*map)->k > k )
-  {
-    QuadMap *new_map = malloc(sizeof(QuadMap));
-    new_map->k = k;
-    new_map->v = v;
-    new_map->map_tail = *map;
-    return *map = new_map;
-  }
-  else
-  {
-    return map_add(&(*map)->map_tail, k, v);
-  }
-}
-
-/*** Memory managing ***/
-
-Quad *alloc_quad()
-{
-#ifdef ALLOC_QUAD
-  if ( quad_block_count < quad_block_size )
-    return &quad_block[quad_block_count++];
-  else if ( stack_size == stack_max_size )
-  {
-    fprintf(stderr, "alloc_quad(): Not enough stack space.\n");
-    exit(1);
-  }
-  else
-  {
-    quad_block = malloc(quad_block_size * sizeof(Quad));
-    stack[stack_size++] = quad_block;
-
-    if ( !quad_block )
-    {
-      perror("alloc_quad()");
-      exit(1);
-    }
-
-    quad_block_count = 1;
-
-    return quad_block;
-  }
-#else
-  return malloc(sizeof(Quad));
-#endif
-}
-
-/*** Hashtable function ***/
-
-void binary(intptr_t w)
-{
-  int k;
-  for ( k = 0 ; k < 64 ; k++, w >>= 1 )
-    printf("%d", (w & 1));
-  printf(" !\n");
-}
-
-int hash(Quad* key[4])
-{
-  intptr_t a[4], x;
-  int i;
-
-  for ( i = 0 ; i < 4 ; i++ )
-    a[i] = (intptr_t) key[i];
-
-  x = (a[0] * a[3]) / 1000 ^ (a[2] * a[1]) / 68 ^ (a[1] * a[3] >> 12) ^ (a[0] >> 4);
-
-  static int t = 0;
-
-  /* sample
-  t++;
-
-  if ( !(t % 20021) )
-  {
-    binary(a[0]);
-    binary(a[1]);
-    binary(a[2]);
-    binary(a[3]);
-  }
-  */
-
-  return (int) x & (init_size - 1);
-}
-
-Quad *hashtbl_find(Hashtbl *hashtbl, int h, Quad* key[4])
-{
-  return list_find(key, hashtbl->tbl[h]);
-}
-
-void hashtbl_add(Hashtbl *hashtbl, int h, Quad *elt)
-{
-  QuadList *ql = malloc(sizeof(QuadList));
-
-  ql->head = elt;
-  ql->tail = hashtbl->tbl[h];
-  hashtbl->tbl[h] = ql;
-  hashtbl->count++;
-}
-
-Quad *list_find(Quad* key[4], QuadList *list)
-{
-  if ( !list )
-    return NULL;
-  else
-  {
-    int i;
-    for ( i = 0 ; i < 4 ; i++ )
-      if (key[i] != list->head->node.n.sub[i])
-        return list_find(key, list->tail);
-    return list->head;
-  }
-}
-
-void free_list(QuadList *ql)
-{
-  if ( ql )
-  {
-    free_list(ql->tail);
-    free_quad(ql->head);
-    free(ql);
-  }
-}
-
-void free_map(QuadMap *qm)
-{
-  if ( qm )
-  {
-    free_map(qm->map_tail);
-    // v member is freed outside as it should be in the hashtbl
-    free(qm);
-  }
-}
-
-void free_quad(Quad *q)
-{
-  free_map(q->node.n.next);
-  free(q);
-}
-
 /*** Initialize hashlife ***/
-void hashlife_init()
+void hashlife_init(void)
 {
   printf("Initializing...");
   int i;
@@ -446,6 +298,162 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
   q->depth = 1;
 
   hashtbl_add(htbl, hash(quad), q);
+}
+
+/*** Map functions ***/
+
+Quad *map_assoc(QuadMap *map, int k)
+{
+  if ( !map || map->k > k )
+    return NULL;
+  else if ( map->k == k )
+    return map->v;
+  else
+    return map_assoc(map->map_tail, k);
+}
+
+QuadMap *map_add(QuadMap **map, int k, Quad* v)
+{
+  if ( !*map || (*map)->k > k )
+  {
+    QuadMap *new_map = malloc(sizeof(QuadMap));
+    new_map->k = k;
+    new_map->v = v;
+    new_map->map_tail = *map;
+    return *map = new_map;
+  }
+  else
+  {
+    return map_add(&(*map)->map_tail, k, v);
+  }
+}
+
+/*** Memory management ***/
+
+Quad *alloc_quad(void)
+{
+#ifdef ALLOC_QUAD
+  if ( quad_block_count < quad_block_size )
+    return &quad_block[quad_block_count++];
+  else if ( stack_size == stack_max_size )
+  {
+    fprintf(stderr, "alloc_quad(): Not enough stack space.\n");
+    exit(1);
+  }
+  else
+  {
+    quad_block = malloc(quad_block_size * sizeof(Quad));
+    stack[stack_size++] = quad_block;
+
+    if ( !quad_block )
+    {
+      perror("alloc_quad()");
+      exit(1);
+    }
+
+    quad_block_count = 1;
+
+    return quad_block;
+  }
+#else
+  return malloc(sizeof(Quad));
+#endif
+}
+
+/*** Hashtable function ***/
+
+/*
+void binary(intptr_t w)
+{
+  int k;
+  for ( k = 0 ; k < 64 ; k++, w >>= 1 )
+    printf("%d", (w & 1));
+  printf(" !\n");
+}
+*/
+
+int hash(Quad* key[4])
+{
+  intptr_t a[4], x;
+  int i;
+
+  for ( i = 0 ; i < 4 ; i++ )
+    a[i] = (intptr_t) key[i];
+
+  x = (a[0] * a[3]) / 1000 ^ (a[2] * a[1]) / 68 ^ (a[1] * a[3] >> 12) ^ (a[0] >> 4);
+
+  /* sample
+  static int t = 0;
+
+  t++;
+
+  if ( !(t % 20021) )
+  {
+    binary(a[0]);
+    binary(a[1]);
+    binary(a[2]);
+    binary(a[3]);
+  }
+  */
+
+  return (int) x & (init_size - 1);
+}
+
+Quad *hashtbl_find(Hashtbl *hashtbl, int h, Quad* key[4])
+{
+  return list_find(key, hashtbl->tbl[h]);
+}
+
+void hashtbl_add(Hashtbl *hashtbl, int h, Quad *elt)
+{
+  QuadList *ql = malloc(sizeof(QuadList));
+
+  ql->head = elt;
+  ql->tail = hashtbl->tbl[h];
+  hashtbl->tbl[h] = ql;
+  hashtbl->count++;
+}
+
+Quad *list_find(Quad* key[4], QuadList *list)
+{
+  if ( !list )
+    return NULL;
+  else
+  {
+    int i;
+    for ( i = 0 ; i < 4 ; i++ )
+      if (key[i] != list->head->node.n.sub[i])
+        return list_find(key, list->tail);
+    return list->head;
+  }
+}
+
+void free_list(QuadList *ql)
+{
+  if ( ql )
+  {
+    free_list(ql->tail);
+    free_quad(ql->head);
+    free(ql);
+  }
+}
+
+void free_map(QuadMap *qm)
+{
+  if ( qm )
+  {
+    free_map(qm->map_tail);
+    // v member is going to be freed outside as it should be in the hashtbl
+    free(qm);
+  }
+}
+
+void free_quad(Quad *q)
+{
+  if ( q->cell_count )
+    bi_free(q->cell_count);
+  free_map(q->node.n.next);
+  free(q);
 }
 
 
