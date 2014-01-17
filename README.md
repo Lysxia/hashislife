@@ -16,10 +16,11 @@ Project composition
 
 - *darray*: Dynamic arrays.
 
-- *parsers*: Read/write utilities. Currently contain definitions of data types
-representing GoL configurations. (Raw and RLE)
+- *parsers*: Parsin utilities. Currently just parsing a rule.
 
-- *rleparser*: Run Length Encoder / Decoder.
+- *runlength*: Run Length Encoder / Decoder.
+
+- *matrix*: Raw text format.
 
 - *conversion*: Converts to and from quad trees. Lossy formats TODO.
 
@@ -27,12 +28,9 @@ representing GoL configurations. (Raw and RLE)
 
 - *slowlife*: Naive cellular automaton simulation. (old)
 
-- *sparsemap*: A data type adapted to Life 1.06 format
-and more generally to sparse configurations (in terms of live cells) (old)
+- *definitions*: Misc. declarations (currently just one `typedef`)
 
 - *main*, *Makefile* ...
-
-Currently unusable.
 
 ---
 
