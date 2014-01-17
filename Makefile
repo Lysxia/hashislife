@@ -12,4 +12,4 @@ hashlife: $(HDR) $(OBJ) $(MAIN)
 .INTERMEDIATE: $(OBJ)
 
 clean:
-	rm -f *\~ *.o *.h.gch
+	rm -f *.o *.h.gch
