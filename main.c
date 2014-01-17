@@ -6,6 +6,7 @@
 #include "bigint.h"
 #include "hashtbl.h"
 #include "hashlife.h"
+#include "lifecount.h"
 #include "conversion.h"
 #include "parsers.h"
 #include "runlength.h"
@@ -70,7 +71,7 @@ void test_matrix(Matrix* mat, rule r)
 
   Quad *q = matrix_to_quad(htbl, mat);
 
-  BigInt *bi_z = bi_zero();
+  //BigInt *bi_z = bi_zero();
 
   //print_quad(q);
   
@@ -83,7 +84,7 @@ void test_matrix(Matrix* mat, rule r)
 #endif
 
   int shift_e;
-  BigInt *steps = bi_from_int(123913012);
+  BigInt *steps = bi_from_int(100000000);
 
   printf("Destiny...\n");
 
@@ -97,6 +98,9 @@ void test_matrix(Matrix* mat, rule r)
   Matrix *next_mat = quad_to_matrix(bi_l, bi_l, side_m, side_n, q);
 
   write_matrix(stdout, next_mat);
+
+  printf("Cell count (log2):%d\n", bi_log2(cell_count(q)));
+  bi_print(cell_count(q));
 
   //htbl_stat(htbl);
 

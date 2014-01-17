@@ -4,6 +4,8 @@
 #include "bigint.h"
 #include "hashtbl.h"
 
-BigInt *life_count(Quad *q);
+/* The lifetime of the result is that of the Quad element
+ * which itself is that of the hashtable that generated it */
+const BigInt *cell_count(Quad *q);
 
 #endif

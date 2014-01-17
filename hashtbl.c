@@ -246,13 +246,14 @@ void hashlife_init(void)
 
   for (i = 0 ; i < leaves_count ; i++)
   {
-    Quad *n = &leaves[i];
+    Quad *q = &leaves[i];
 
     int j;
     for ( j = 0 ; j < 4 ; j++ )
-      n->node.l.map[j] = (i >> (3 - j)) & 1;
+      q->node.l.map[j] = (i >> (3 - j)) & 1;
 
-    n->depth = 0;
+    q->cell_count = NULL;
+    q->depth = 0;
   }
 
   printf("Done.\n");
@@ -272,6 +273,12 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
   pos[4][2] = {{0,3},{1,2},{2,1},{3,0}};
 
   Quad *q = alloc_quad();
+
+  if ( !q )
+  {
+    perror("quad_d1()");
+    exit(1);
+  }
 
   int acc = 0, i;
 
@@ -295,6 +302,7 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
   q->node.n.next->k = 0;
 
   q->node.n.next->v = &leaves[acc];
+  q->cell_count = NULL;
   q->depth = 1;
 
   hashtbl_add(htbl, hash(quad), q);

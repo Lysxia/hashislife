@@ -256,24 +256,41 @@ BigInt *bi_minus_pow(const BigInt *b, int e, int *neg)
   }
 }
 
-/*
-void bi_add_to(BigInt *a, const BigInt *b)
+BigInt *bi_add(const BigInt *a, const BigInt *b)
 {
   if ( bi_iszero(a) && bi_iszero(b) )
-    return;
+    return bi_zero();
+  else if ( a->len < b->len )
+  {
+    const BigInt *c = b;
+    b = a;
+    a = c;
+  }
 
-  a->len = MAX(a->len, b->len) + 1;
-  a->digits = realloc(a->digits, a->len * sizeof(bi_block));
-  a->digits[a->len-1] = 0;
+  BigInt *c = bi_new(a->len + 1);
+
+  if ( !c )
+  {
+    perror("bi_add()");
+    exit(1);
+  }
 
   int i;
-  for ( i = 0 ; i < b->len ; i++ )
-    a->digits[i] += b->digits[i];
+  for ( i = 0, c->digits[0] = 0 ; i < b->len ; i++ )
+  {
+    c->digits[i] += a->digits[i] + b->digits[i];
+    c->digits[i+1] = c->digits[i] < a->digits[i] || c->digits[i] < b->digits[i];
+  }
+  for ( ; i < a->len ; i++ )
+  {
+    c->digits[i] += a->digits[i];
+    c->digits[i+1] = c->digits[i] < a->digits[i];
+  }
 
-  bi_smooth(a->digits, 0, a->len);
-  bi_canonize(a);
+  bi_canonize(c);
+
+  return c;
 }
-*/
 
 int bi_to_int(const BigInt *b)
 {
@@ -302,17 +319,17 @@ BigInt *bi_from_int(int i)
 
 void bi_free(BigInt *b)
 {
-  free(b->digits);
+  if ( b->digits )
+    free(b->digits);
   free(b);
 }
 
 void bi_print(BigInt *b)
 {
   int d;
-  putchar('0');
   for ( d = 0 ; d < bi_log2(b) ; d++ )
   {
-    if ( !(d % 64) )
+    if ( d > 0 && !(d % 8) )
       putchar(' ');
     putchar('0' + bi_digit(b, d));
   }
