@@ -39,5 +39,5 @@ TODO
 
     1. Garbage collecting ? Mark and sweep ? Stop & copy ?
 
-    2. Graphic display (SDL)
+    2. Graphical display (SDL)
 
