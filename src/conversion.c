@@ -200,15 +200,14 @@ Matrix *bi_mat_to_matrix(const BigInt ***bm, int m, int n, int height)
   for ( i = 0 ; i < m ; i++ )
     for ( j = 0 ; j < n ; j++ )
     {
-      const int hexa_bits = 4;
-      int x = bi_slice(bm[i][j],
-                       2 * height < hexa_bits ? 0 : 2 * height - hexa_bits)
-            & ((1 << hexa_bits) - 1);
-      matrix->matrix[i][j] = bi_iszero(bm[i][j])
-                             ? '.'
-                             : x > 9
+      const int hex_max = 16;
+      int u = bi_log2(bm[i][j]);
+      int x = u / (height / hex_max + 1);
+      matrix->matrix[i][j] = u               // u == 0 <=> bm[i][j] is zero
+                             ? x > 9
                                ? 'A' - 10 + x
-                               : '0' + x;
+                               : '0' + x
+                             : '.';
     }
 
   return matrix;
