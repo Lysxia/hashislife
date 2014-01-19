@@ -40,13 +40,10 @@ Usage
 Use the `make` command in the `src/` directory to compile `hashlife`:
 
     $ cd src
-
     $ make
-
     ...
 
     $ ./hashlife
-
     usage: ./hashlife (filename) (t:integer) [h:integer]
 
 where `t` and optionally `h` are integer arguments.
