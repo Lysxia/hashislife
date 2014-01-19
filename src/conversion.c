@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "conversion.h"
 #include "bigint.h"
 #include "hashtbl.h"
 #include "hashlife.h"
-#include "conversion.h"
+#include "lifecount.h"
 
 Quad *matrix_to_quad_(Hashtbl *htbl,
                       char **matrix, int m, int n,
@@ -70,68 +71,68 @@ Quad *matrix_to_quad_(Hashtbl *htbl,
   }
 }
 
-void quad_to_matrix_(Matrix *matrix,
+void quad_to_matrix_(UMatrix matrix,
                      int m_mmin, int m_nmin,
                      BigInt *mmin, BigInt *nmin,
                      int mlen, int nlen,
-                     Quad *q);
+                     const int height_, Quad *q);
 
-Matrix *quad_to_matrix(BigInt *mmin, BigInt *nmin,
-                       int mlen, int nlen,
-                       Quad *q)
+UMatrix quad_to_matrix(BigInt *mmin, BigInt *nmin,
+                          int mlen, int nlen,
+                          int height, Quad *q)
 {
-  Matrix *matrix = malloc(sizeof(Matrix));
+  UMatrix matrix;
 
-  if ( !matrix )
+  if ( height <= 0 )
   {
-    perror("quad_to_matrix()");
-    return NULL;
-  }
+    height = 0;
 
-  matrix->matrix = malloc(mlen * sizeof(char *));
+    matrix.um_char = alloc_matrix(mlen, nlen, sizeof(char));
 
-  if ( !matrix->matrix )
-  {
-    perror("quad_to_matrix()");
-    free(matrix);
-    return NULL;
-  }
-  
-  int i;
-
-  for ( i = 0 ; i < mlen ; i++ )
-  {
-    matrix->matrix[i] = malloc(nlen * sizeof(char));
-    
-    if ( !matrix->matrix[i] )
+    if ( !matrix.um_char )
     {
       perror("quad_to_matrix()");
-      matrix->m = i;
-      free_matrix(matrix);
-      return NULL;
+      return matrix;
     }
   }
+  else
+  {
+    matrix.um_bi = alloc_matrix(mlen, nlen, sizeof(const BigInt *));
 
-  matrix->m = mlen;
-  matrix->n = nlen;
+    if ( !matrix.um_bi )
+    {
+      perror("quad_to_matrix()");
+      return matrix;
+    }
+  }
 
   quad_to_matrix_(matrix,
     0, 0,
     mmin, nmin,
     mlen, nlen,
-    q);
+    height, q);
 
   return matrix;
 }
 
-void quad_to_matrix_(Matrix *matrix,
+void quad_to_matrix_(UMatrix matrix,
                      int m_mmin, int m_nmin,
                      BigInt *mmin, BigInt *nmin,
                      int mlen, int nlen,
-                     Quad *q)
+                     const int height, Quad *q)
 {
   if ( mlen <= 0 || nlen <= 0 )
     return;
+  else if ( q->depth <= height - 1 )
+  {
+    int i, j;
+    for ( i = 0 ; i < mlen ; i++ )
+      for ( j = 0 ; j < nlen ; j++ )
+      {
+        matrix.um_bi[m_mmin+i][m_nmin+j] =
+          i || j ? bi_zero_const : cell_count(q);
+      }
+  }
   else if ( q->depth == 0 )
   {
     int i, j;
@@ -140,7 +141,12 @@ void quad_to_matrix_(Matrix *matrix,
 
     for ( i = 0 ; i < mlen ; i++ )
       for ( j = 0 ; j < nlen ; j++ )
-        matrix->matrix[m_mmin+i][m_nmin+j] = q->node.l.map[2*(mmin_+i)+(nmin_+j)] ? ALIVE : DEAD;
+      {
+        matrix.um_char[m_mmin+i][m_nmin+j] =
+          i >= 2 || j >= 2
+          ? 0
+          : q->node.l.map[2*(mmin_+i)+(nmin_+j)] ? ALIVE : DEAD;
+      }
   }
   else
   {
@@ -151,14 +157,14 @@ void quad_to_matrix_(Matrix *matrix,
     int diff = 0;
 
     mmin_[0] = mmin;
-    mmin_[1] = bi_minus_pow(mmin, q->depth, &diff);
+    mmin_[1] = bi_minus_pow(mmin, q->depth - height, &diff);
     m_mmin_[0] = m_mmin;
     m_mmin_[1] = m_mmin + diff;
     mlen_[0] = mlen < diff ? mlen : diff;
     mlen_[1] = mlen - diff;
 
     nmin_[0] = nmin;
-    nmin_[1] = bi_minus_pow(nmin, q->depth, &diff);
+    nmin_[1] = bi_minus_pow(nmin, q->depth - height, &diff);
     m_nmin_[0] = m_nmin;
     m_nmin_[1] = m_nmin + diff;
     nlen_[0] = nlen < diff ? nlen : diff;
@@ -166,7 +172,7 @@ void quad_to_matrix_(Matrix *matrix,
 
     int i;
 
-    for (i = 0 ; i < 4 ; i++)
+    for ( i = 0 ; i < 4 ; i++ )
     {
       const int x = i >> 1, y = i & 1;
 
@@ -174,10 +180,36 @@ void quad_to_matrix_(Matrix *matrix,
                       m_mmin_[x], m_nmin_[y],
                       mmin_[x], nmin_[y],
                       mlen_[x], nlen_[y],
-                      q->node.n.sub[i]);
+                      height, q->node.n.sub[i]);
     }
 
     bi_free(mmin_[1]);
     bi_free(nmin_[1]);
   }
+}
+
+Matrix *bi_mat_to_matrix(const BigInt ***bm, int m, int n, int height)
+{
+  Matrix *matrix = malloc(sizeof(Matrix));
+
+  matrix->matrix = alloc_matrix(m, n, sizeof(char));
+
+  matrix->m = m;
+  matrix->n = n;
+
+  int i, j;
+  for ( i = 0 ; i < m ; i++ )
+    for ( j = 0 ; j < n ; j++ )
+    {
+      const int hexa_bits = 4;
+      int x = bi_slice(bm[i][j], height < hexa_bits ? 0 : height - hexa_bits)
+            & ((1 << hexa_bits) - 1);
+      matrix->matrix[i][j] = bi_iszero(bm[i][j])
+                             ? '.'
+                             : x > 9
+                               ? 'A' - 10 + x
+                               : '0' + x;
+    }
+
+  return matrix;
 }

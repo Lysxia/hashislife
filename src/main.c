@@ -12,23 +12,29 @@
 #include "runlength.h"
 #include "matrix.h"
 
-void test_matrix(Matrix *, rule);
+void test_matrix(Matrix *, rule, BigInt *, int);
 
 const char *get_filename_ext(const char *filename);
+
+const char *collect_arg3(char *argv, BigInt **t);
 
 int main(int argc, char *argv[])
 {
   const rule conway = 6152; // parse_rule("b3/s23");
 
-  const char *filename = argv[1];
+  int h = 0;
+  BigInt *t;
+  char *filename;
   FILE *file;
 
   switch ( argc )
   {
-    case 1:
-      bi_test();
-      break;
-    case 2:
+    case 4:
+      h = atoi(argv[3]);
+    case 3:
+      filename = argv[1];
+      t = bi_from_string(argv[2], 10);
+
       file = fopen(filename, "r");
 
       if ( strcmp(get_filename_ext(filename), "rle") == 0 )
@@ -43,12 +49,19 @@ int main(int argc, char *argv[])
       {
         Matrix *mat = read_matrix(file);
 
-        test_matrix(mat, conway);
+        test_matrix(mat, conway, t, h);
 
+        bi_free(t);
         free_matrix(mat);
       }
 
       break;
+    case 1:
+#if 0
+      bi_test();
+#endif
+    default:
+      printf("usage: %s (filename) (t:integer) [h:integer]", argv[0]);
   }
 
   return 0;
@@ -61,7 +74,12 @@ const char *get_filename_ext(const char *filename)
   return dot + 1;
 }
 
-void test_matrix(Matrix* mat, rule r)
+const char *collect_arg3(char *argv, BigInt **t)
+{
+  return NULL;
+}
+
+void test_matrix(Matrix* mat, rule r, BigInt *t, int h)
 {
 #if 0
   write_matrix(stdout, mat);
@@ -84,18 +102,30 @@ void test_matrix(Matrix* mat, rule r)
 #endif
 
   int shift_e;
-  BigInt *steps = bi_from_int(100000000);
 
   printf("Destiny...\n");
 
-  q = destiny(htbl, q, steps, &shift_e);
+  q = destiny(htbl, q, t, &shift_e);
 
-  const int side_m = 30;
-  const int side_n = 120;
+  const int side_m = 40;
+  const int side_n = 200;
 
-  BigInt *bi_l = bi_power_2(shift_e);
+  BigInt *bi_l = bi_power_2(shift_e - h);
 
-  Matrix *next_mat = quad_to_matrix(bi_l, bi_l, side_m, side_n, q);
+  UMatrix um = quad_to_matrix(bi_l, bi_l, side_m, side_n, h, q); 
+
+  Matrix *next_mat;
+  if ( !h )
+  {
+    next_mat = malloc(sizeof(Matrix));
+
+    next_mat->matrix = um.um_char;
+  }
+  else
+    next_mat = bi_mat_to_matrix(um.um_bi, side_m, side_n, h);
+
+  next_mat->m = side_m;
+  next_mat->n = side_n;
 
   write_matrix(stdout, next_mat);
 
@@ -105,7 +135,6 @@ void test_matrix(Matrix* mat, rule r)
   //htbl_stat(htbl);
 
   free_matrix(next_mat);
-  bi_free(steps);
   bi_free(bi_l);
   free(htbl);
 }

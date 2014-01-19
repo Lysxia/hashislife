@@ -5,6 +5,29 @@
 #include "parsers.h"
 #include "darray.h"
 
+void *alloc_matrix(int m, int n, size_t size)
+{
+  char **a = malloc(m * sizeof(char *));
+
+  if ( !a )
+    return NULL;
+
+  int i;
+  for ( i = 0 ; i < m ; i++ )
+  {
+    a[i] = malloc(n * size);
+    if ( !a[i] )
+    {
+      for ( i-- ; i >= 0 ; i-- )
+        free(a[i]);
+      free(a);
+      return NULL;
+    }
+  }
+
+  return a;
+}
+
 Matrix *read_matrix(FILE *file)
 {
   if (file == NULL)
@@ -88,14 +111,19 @@ void write_matrix(FILE *file, Matrix *matrix)
   fflush(file);
 }
 
-void free_matrix(Matrix *matrix)
+void free_matrix_contents(char **matrix, int linenum)
 {
   int i;
 
-  for ( i = 0 ; i < matrix->m ; i++ )
-    free(matrix->matrix[i]);
+  for ( i = 0 ; i < linenum ; i++ )
+    free(matrix[i]);
 
-  free(matrix->matrix);
+  free(matrix);
+}
+
+void free_matrix(Matrix *matrix)
+{
+  free_matrix_contents(matrix->matrix, matrix->m);
   free(matrix);
 }
 

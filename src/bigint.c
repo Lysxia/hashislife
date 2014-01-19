@@ -47,9 +47,10 @@ BigInt *bi_new(int len)
   return n;
 }
 
+const BigInt bi_zero_ = {.digits = NULL, .len = 0}, *bi_zero_const = &bi_zero_;
+
 BigInt *bi_zero(void)
 {
-  const BigInt bi_zero_ = {.digits = NULL, .len = 0};
   BigInt *zero = malloc(sizeof(BigInt));
 
   if ( !zero )
@@ -76,6 +77,20 @@ int bi_log2(const BigInt *b)
     d--;
 
   return d;
+}
+
+int bi_slice(const BigInt *b, int c)
+{
+  int pos = c / bi_block_bit, ofs = c % bi_block_bit;
+
+  if ( pos >= b->len )
+    return 0;
+  else if ( pos == b->len - 1 )
+    return b->digits[pos] >> ofs;
+  else if ( bi_block_bit - (unsigned) ofs < CHAR_BIT * sizeof(int) )
+    return (b->digits[pos] >> ofs | b->digits[pos+1] << (bi_block_bit - ofs)) & INT_MAX;
+  else
+    return b->digits[pos] >> ofs & INT_MAX;
 }
 
 int bi_digit(const BigInt *b, int d)
@@ -317,6 +332,50 @@ BigInt *bi_from_int(int i)
   }
 }
 
+BigInt *bi_mult_int(const BigInt *b, int n);
+
+BigInt *bi_from_string(const char *c, int base)
+{
+  if ( base < 2 || 10 < base )
+    return NULL;
+
+  BigInt *acc = bi_zero();
+
+  int i;
+
+  for ( i = 0 ; '0' <= c[i] && c[i] < '0' + base ; i += (c[i+1] == ',') + 1 )
+  {
+    BigInt *tmp = bi_mult_int(acc, base);
+    bi_free(acc);
+    acc = bi_plus_int(tmp, c[i] - '0');
+    bi_free(tmp);
+  }
+
+  return acc;
+}
+
+BigInt *bi_mult_int(const BigInt *b, int n)
+{
+  BigInt *acc = bi_zero();
+
+  int i;
+  for ( i = CHAR_BIT * sizeof(int) - 2 ; i >= 0 ; i-- )
+  {
+    BigInt *tmp = bi_add(acc, acc);
+    bi_free(acc);
+
+    if ( n & 1 << i )
+    {
+      acc = bi_add(tmp, b);
+      bi_free(tmp);
+    }
+    else
+      acc = tmp;
+  }
+
+  return acc;
+}
+
 void bi_free(BigInt *b)
 {
   if ( b->digits )
@@ -338,6 +397,7 @@ void bi_print(const BigInt *b)
 
 void bi_test()
 {
+#if 0
   const int len = 3;
   BigInt *b = bi_new(len);
 
@@ -366,4 +426,10 @@ void bi_test()
   bi_free(b);
   bi_free(c);
   bi_free(d);
+#else
+  BigInt *b = bi_from_string("600,40100200,40100200,40100200", 8);
+
+  bi_print(b);
+  bi_free(b);
+#endif
 }
