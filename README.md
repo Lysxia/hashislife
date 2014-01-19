@@ -60,9 +60,15 @@ corner is at the same position as in the input file.
 
 The only input format supported is a raw text matrix, using `'o'` and `'.'` to
 denote respectively alive and dead cells. The file can start with any number of
-comment lines beginning with an `'!'`, and is limited to 80 columns overall:
+comment lines beginning with an `'!'`, and is limited to 80 columns overall.
 
-    ! Glider
+Example files are (to be) provided in `patterns/`, with extensions
+`.txt` for text matrices and
+`.rle` for run length encoded patterns.
+
+Example `glider.txt` file:
+
+    ! Glider example
     .....
     ..o..
     ...o.
