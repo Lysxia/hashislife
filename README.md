@@ -53,6 +53,7 @@ where `t` and optionally `h` are integer arguments.
 This will simulate the game of life (with Conway's b3/s23 rule) for `t`
 time steps, and display the final state with a (de)zoom level `h`
 where one character represents a 2^`h` by 2^`h` area.
+(using hex to show density when `h > 0`)
 
 Currently this displayed area is limited to a 32x80 grid, and the top-left
 corner is at the same position as in the input file.
