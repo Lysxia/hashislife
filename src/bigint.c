@@ -85,12 +85,10 @@ int bi_slice(const BigInt *b, int c)
 
   if ( pos >= b->len )
     return 0;
-  else if ( pos == b->len - 1 )
-    return b->digits[pos] >> ofs;
-  else if ( bi_block_bit - (unsigned) ofs < CHAR_BIT * sizeof(int) )
-    return (b->digits[pos] >> ofs | b->digits[pos+1] << (bi_block_bit - ofs)) & INT_MAX;
-  else
+  else if ( pos == b->len - 1 || bi_block_bit - (unsigned) ofs > CHAR_BIT * sizeof(int) )
     return b->digits[pos] >> ofs & INT_MAX;
+  else
+    return (b->digits[pos] >> ofs | b->digits[pos+1] << (bi_block_bit - ofs)) & INT_MAX;
 }
 
 int bi_digit(const BigInt *b, int d)

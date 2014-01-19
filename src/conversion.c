@@ -202,7 +202,8 @@ Matrix *bi_mat_to_matrix(const BigInt ***bm, int m, int n, int height)
     for ( j = 0 ; j < n ; j++ )
     {
       const int hexa_bits = 4;
-      int x = bi_slice(bm[i][j], height < hexa_bits ? 0 : height - hexa_bits)
+      int x = bi_slice(bm[i][j],
+                       2 * height < hexa_bits ? 0 : 2 * height - hexa_bits)
             & ((1 << hexa_bits) - 1);
       matrix->matrix[i][j] = bi_iszero(bm[i][j])
                              ? '.'
