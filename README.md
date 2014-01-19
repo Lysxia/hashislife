@@ -65,7 +65,7 @@ Project composition
 
 - *matrix*: Raw text format.
 
-- *conversion*: Converts to and from quad trees. Lossy formats TODO.
+- *conversion*: Converts to and from quad trees.
 
 - *lifecount*: Counting cells in a quadtree.
 
