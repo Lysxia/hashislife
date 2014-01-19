@@ -143,9 +143,8 @@ void quad_to_matrix_(UMatrix matrix,
       for ( j = 0 ; j < nlen ; j++ )
       {
         matrix.um_char[m_mmin+i][m_nmin+j] =
-          i >= 2 || j >= 2
-          ? 0
-          : q->node.l.map[2*(mmin_+i)+(nmin_+j)] ? ALIVE : DEAD;
+          (i < 2 && j < 2) && q->node.l.map[2*(mmin_+i)+(nmin_+j)]
+          ? ALIVE : DEAD;
       }
   }
   else

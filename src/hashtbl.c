@@ -223,7 +223,6 @@ Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
 /*** Initialize hashlife ***/
 void hashlife_init(void)
 {
-  printf("Initializing...");
   int i;
 
   leaves = malloc(leaves_count * sizeof(Quad));
@@ -255,8 +254,6 @@ void hashlife_init(void)
     q->cell_count = NULL;
     q->depth = 0;
   }
-
-  printf("Done.\n");
 }
 
 /* Depth 1 nodes are computed at the beginning of the program */
@@ -375,8 +372,8 @@ void binary(intptr_t w)
 {
   int k;
   for ( k = 0 ; k < 64 ; k++, w >>= 1 )
-    printf("%d", (w & 1));
-  printf(" !\n");
+    fprintf(stderr, "%d", (w & 1));
+  fprintf(stderr, " !\n");
 }
 */
 
@@ -472,20 +469,20 @@ void print_quad(Quad *q)
   if ( q->depth == 0 )
   {
     int i;
-    printf(" ");
+    fprintf(stderr, " ");
     for ( i = 0 ; i < 4 ; i++ )
-      printf("%d", q->node.l.map[i]);
-    printf(" ");
+      fprintf(stderr, "%d", q->node.l.map[i]);
+    fprintf(stderr, " ");
   }
   else
   {
-    printf("QUAD depth: %d\n", q->depth);
+    fprintf(stderr, "QUAD depth: %d\n", q->depth);
 
     int i;
     for ( i = 0 ; i < 4 ; i++ )
       print_quad(q->node.n.sub[i]);
 
-    printf("\n");
+    fprintf(stderr, "\n");
   }
 }
 
@@ -508,11 +505,11 @@ void htbl_stat(Hashtbl *htbl)
     max[l >= BUCKET_COUNT ? BUCKET_COUNT - 1 : l]++;
   }
 
-  printf("LENGTH: %d\n", htbl->count);
+  fprintf(stderr, "LENGTH: %d\n", htbl->count);
   for ( i = 0 ; i < BUCKET_COUNT ; i++ )
   {
     if ( max[i] )
-      printf("%3d %d\n", i, max[i]);
+      fprintf(stderr, "%3d %d\n", i, max[i]);
   }
 
   return;
