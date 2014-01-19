@@ -34,10 +34,50 @@ Project composition
 
 ---
 
+Usage
+-----
+
+Use the `make` command in the `src/` directory to compile `hashlife`:
+
+    $ cd src
+
+    $ make
+
+    ...
+
+    $ ./hashlife
+
+    usage: ./hashlife (filename) (t:integer) [h:integer]
+
+where `t` and optionally `h` are integer arguments.
+(`t` can be arbitrarily big, while `h` must hold on 32-bit
+(it won't make sense if it's too big anyway))
+
+This will simulate the game of life (with Conway's b3/s23 rule) for `t`
+time steps, and display the final state with a (de)zoom level `h`
+where one character represents a 2^`h` by 2^`h` area.
+
+Currently this displayed area is limited to a 32x80 grid, and the top-left
+corner is at the same position as in the input file.
+
+The only input format supported is a raw text matrix, using `'o'` and `'.'` to
+denote respectively alive and dead cells. The file can start with any number of
+comment lines beginning with an `'!'`, and is limited to 80 columns overall:
+
+    ! Glider
+    .....
+    ..o..
+    ...o.
+    .ooo.
+    .....
+
+---
+
 TODO
 ----
 
-    1. Garbage collecting ? Mark and sweep ? Stop & copy ?
+1. Garbage collecting ? Mark and sweep ? Stop & copy ?
 
-    2. Graphical display (SDL)
+2. Graphical display (SDL)
 
+3. Run length encoding support

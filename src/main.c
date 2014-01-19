@@ -107,8 +107,8 @@ void test_matrix(Matrix* mat, rule r, BigInt *t, int h)
 
   q = destiny(htbl, q, t, &shift_e);
 
-  const int side_m = 40;
-  const int side_n = 200;
+  const int side_m = 32;
+  const int side_n = 80;
 
   BigInt *bi_l = bi_power_2(shift_e - h);
 
