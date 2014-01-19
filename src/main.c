@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
       bi_test();
 #endif
     default:
-      printf("usage: %s (filename) (t:integer) [h:integer]", argv[0]);
+      printf("usage: %s (filename) (t:integer) [h:integer]\n", argv[0]);
   }
 
   return 0;
