@@ -7,7 +7,7 @@ typedef struct Matrix
   int m, n;
 } Matrix;
 
-#define ALIVE 'o'
+#define ALIVE 'O'
 #define DEAD '.'
 
 // void **
