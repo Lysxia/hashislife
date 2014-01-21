@@ -193,7 +193,6 @@ void rle_abort_(Darray *lines, Darray *cur_line)
 
 /**/
 
-int itoa(char *dest, int src);
 void bounded_lines(int run_count, char tag, FILE *new_file);
 
 void write_rle(FILE *file, Rle *rle)
@@ -216,28 +215,6 @@ void write_rle(FILE *file, Rle *rle)
   }
   printf("\n!\n");
   fflush(file);
-}
-
-int itoa(char *dest, int src)
-{
-  int i = 0, j;
-  do
-  {
-    dest[i++] = '0' + src % 10;
-    src /= 10;
-  }
-  while ( src > 0 );
-
-  for ( j = 0 ; j < i / 2 ; j++ )
-  {
-    char tmp = dest[i-j-1];
-    dest[i-j-1] = dest[j];
-    dest[j] = tmp;
-  }
-
-  dest[i] = '\0';
-
-  return i;
 }
 
 void bounded_lines(int run_count, char tag, FILE *new_file)

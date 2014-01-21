@@ -71,9 +71,6 @@ Hashtbl *hashtbl_new(rule r)
   if (leaves == NULL) // Must initialize
     hashlife_init();
 
-  printf("Creating new hashtable...\n");
-  printf("Rule %d\n", r);
-
   Hashtbl *htbl = malloc(sizeof(Hashtbl));
 
   if (htbl == NULL)
@@ -91,11 +88,10 @@ Hashtbl *hashtbl_new(rule r)
 
   if (htbl->tbl == NULL || htbl->dead_quad == NULL)
   {
+    fputs("\n", stderr);
     perror("hashtbl_new()");
     exit(1);
   }
-
-  printf("Generating atoms.\n");
 
   int i;
 

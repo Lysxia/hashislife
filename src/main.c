@@ -10,9 +10,9 @@
 #include "conversion.h"
 #include "parsers.h"
 #include "runlength.h"
-#include "matrix.h"
+#include "prgrph.h"
 
-void test_matrix(Matrix *, rule, BigInt *, int);
+void test_prgrph(Prgrph, rule, BigInt *, int);
 
 const char *get_filename_ext(const char *filename);
 
@@ -47,12 +47,12 @@ int main(int argc, char *argv[])
       }
       else
       {
-        Matrix *mat = read_matrix(file);
+        Prgrph p = read_prgrph(file);
 
-        test_matrix(mat, conway, t, h);
+        test_prgrph(p, conway, t, h);
 
         bi_free(t);
-        free_matrix(mat);
+        free_prgrph(p);
       }
 
       break;
@@ -79,62 +79,48 @@ const char *collect_arg3(char *argv, BigInt **t)
   return NULL;
 }
 
-void test_matrix(Matrix* mat, rule r, BigInt *t, int h)
+void test_prgrph(Prgrph p, rule r, BigInt *t, int h)
 {
-#if 0
-  write_matrix(stdout, mat);
-#endif
-
+  //write_prgrph(stdout, p);
+  const int m = 32, n = 80;
   Hashtbl *htbl = hashtbl_new(r);
 
-  Quad *q = matrix_to_quad(htbl, mat);
-
-  //BigInt *bi_z = bi_zero();
+  Quad *q = prgrph_to_quad(htbl, p);
 
   //print_quad(q);
   
 #if 0
-  Matrix *new_mat = quad_to_matrix(bi_z, bi_z, mat->m, mat->n, q);
+  BigInt *bi_z = bi_zero();
 
-  write_matrix(stdout, new_mat);
-  
-  free_matrix(new_mat);
-#endif
-
+  UMatrix um = quad_to_prgrph(bi_z, bi_z, m, n, 0, q);
+#else
   int shift_e;
-
-  printf("Destiny...\n");
 
   q = destiny(htbl, q, t, &shift_e);
 
-  const int side_m = 32;
-  const int side_n = 80;
-
   BigInt *bi_l = bi_power_2(shift_e - h);
 
-  UMatrix um = quad_to_matrix(bi_l, bi_l, side_m, side_n, h, q); 
+  UMatrix um = quad_to_prgrph(bi_l, bi_l, m, n, h, q); 
+  bi_free(bi_l);
+#endif
 
-  Matrix *next_mat;
+  Prgrph next_p;
   if ( !h )
   {
-    next_mat = malloc(sizeof(Matrix));
-
-    next_mat->matrix = um.um_char;
+    next_p.prgrph = um.um_char;
   }
   else
-    next_mat = bi_mat_to_matrix(um.um_bi, side_m, side_n, h);
+    next_p = bi_mat_to_prgrph(um.um_bi, m, n, h);
 
-  next_mat->m = side_m;
-  next_mat->n = side_n;
+  next_p.m = m;
 
-  write_matrix(stdout, next_mat);
+  write_prgrph(stdout, next_p);
 
-  printf("Cell count (log2):%d\n", bi_log2(cell_count(q)));
-  bi_print(cell_count(q));
+  //printf("Cell count (log2):%d\n", bi_log2(cell_count(q)));
+  //bi_print(cell_count(q));
 
   //htbl_stat(htbl);
 
-  free_matrix(next_mat);
-  bi_free(bi_l);
+  free_prgrph(next_p);
   free(htbl);
 }

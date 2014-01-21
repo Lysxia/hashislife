@@ -15,7 +15,7 @@ Darray *da_new(size_t data_size)
 
   if ( da == NULL )
   {
-    perror("da_init()");
+    perror("da_new()");
     exit(1);
   }
 
