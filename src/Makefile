@@ -12,5 +12,8 @@ hashlife: $(HDR) $(OBJ) $(MAIN)
 
 .INTERMEDIATE: $(OBJ)
 
+test: hashlife
+	./hashlife ../patterns/glider_gun.txt 0
+
 clean:
 	rm -f *.o *.h.gch
