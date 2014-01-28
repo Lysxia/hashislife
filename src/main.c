@@ -47,7 +47,13 @@ int main(int argc, char *argv[])
 
         write_rle(stdout, rle);
         
+        printf("___\n");
+        fflush(stdout);
+
         q = rle_to_quad(htbl, rle);
+
+        printf("...\n");
+        fflush(stdout);
 
         free_rle(rle);
       }
@@ -64,8 +70,10 @@ int main(int argc, char *argv[])
       fclose(file);
       test_quad(htbl, q, t, h);
 
+      htbl_stat(htbl);
+
       bi_free(t);
-      free(htbl);
+      hashtbl_free(htbl);
 
       break;
     case 1:
@@ -107,7 +115,7 @@ void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
 
   BigInt *bi_l = bi_power_2(shift_e - h);
 
-  UMatrix um = quad_to_prgrph(bi_l, bi_l, m, n, h, q); 
+  UMatrix um = quad_to_matrix(bi_l, bi_l, m, n, h, q); 
   bi_free(bi_l);
 #endif
 
@@ -117,7 +125,9 @@ void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
     next_p.prgrph = um.um_char;
   }
   else
+  {
     next_p = bi_mat_to_prgrph(um.um_bi, m, n, h);
+  }
 
   next_p.m = m;
 
@@ -128,5 +138,14 @@ void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
 
   //htbl_stat(htbl);
 
-  free_prgrph(next_p);
+  if ( !h )
+  {
+    free_um_char(um, m);
+  }
+  else
+  {
+    free_um_bi(um, m);
+    free_prgrph(next_p);
+  }
+
 }

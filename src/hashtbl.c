@@ -30,7 +30,7 @@ struct QuadMap
 
 /*** Auxiliary functions ***/
 
-Quad *alloc_quad(void);
+Quad *alloc_quad(int d);
 // create depth 1 nodes. Part of hashlife_init() logic.
 void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r); 
 
@@ -43,7 +43,7 @@ void free_list(QuadList *ql);
 void free_map(QuadMap *qm); 
 void free_quad(Quad *q);
 
-const int init_size = 1 << 20; // start size of hashtbl
+const int init_size = 1 << 25; // start size of hashtbl
 const int init_dead_size = 32;
 
 /* The address of a leaf is 0123 representing the 4 bit picture
@@ -195,15 +195,11 @@ Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
 
   if ( !q )
   {
-    if ( !(q = alloc_quad()) )
+    if ( !(q = alloc_quad(d)) )
     {
       perror("cons_quad()");
       exit(1);
     }
-
-    q->depth = d;
-    q->node.n.next = NULL;
-    q->cell_count = NULL;
 
     int i;
 
@@ -265,7 +261,7 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
   },
   pos[4][2] = {{0,3},{1,2},{2,1},{3,0}};
 
-  Quad *q = alloc_quad();
+  Quad *q = alloc_quad(1);
 
   if ( !q )
   {
@@ -292,11 +288,16 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
   }
 
   q->node.n.next = malloc(sizeof(QuadMap));
-  q->node.n.next->k = 0;
 
+  if ( !q->node.n.next )
+  {
+    perror("quad_d1()");
+    exit(1);
+  }
+
+  q->node.n.next->k = 0;
   q->node.n.next->v = &leaves[acc];
-  q->cell_count = NULL;
-  q->depth = 1;
+  q->node.n.next->map_tail = NULL;
 
   hashtbl_add(htbl, hash(quad), q);
 }
@@ -313,27 +314,28 @@ Quad *map_assoc(QuadMap *map, int k)
     return map_assoc(map->map_tail, k);
 }
 
-QuadMap *map_add(QuadMap **map, int k, Quad* v)
+QuadMap *map_add(QuadMap *map, int k, Quad* v)
 {
-  if ( !*map || (*map)->k > k )
+  if ( !map || map->k > k )
   {
     QuadMap *new_map = malloc(sizeof(QuadMap));
     new_map->k = k;
     new_map->v = v;
-    new_map->map_tail = *map;
-    return *map = new_map;
+    new_map->map_tail = map;
+    return new_map;
   }
   else
   {
-    return map_add(&(*map)->map_tail, k, v);
+    map->map_tail = map_add(map->map_tail, k, v);
+    return map;
   }
 }
 
 /*** Memory management ***/
 
-Quad *alloc_quad(void)
+Quad *alloc_quad(int d)
 {
-#ifdef ALLOC_QUAD
+#if 0
   if ( quad_block_count < quad_block_size )
     return &quad_block[quad_block_count++];
   else if ( stack_size == stack_max_size )
@@ -357,7 +359,13 @@ Quad *alloc_quad(void)
     return quad_block;
   }
 #else
-  return malloc(sizeof(Quad));
+  Quad *q = malloc(sizeof(Quad));
+
+  q->depth = d;
+  q->cell_count = NULL;
+  q->node.n.next = NULL;
+
+  return q;
 #endif
 }
 

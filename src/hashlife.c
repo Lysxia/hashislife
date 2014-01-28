@@ -77,7 +77,7 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
 
     f = cons_quad(htbl, nxt, d-1);
 
-    map_add(&q->node.n.next, t, f);
+    q->node.n.next = map_add(q->node.n.next, t, f);
   }
 
   return f;

@@ -213,6 +213,7 @@ Quad *condense_(Hashtbl *htbl, struct Quad_rle qrle)
   int d;
   for ( d = 0 ; qrle.qrle_len > 1 || qrle.qrle[0].qrle_linelen > 1 ; d++ )
   {
+    //printf("-%d %d", qrle.qrle_len, qrle.qrle[0].qrle_linelen); fflush(stdout);
     qrle = map_cons(htbl, dead_space(htbl, d), d+1, qrle);
   }
 
@@ -335,14 +336,14 @@ int line_take_two(Quad *ds,
   else if ( line[*j].qr_n == 1 )
   {
     quad[0] = line[*j].qr_q;
-    (*j)++;
+    ++*j;
     if ( *j == linelen )
       quad[1] = ds;
     else
     {
       quad[1] = line[*j].qr_q;
       if ( !--line[*j].qr_n )
-        (*j)++;
+        ++*j;
     }
     return 1;
   }
@@ -351,12 +352,12 @@ int line_take_two(Quad *ds,
     quad[0] = quad[1] = line[*j].qr_q;
     int len = line[*j].qr_n / 2;
     if ( !(line[*j].qr_n %= 2) )
-      (*j)++;
+      ++*j;
     return len;
   }
 }
 
-// *buff must be initialized to -1 at the first call
+// At the first call buff must be initialized to -1
 // and not modified by the caller thereafter
 int rle_take_two(int *line, int linelen, int *j, int *leaf, int *buff)
 {
@@ -365,56 +366,50 @@ int rle_take_two(int *line, int linelen, int *j, int *leaf, int *buff)
     *leaf = 0;
     return INT_MAX;
   }
-  
+
   if ( *buff == -1 )
     *buff = line[*j];
 
-  while ( *buff == 0 && *j < linelen )
-  {
-    (*j)++;
-    *buff = line[*j];
-  }
-
   if ( *buff == 0 )
   {
-    *leaf = 0;
-    return INT_MAX;
+    if ( ++*j < linelen )
+      *buff = line[*j];
+    else
+    {
+      *leaf = 0;
+      return INT_MAX;
+    }
   }
-  else if ( *buff == 1 )
+
+  if ( *buff == 1 )
   {
     *leaf = (*j & 1) << 1;
 
-    do
-    {
-      (*j)++;
-      *buff = line[*j];
-    } while ( *buff == 0 && *j < linelen );
-
-    if ( *buff == 0 )
+    if ( ++*j == linelen )
       return 1;
     else
     {
       *leaf |= *j & 1;
-      (*buff)--;
+      *buff = line[*j] - 1;
       return 1;
     }
   }
   else
   {
-    *leaf = 3 * (*j & 1);
+    *leaf = (*j & 1) ? 3 : 0;
     int len = *buff / 2;
     *buff %= 2;
     return len;
   }
 }
 
-void quad_to_prgrph_(UMatrix p,
+void quad_to_matrix_(UMatrix p,
                      int m_mmin, int m_nmin,
                      BigInt *mmin, BigInt *nmin,
                      int mlen, int nlen,
                      const int height_, Quad *q);
 
-UMatrix quad_to_prgrph(BigInt *mmin, BigInt *nmin,
+UMatrix quad_to_matrix(BigInt *mmin, BigInt *nmin,
                           int mlen, int nlen,
                           int height, Quad *q)
 {
@@ -441,7 +436,7 @@ UMatrix quad_to_prgrph(BigInt *mmin, BigInt *nmin,
 
     if ( !p.um_char )
     {
-      perror("quad_to_prgrph()");
+      perror("quad_to_matrix()");
       return p;
     }
   }
@@ -451,12 +446,12 @@ UMatrix quad_to_prgrph(BigInt *mmin, BigInt *nmin,
 
     if ( !p.um_bi )
     {
-      perror("quad_to_prgrph()");
+      perror("quad_to_matrix()");
       return p;
     }
   }
 
-  quad_to_prgrph_(p,
+  quad_to_matrix_(p,
     0, 0,
     mmin, nmin,
     mlen, nlen,
@@ -465,7 +460,7 @@ UMatrix quad_to_prgrph(BigInt *mmin, BigInt *nmin,
   return p;
 }
 
-void quad_to_prgrph_(UMatrix p,
+void quad_to_matrix_(UMatrix p,
                      int m_mmin, int m_nmin,
                      BigInt *mmin, BigInt *nmin,
                      int mlen, int nlen,
@@ -525,7 +520,7 @@ void quad_to_prgrph_(UMatrix p,
     {
       const int x = i >> 1, y = i & 1;
 
-      quad_to_prgrph_(p,
+      quad_to_matrix_(p,
                       m_mmin_[x], m_nmin_[y],
                       mmin_[x], nmin_[y],
                       mlen_[x], nlen_[y],
@@ -559,4 +554,20 @@ Prgrph bi_mat_to_prgrph(const BigInt ***bm, int m, int n, int height)
     }
 
   return p;
+}
+
+void free_um_char(UMatrix um, int m)
+{
+  int i;
+  for ( i = 0 ; i < m ; i++ )
+    free(um.um_char[i]);
+  free(um.um_char);
+}
+
+void free_um_bi(UMatrix um, int m)
+{
+  int i;
+  for ( i = 0 ; i < m ; i++ )
+    free(um.um_bi[i]);
+  free(um.um_char);
 }

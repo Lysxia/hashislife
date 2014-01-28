@@ -47,7 +47,7 @@ Quad *dead_space(Hashtbl *hashtbl, int d);
 Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d);
 
 Quad *map_assoc(QuadMap*, int);
-QuadMap *map_add(QuadMap**, int, Quad*);
+QuadMap *map_add(QuadMap*, int, Quad*);
 
 void print_quad(Quad*);
 void htbl_stat(Hashtbl*);

@@ -200,6 +200,8 @@ void rle_abort_(Darray *lines, Darray *cur_line)
 
 void bounded_lines(int run_count, char tag, FILE *new_file);
 
+#define MIN(a,b) (((a) < (b)) ? a : b)
+
 void write_rle(FILE *file, Rle *rle)
 {
   int l, c;
@@ -207,7 +209,7 @@ void write_rle(FILE *file, Rle *rle)
 
   bounded_lines(0, '\0', file);
 
-  for ( l = 0 ; l < rle->rle_lines_c ; l++ )
+  for ( l = 0 ; l < MIN(40, rle->rle_lines_c) ; l++ )
   {
     bounded_lines(rle->rle_lines[l].line_num - prev_line_num,
                   NEWLINE_RLE_TOKEN, NULL);
