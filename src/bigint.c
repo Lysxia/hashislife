@@ -138,7 +138,8 @@ void bi_canonize(BigInt *b)
 
 BigInt *bi_power_2(int k)
 {
-  BigInt *s = bi_new(k / bi_block_bit + 1);
+  const int len_ = k / bi_block_bit + 1;
+  BigInt *s = bi_new(len_);
 
   if ( !s )
   {
@@ -146,9 +147,9 @@ BigInt *bi_power_2(int k)
     exit(1);
   }
 
-  memset(s->digits, 0, (s->len - 1) * sizeof(bi_block));
+  memset(s->digits, 0, (len_ - 1) * sizeof(bi_block));
 
-  s->digits[k / bi_block_bit] |= (bi_block) 1 << (k % bi_block_bit);
+  s->digits[len_-1] = (bi_block) 1 << (k % bi_block_bit);
 
   return s;
 }
