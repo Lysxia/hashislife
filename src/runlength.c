@@ -50,9 +50,11 @@ int read_rle_(FILE *file, Rle *rle);
 Rle *read_rle(FILE *file)
 {
   char buff[RLE_LINE_LENGTH];
+  int linum = 0;
 
   do
   {
+    linum++;
     if ( fgets(buff, RLE_LINE_LENGTH, file) == NULL )
     {
       fprintf(stderr, "read_rle(): Error on input\n");
@@ -70,7 +72,7 @@ Rle *read_rle(FILE *file)
     return NULL;
   }
 
-  switch ( sscanf(buff, "x = %d , y = %d , r = %21s ",
+  switch ( sscanf(buff, "x = %d, y = %d, r = %21s ",
                         &rle->rle_meta.rle_x,
                         &rle->rle_meta.rle_y,
                         s) )
@@ -83,8 +85,11 @@ Rle *read_rle(FILE *file)
         break;
     case EOF:
     case 1:
+    default:
       free(rle);
       fprintf(stderr, "read_rle(): Bad format\n");
+      fprintf(stderr,"Line %d: %s\n", linum, s);
+      exit(3);
       return NULL;
   }
 
