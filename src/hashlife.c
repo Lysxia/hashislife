@@ -20,7 +20,7 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
   Quad *f = map_assoc(q->node.n.next, t);
 
   // quad->depth > t
-  if (f == NULL)
+  if ( f == NULL )
   {
     /* qs is the array of depth d-2 subtrees
          00 01 02 03
@@ -40,34 +40,34 @@ Quad *fate(Hashtbl *htbl, Quad *q, int t)
     const int d = q->depth;
     const int t_ = d == t + 1 ? t - 1 : t;
 
-    for (i = 0 ; i < 4 ; i++)
-      for (j = 0 ; j < 4 ; j++)
+    for ( i = 0 ; i < 4 ; i++ )
+      for ( j = 0 ; j < 4 ; j++ )
         qs[i][j] = quad[(i & 2) + (j >> 1)]->node.n.sub[2 * (i & 1) + (j & 1)];
 
     // we compute q1
-    for (i = 0 ; i < 3 ; i++)
-      for (j = 0 ; j < 3 ; j++)
+    for ( i = 0 ; i < 3 ; i++ )
+      for ( j = 0 ; j < 3 ; j++ )
       {
         Quad *tmp[4];
         int k;
 
-        for (k = 0 ; k < 4 ; k++)
+        for ( k = 0 ; k < 4 ; k++ )
           tmp[k] = qs[i + (k >> 1)][j + (k & 1)];
 
-        if (d == t + 1)
+        if ( d == t + 1 )
           q1[i][j] = fate(htbl, cons_quad(htbl, tmp, d - 1), t - 1);
         else
           q1[i][j] = center(htbl, tmp, d - 2);
       }
 
     // nxt=q->node.n.sub holds the quad tree pointer to step 2^d
-    for (i = 0 ; i < 2 ; i++)
-      for (j = 0 ; j < 2 ; j++)
+    for ( i = 0 ; i < 2 ; i++ )
+      for ( j = 0 ; j < 2 ; j++ )
       {
         Quad *tmp[4];
         int k;
 
-        for (k = 0 ; k < 4 ; k++)
+        for ( k = 0 ; k < 4 ; k++ )
           tmp[k] = q1[i + (k >> 1)][j + (k & 1)];
 
         Quad *tmpq = cons_quad(htbl, tmp, d - 1);
@@ -102,7 +102,7 @@ Quad *destiny(Hashtbl *htbl, Quad *q, const BigInt *bi, int *shift_e)
 
   // Increase the size of the quad tree so that the center square
   // can contain all the effects of the starting configuration
-  while (len > d + 1)
+  while ( len > d + 1 )
   {
     Quad *ds = dead_space(htbl, d);
     Quad *quad[4] = {q, ds, ds, ds};
@@ -123,9 +123,9 @@ Quad *destiny(Hashtbl *htbl, Quad *q, const BigInt *bi, int *shift_e)
   q = cons_quad(htbl, quad_, ++d);
 
   // Progress by powers of two
-  for (len-- ; len >= 0 ; len--)
+  for ( len-- ; len >= 0 ; len-- )
   {
-    if (bi_digit(bi, len))
+    if ( bi_digit(bi, len) )
       q = fate(htbl, expand(htbl, q, d + 1), len);
   }
 
@@ -155,7 +155,7 @@ Quad *expand(Hashtbl *htbl, Quad *q, int d)
 
   int i;
 
-  for (i = 0 ; i < 4 ; i++)
+  for ( i = 0 ; i < 4 ; i++ )
   {
     quad[3-i] = q->node.n.sub[i];
     quad2[i] = cons_quad(htbl, quad, d-1);
@@ -179,10 +179,10 @@ Quad *expand(Hashtbl *htbl, Quad *q, int d)
 
 Quad *center(Hashtbl *htbl, Quad *quad[4], int d)
 {
-  if (d == 0)
+  if ( d == 0 )
   {
     int i, l = 0;
-    for (i = 0 ; i < 4 ; i++)
+    for ( i = 0 ; i < 4 ; i++ )
       l |= quad[i]->node.l.map[3-i] << (3-i);
 
     return leaf(l);
@@ -190,7 +190,7 @@ Quad *center(Hashtbl *htbl, Quad *quad[4], int d)
   else
   {
     int i;
-    for (i = 0 ; i < 4 ; i++)
+    for ( i = 0 ; i < 4 ; i++ )
       quad[i] = quad[i]->node.n.sub[3-i];
 
     return cons_quad(htbl, quad, d);

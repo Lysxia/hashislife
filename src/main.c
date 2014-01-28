@@ -12,7 +12,7 @@
 #include "runlength.h"
 #include "prgrph.h"
 
-void test_prgrph(Prgrph, rule, BigInt *, int);
+void test_quad(Hashtbl*, Quad*, BigInt *, int);
 
 const char *get_filename_ext(const char *filename);
 
@@ -37,11 +37,17 @@ int main(int argc, char *argv[])
 
       file = fopen(filename, "r");
 
+
+      Hashtbl *htbl = hashtbl_new(conway);
+      Quad *q;
+
       if ( strcmp(get_filename_ext(filename), "rle") == 0 )
       {
         Rle *rle = read_rle(file);
 
         write_rle(stdout, rle);
+        
+        q = rle_to_quad(htbl, rle);
 
         free_rle(rle);
       }
@@ -49,11 +55,17 @@ int main(int argc, char *argv[])
       {
         Prgrph p = read_prgrph(file);
 
-        test_prgrph(p, conway, t, h);
+        q = prgrph_to_quad(htbl, p);
 
-        bi_free(t);
+        //write_prgrph(stdout, p);
         free_prgrph(p);
       }
+
+      fclose(file);
+      test_quad(htbl, q, t, h);
+
+      bi_free(t);
+      free(htbl);
 
       break;
     case 1:
@@ -79,14 +91,9 @@ const char *collect_arg3(char *argv, BigInt **t)
   return NULL;
 }
 
-void test_prgrph(Prgrph p, rule r, BigInt *t, int h)
+void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
 {
-  //write_prgrph(stdout, p);
   const int m = 32, n = 80;
-  Hashtbl *htbl = hashtbl_new(r);
-
-  Quad *q = prgrph_to_quad(htbl, p);
-
   //print_quad(q);
   
 #if 0
@@ -122,5 +129,4 @@ void test_prgrph(Prgrph p, rule r, BigInt *t, int h)
   //htbl_stat(htbl);
 
   free_prgrph(next_p);
-  free(htbl);
 }
