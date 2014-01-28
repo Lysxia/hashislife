@@ -25,7 +25,7 @@ int rle_token(FILE *new_file, char *tag)
   else if ( file == NULL )
     return -1;
 
-  i += strspn(buff + i, " \n\t");
+  i += strspn(buff + i, " \n\t\r");
 
   if ( buff[i] == '\0' )
   {
@@ -72,7 +72,7 @@ Rle *read_rle(FILE *file)
     return NULL;
   }
 
-  switch ( sscanf(buff, "x = %d, y = %d, r = %21s ",
+  switch ( sscanf(buff, "x = %d, y = %d, rule = %21s ",
                         &rle->rle_meta.rle_x,
                         &rle->rle_meta.rle_y,
                         s) )
@@ -153,7 +153,7 @@ int read_rle_(FILE *file, Rle *rle)
         new_run_alive = 0;
         break;
       default:
-        fprintf(stderr, "read_rle(): Unrecognized token\n");
+        fprintf(stderr, "read_rle(): Unrecognized token, %d\n", tag);
         rle_abort_(lines, cur_line);
         return 0;
     }
