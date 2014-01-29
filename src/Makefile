@@ -2,7 +2,7 @@
 OBJ=definitions.o darray.o bigint.o hashtbl.o hashlife.o lifecount.o \
 		parsers.o runlength.o prgrph.o conversion.o
 MAIN=main.c
-CC=gcc -W -Wall -O2
+CC=gcc -W -Wall -O0 -g
 
 hashlife: $(HDR) $(OBJ) $(MAIN)
 	$(CC) $(OBJ) $(MAIN) -o $@

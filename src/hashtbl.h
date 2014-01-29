@@ -5,7 +5,7 @@
 #include "bigint.h"
 
 typedef struct Hashtbl Hashtbl;
-typedef struct QuadMap QuadMap;
+typedef struct Quad_map Quad_map;
 
 typedef struct Quad Quad;
 
@@ -15,7 +15,7 @@ union Node
   struct
   {
     Quad *sub[4];   // subtrees : 0:upper left,  1:upper right,
-    QuadMap *next;  //            2:bottom left, 3:bottom right
+    Quad_map *next;  //            2:bottom left, 3:bottom right
   } n;
 
   // leaf
@@ -43,14 +43,14 @@ void hashtbl_free(Hashtbl*);
 void hashlife_init(void);
 
 Quad *leaf(int k);
-Quad *dead_space(Hashtbl *hashtbl, int d);
+Quad *dead_space(Hashtbl *htbl, int d);
 Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d);
 
-Quad *map_assoc(QuadMap*, int);
-QuadMap *map_add(QuadMap*, int, Quad*);
+Quad *map_assoc(Quad_map*, int);
+Quad_map *map_add(Quad_map*, int, Quad*);
 
 void print_quad(Quad*);
-void htbl_stat(Hashtbl*);
+void hashtbl_stat(Hashtbl*);
 const int *step(Hashtbl*, int[4]);
 
 #endif

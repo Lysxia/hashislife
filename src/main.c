@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
       fclose(file);
       test_quad(htbl, q, t, h);
 
-      htbl_stat(htbl);
+      hashtbl_stat(htbl);
 
       bi_free(t);
       hashtbl_free(htbl);
@@ -147,5 +147,4 @@ void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
     free_um_bi(um, m);
     free_prgrph(next_p);
   }
-
 }

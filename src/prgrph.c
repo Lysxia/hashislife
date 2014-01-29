@@ -90,6 +90,8 @@ Prgrph read_prgrph(FILE *file)
   }
   while ( fgets(buff, buffsize + 1, file) != NULL );
 
+  free(buff);
+
   Prgrph prgrph;
   prgrph.prgrph = da_unpack(da, &prgrph.m);
   return prgrph;
@@ -111,4 +113,5 @@ void free_prgrph(Prgrph prgrph)
   int i;
   for ( i = 0 ; i < prgrph.m ; i++ )
     free(prgrph.prgrph[i]);
+  free(prgrph.prgrph);
 }
