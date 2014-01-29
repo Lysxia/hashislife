@@ -16,7 +16,7 @@ const int bi_block_bit = CHAR_BIT * sizeof(bi_block);
 
 struct BigInt {
   bi_block *digits;
-  int len;
+  int       len;
 };
 
 // The leading digit/block of results should always be non-zero,
@@ -47,7 +47,8 @@ BigInt *bi_new(int len)
   return n;
 }
 
-const BigInt bi_zero_ = {.digits = NULL, .len = 0}, *bi_zero_const = &bi_zero_;
+const BigInt  bi_zero_      = { .digits = NULL, .len = 0 },
+             *bi_zero_const = &bi_zero_;
 
 BigInt *bi_zero(void)
 {

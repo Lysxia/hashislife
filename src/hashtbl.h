@@ -14,8 +14,8 @@ union Node
   // internal node
   struct
   {
-    Quad *sub[4];   // subtrees : 0:upper left,  1:upper right,
-    Quad_map *next;  //            2:bottom left, 3:bottom right
+    Quad     *sub[4]; // subtrees : 0:upper left,  1:upper right,
+    Quad_map *next;   //            2:bottom left, 3:bottom right
   } n;
 
   // leaf
@@ -30,21 +30,24 @@ union Node
 
 struct Quad
 {
-  int depth;          // quad tree for a square map with side 2^(depth+1)
-  BigInt *cell_count;
-  union Node node;
+  int         depth;      // quad tree for a square map with side 2^(depth+1)
+  BigInt     *cell_count;
+  union Node  node;
 };
 
 /********************/
 
 Hashtbl *hashtbl_new(rule r);
-void hashtbl_free(Hashtbl*);
+void free_hashtbl(Hashtbl*);
 
 void hashlife_init(void);
 
 Quad *leaf(int k);
 Quad *dead_space(Hashtbl *htbl, int d);
-Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d);
+Quad *cons_quad(
+  Hashtbl *htbl,
+  Quad *quad[4],
+  int d);
 
 Quad *map_assoc(Quad_map*, int);
 Quad_map *map_add(Quad_map*, int, Quad*);

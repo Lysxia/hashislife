@@ -5,7 +5,7 @@
 typedef struct Prgrph
 {
   char **prgrph;
-  int m;
+  int    m;
 } Prgrph;
 
 #define ALIVE 'O'

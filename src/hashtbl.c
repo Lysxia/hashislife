@@ -8,17 +8,17 @@ typedef struct Quad_block Quad_block;
 
 struct Hashtbl
 {
-  int size;
-  int count;
-  int dead_size;
-  Quad **dead_quad;
-  Quad_block *blocks;
-  Quad_list **tbl;
+  int          size;
+  int          count;
+  int          dead_size;
+  Quad       **dead_quad;
+  Quad_block  *blocks;
+  Quad_list  **tbl;
 };
 
 struct Quad_list
 {
-  Quad head;
+  Quad       head;
   Quad_list *tail;
 };
 
@@ -28,15 +28,15 @@ struct Quad_list
 struct Quad_block
 {
   Quad_block *next_block;
-  int block_len;
-  Quad_list block[BLOCK_MAX_LEN];
+  int         block_len;
+  Quad_list   block[BLOCK_MAX_LEN];
 };
 
 typedef struct Quad_map Quad_map;
 struct Quad_map
 {
-  int k;
-  Quad *v;
+  int       k;
+  Quad     *v;
   Quad_map *map_tail;
 };
 
@@ -79,13 +79,14 @@ Hashtbl *hashtbl_new(rule r)
     exit(1);
   }
 
-  htbl->blocks = malloc(sizeof(Quad_block));
-  htbl->tbl = malloc(init_size * sizeof(Quad_list*));
-  htbl->size = init_size;
-  htbl->count = 0;
-
-  htbl->dead_quad = malloc(init_dead_size * sizeof(Quad*));
+  // Initialize fields
+  htbl->size      = init_size;
+  htbl->count     = 0;
   htbl->dead_size = init_dead_size;
+
+  htbl->blocks    = malloc(sizeof(Quad_block));
+  htbl->tbl       = malloc(init_size * sizeof(Quad_list*));
+  htbl->dead_quad = malloc(init_dead_size * sizeof(Quad*));
 
   if ( !htbl->blocks || !htbl->tbl || !htbl->dead_quad )
   {
@@ -93,30 +94,31 @@ Hashtbl *hashtbl_new(rule r)
     exit(1);
   }
 
+  // First block
   htbl->blocks->next_block = NULL;
-  htbl->blocks->block_len = 0;
+  htbl->blocks->block_len  = 0;
 
   int i;
 
-  for (i = 0 ; i < init_size ; i++)
+  for ( i = 0 ; i < init_size ; i++ )
     htbl->tbl[i] = NULL;
 
   htbl->dead_quad[0] = &leaves[0];
 
-  for (i = 1 ; i < htbl->dead_size ; i++)
+  for ( i = 1 ; i < htbl->dead_size ; i++ )
     htbl->dead_quad[i] = NULL;
 
   int k[4];
 
-  for (k[0] = 0 ; k[0] < leaves_count ; k[0]++)
-    for (k[1] = 0 ; k[1] < leaves_count ; k[1]++)
-      for (k[2] = 0 ; k[2] < leaves_count ; k[2]++)
-        for (k[3] = 0 ; k[3] < leaves_count ; k[3]++)
+  for ( k[0] = 0 ; k[0] < leaves_count ; k[0]++ )
+    for ( k[1] = 0 ; k[1] < leaves_count ; k[1]++ )
+      for ( k[2] = 0 ; k[2] < leaves_count ; k[2]++ )
+        for ( k[3] = 0 ; k[3] < leaves_count ; k[3]++ )
         {
           Quad *quad[4];
 
           int j;
-          for (j = 0 ; j < 4 ; j++)
+          for ( j = 0 ; j < 4 ; j++ )
             quad[j] = &leaves[k[j]];
 
           quad_d1(htbl, quad, r);
@@ -127,10 +129,10 @@ Hashtbl *hashtbl_new(rule r)
 
 void hashtbl_free(Hashtbl *htbl)
 {
-  free(htbl->tbl);
-  free(htbl->dead_quad);
+  free      (htbl->tbl);
+  free      (htbl->dead_quad);
   free_block(htbl->blocks);
-  free(htbl);
+  free      (htbl);
 }
 
 Quad *leaf(int k)
@@ -148,9 +150,8 @@ Quad *dead_space(Hashtbl *htbl, int d)
     do htbl->dead_size *= 2;
     while ( htbl->dead_size <= d );
 
-    Quad **old_quad = htbl->dead_quad;
-    
-    htbl->dead_quad = malloc(htbl->dead_size * sizeof(Quad*));
+    htbl->dead_quad = realloc(htbl->dead_quad,
+                              htbl->dead_size * sizeof(Quad*));
 
     if ( !htbl->dead_quad )
     {
@@ -158,13 +159,8 @@ Quad *dead_space(Hashtbl *htbl, int d)
       exit(1);
     }
 
-    for ( i = 0 ; i < old_size ; i++ )
-      htbl->dead_quad[i] = old_quad[i];
-
     for ( i = old_size ; i < htbl->dead_size ; i++ )
       htbl->dead_quad[i] = NULL;
-
-    free(old_quad);
   }
 
   if ( !htbl->dead_quad[d] )

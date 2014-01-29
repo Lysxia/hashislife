@@ -18,11 +18,19 @@ Quad *prgrph_to_quad(Hashtbl *htbl, Prgrph p);
 Quad *rle_to_quad(Hashtbl *htbl, Rle *rle);
 
 // Draw the prgrph described by q at the specified location
-UMatrix quad_to_matrix(BigInt *mmin, BigInt *nmin,
-                       int mlen, int nlen,
-                       int height, Quad *q);
+UMatrix quad_to_matrix(
+  BigInt *mmin,
+  BigInt *nmin,
+  int mlen,
+  int nlen,
+  int height,
+  Quad *q);
 
-Prgrph bi_mat_to_prgrph(const BigInt ***bm, int m, int n, int height);
+Prgrph bi_mat_to_prgrph(
+  const BigInt ***bm,
+  int m,
+  int n,
+  int height);
 
 void free_um_char(UMatrix um, int m);
 void free_um_bi(UMatrix um, int m);
