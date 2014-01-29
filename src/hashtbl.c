@@ -22,8 +22,8 @@ struct Quad_list
   Quad_list *tail;
 };
 
-// A smarter (?) memory allocation, malloc chunks of memory
-#define BLOCK_MAX_LEN 8192
+// A faster memory allocation, malloc chunks of memory
+#define BLOCK_MAX_LEN 1048576
 
 struct Quad_block
 {
@@ -33,36 +33,56 @@ struct Quad_block
 };
 
 typedef struct Quad_map Quad_map;
+typedef struct Map_block Map_block;
+
 struct Quad_map
 {
-  int       k;
-  Quad     *v;
-  Quad_map *map_tail;
+  Map_block *qm_block;
+  int        k;
+  Quad      *v;
+  Quad_map  *map_tail;
+};
+
+struct Map_block
+{
+  int        m_block_alive;
+  Map_block *next_m_block;
+  int        m_block_len;
+  Quad_map   m_block[BLOCK_MAX_LEN];
 };
 
 /*** Auxiliary functions ***/
 
 Quad_list *alloc_quad(Hashtbl *htbl);
+Quad_map  *alloc_map();
+void       map_block_compact();
+Map_block *map_block_compact_(Map_block *);
+
 // create depth 1 nodes. Part of hashlife_init() logic.
 void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r); 
 
-int hash(Quad*[4]);
+int  hash(Quad*[4]);
 Quad *hashtbl_find(Hashtbl *htbl, int h, Quad* key[4]);
 void hashtbl_add(Hashtbl *htbl, int h, Quad_list *elt);
 Quad *list_find(Quad* key[4], Quad_list *list);
 
-void free_block(Quad_block *qb);
-void free_quad(Quad *q);
-void free_map(Quad_map *qm); 
+void free_block(Quad_block *);
+void free_quad(Quad *);
+void free_map(Quad_map *); 
 
-const int init_size = 1 << 25; // start size of hashtbl
+/*** Constants and global elements ***/
+
+const int init_size = 1 << 25; // size of hashtbl
 const int init_dead_size = 32;
 
-/* The address of a leaf is 0123 representing the 4 bit picture
+/* The address of a leaf is a 4 digit binary number 0123
+ * representing the 4 bit map
  * 0 1
  * 2 3 */
-Quad *leaves = NULL;
-const int leaves_count = 16;
+const int  leaves_count = 16;
+Quad      *leaves       = NULL;
+
+Map_block *map_blocks = NULL;
 
 /**************************************/
 
@@ -272,7 +292,7 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
       acc |= ((r >> sum) & 1) << (3 - i);
   }
 
-  Quad_map *qm = malloc(sizeof(Quad_map));
+  Quad_map *qm = alloc_map();
 
   if ( !qm )
   {
@@ -305,7 +325,7 @@ Quad_map *map_add(Quad_map *map, int k, Quad* v)
 {
   if ( !map || map->k > k )
   {
-    Quad_map *new_map = malloc(sizeof(Quad_map));
+    Quad_map *new_map = alloc_map();
     new_map->k = k;
     new_map->v = v;
     new_map->map_tail = map;
@@ -343,7 +363,61 @@ Quad_list *alloc_quad(Hashtbl *htbl)
   return htbl->blocks->block + htbl->blocks->block_len++;
 }
 
-/*** Hashtable function ***/
+Quad_map *alloc_map()
+{
+  if ( !map_blocks || map_blocks->m_block_len == BLOCK_MAX_LEN )
+  {
+    Map_block *new_mb = malloc(sizeof(Map_block));
+
+    if ( !new_mb )
+    {
+      perror("alloc_map()");
+      exit(1);
+    }
+
+    new_mb->m_block_len   = 0;
+    new_mb->m_block_alive = 0;
+    new_mb->next_m_block  = map_blocks;
+
+    int i;
+    for ( i = 0 ; i < BLOCK_MAX_LEN ; i++ )
+      new_mb->m_block[i].qm_block = new_mb;
+
+    map_blocks = new_mb;
+  }
+
+  map_blocks->m_block_alive++;
+
+  return map_blocks->m_block + map_blocks->m_block_len++;
+}
+
+void map_block_compact()
+{
+  map_blocks = map_block_compact_(map_blocks);
+}
+
+Map_block *map_block_compact_(Map_block *qb)
+{
+  if ( qb )
+  {
+    Map_block *next = map_block_compact_(qb->next_m_block);
+
+    if ( qb->m_block_alive )
+    {
+      qb->next_m_block = next;
+      return qb;
+    }
+    else
+    {
+      free(qb);
+      return next;
+    }
+  }
+  else
+    return NULL;
+}
+
+/*** Hashtable functions ***/
 
 /*
 void binary(intptr_t w)
@@ -432,13 +506,12 @@ void free_map(Quad_map *qm)
 {
   if ( qm )
   {
-    Quad_map *qm_ = qm->map_tail;
+    qm->qm_block->m_block_alive--;
+    qm->qm_block = NULL;
+    free_map(qm->map_tail);
     // v member is going to be freed outside as it should be in the hashtbl
-    free(qm);
-    free_map(qm_);
   }
 }
-
 
 /*** Debug functions ***/
 
