@@ -196,7 +196,10 @@ Quad *dead_space(Hashtbl *htbl, int d)
 
 // Prerequisite : the four sub trees were computed and hashed.
 // This is the only constructor of quadtrees to be used
-Quad *cons_quad(Hashtbl *htbl, Quad *quad[4], int d)
+Quad *cons_quad(
+  Hashtbl *htbl,
+  Quad *quad[4],
+  int d)
 {
   if ( quad[0]->depth != quad[1]->depth ||
        quad[0]->depth != quad[2]->depth ||

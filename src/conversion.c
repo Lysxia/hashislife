@@ -11,41 +11,64 @@
 #include "prgrph.h"
 #include "runlength.h"
 
+/*** Matrix to- conversion ***/
 struct Quad_repeat
 {
   Quad *qr_q;
-  int qr_n;
+  int   qr_n;
 };
 
 struct Quad_rle_line
 {
   struct Quad_repeat *qrle_line;
-  int qrle_linelen;
-  int qrle_linenum;
+  int                 qrle_linelen;
+  int                 qrle_linenum;
 };
 
 struct Quad_rle
 {
   struct Quad_rle_line *qrle;
-  int qrle_len;
+  int                   qrle_len;
 };
 
 const struct Quad_rle qrle_error = {
-  .qrle = NULL,
+  .qrle     = NULL,
   .qrle_len = -1,
 };
 
 struct Quad_rle prgrph_to_qrle(Prgrph p);
-struct Quad_rle rle_to_qrle(Rle *rle);
+struct Quad_rle    rle_to_qrle(Rle *rle);
 
 Quad *condense_(Hashtbl *htbl, struct Quad_rle qrle);
-struct Quad_rle map_cons(Hashtbl *htbl, Quad *ds, int d, struct Quad_rle qrle);
-struct Quad_rle_line map_cons_line(Hashtbl *htbl, Quad *ds, int d,
-                                   struct Quad_repeat *line1, int line1len,
-                                   struct Quad_repeat *line2, int line2len);
-int line_take_two(Quad *ds,
-                  struct Quad_repeat *line, int linelen, int *j, Quad *quad[]);
-int rle_take_two(int *line, int linelen, int *j, int *leaf, int *buff);
+
+struct Quad_rle map_cons(
+  Hashtbl *htbl,
+  Quad *ds,
+  int d,
+  struct Quad_rle qrle);
+
+struct Quad_rle_line map_cons_line(
+  Hashtbl *htbl,
+  Quad *ds,
+  int d,
+  struct Quad_repeat *line1,
+  int line1len,
+  struct Quad_repeat *line2,
+  int line2len);
+
+int line_take_two(
+  Quad *ds,
+  struct Quad_repeat *line,
+  int linelen,
+  int *j,
+  Quad *quad[]);
+
+int rle_take_two(
+  int *line,
+  int linelen,
+  int *j,
+  int *leaf,
+  int *buff);
 
 Quad *prgrph_to_quad(Hashtbl *htbl, Prgrph p)
 {
@@ -225,7 +248,11 @@ Quad *condense_(Hashtbl *htbl, struct Quad_rle qrle)
   return q;
 }
 
-struct Quad_rle map_cons(Hashtbl *htbl, Quad *ds, int d, struct Quad_rle qrle)
+struct Quad_rle map_cons(
+  Hashtbl *htbl,
+  Quad *ds,
+  int d,
+  struct Quad_rle qrle)
 {
   struct Quad_rle qrle2;
 
@@ -281,9 +308,14 @@ struct Quad_rle map_cons(Hashtbl *htbl, Quad *ds, int d, struct Quad_rle qrle)
   return qrle2;
 }
 
-struct Quad_rle_line map_cons_line(Hashtbl *htbl, Quad *ds, int d,
-                                   struct Quad_repeat *line1, int line1len,
-                                   struct Quad_repeat *line2, int line2len)
+struct Quad_rle_line map_cons_line(
+  Hashtbl *htbl,
+  Quad *ds,
+  int d,
+  struct Quad_repeat *line1,
+  int line1len,
+  struct Quad_repeat *line2,
+  int line2len)
 {
   int j1 = 0, j2 = 0;
   int id1 = 0, id2 = 0;
@@ -325,8 +357,12 @@ struct Quad_rle_line map_cons_line(Hashtbl *htbl, Quad *ds, int d,
   return line_;
 }
 
-int line_take_two(Quad *ds,
-                  struct Quad_repeat *line, int linelen, int *j, Quad *quad[])
+int line_take_two(
+  Quad *ds,
+  struct Quad_repeat *line,
+  int linelen,
+  int *j,
+  Quad *quad[])
 {
   if ( *j == linelen )
   {
@@ -359,7 +395,12 @@ int line_take_two(Quad *ds,
 
 // At the first call buff must be initialized to -1
 // and not modified by the caller thereafter
-int rle_take_two(int *line, int linelen, int *j, int *leaf, int *buff)
+int rle_take_two(
+  int *line,
+  int linelen,
+  int *j,
+  int *leaf,
+  int *buff)
 {
   if ( *j == linelen )
   {
@@ -403,30 +444,28 @@ int rle_take_two(int *line, int linelen, int *j, int *leaf, int *buff)
   }
 }
 
-void quad_to_matrix_(UMatrix p,
-                     int m_mmin, int m_nmin,
-                     BigInt *mmin, BigInt *nmin,
-                     int mlen, int nlen,
-                     const int height_, Quad *q);
+/*** -to matrix conversion ***/
 
-UMatrix quad_to_matrix(BigInt *mmin, BigInt *nmin,
-                          int mlen, int nlen,
-                          int height, Quad *q)
+void quad_to_matrix_(
+  UMatrix p,
+  int m_mmin,
+  int m_nmin,
+  BigInt *mmin,
+  BigInt *nmin,
+  int mlen,
+  int nlen,
+  const int height_,
+  Quad *q);
+
+UMatrix quad_to_matrix(
+  BigInt *mmin,
+  BigInt *nmin,
+  int mlen,
+  int nlen,
+  int height,
+  Quad *q)
 {
   UMatrix p;
-
-  /*
-  BigInt *mmin_, *nmin_;
-  int diff = 0;
-  mmin_ = bi_minus_pow(mmin, q->depth - height, &diff);
-  if ( diff < mlen )
-    mlen = diff /2;
-  bi_free(mmin_);
-  nmin_ = bi_minus_pow(nmin, q->depth - height, &diff);
-  if ( diff < nlen )
-    nlen = diff /2;
-  bi_free(nmin_);
-  **/
 
   if ( height <= 0 )
   {
@@ -460,11 +499,16 @@ UMatrix quad_to_matrix(BigInt *mmin, BigInt *nmin,
   return p;
 }
 
-void quad_to_matrix_(UMatrix p,
-                     int m_mmin, int m_nmin,
-                     BigInt *mmin, BigInt *nmin,
-                     int mlen, int nlen,
-                     const int height, Quad *q)
+void quad_to_matrix_(
+  UMatrix p,
+  int m_mmin,
+  int m_nmin,
+  BigInt *mmin,
+  BigInt *nmin,
+  int mlen,
+  int nlen,
+  const int height,
+  Quad *q)
 {
   if ( mlen <= 0 || nlen <= 0 )
     return;

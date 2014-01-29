@@ -21,7 +21,7 @@ BigInt *bi_plus_int(const BigInt *b, int i);
 BigInt *bi_minus_pow(const BigInt *b, int e, int *neg);
 BigInt *bi_add(const BigInt *a, const BigInt *b);
 
-int bi_to_int(const BigInt *b);
+int     bi_to_int(const BigInt *b);
 BigInt *bi_from_int(int i);
 
 // Ignores isolated commas

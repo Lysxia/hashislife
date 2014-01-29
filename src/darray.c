@@ -4,9 +4,9 @@
 #include "darray.h"
 
 struct Darray {
-  char *da;
-  size_t data_size;
-  int array_length;
+  char   *da;
+  size_t  data_size;
+  int     array_length;
 };
 
 Darray *da_new(size_t data_size)

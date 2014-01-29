@@ -28,8 +28,8 @@ typedef struct Rle
   } rle_meta;
 } Rle;
 
-Rle *read_rle(FILE *file);
-void write_rle(FILE *file, Rle *rle);
-void free_rle(Rle *rle);
+Rle  * read_rle(FILE *file);
+void  write_rle(FILE *file, Rle *rle);
+void   free_rle(Rle *rle);
 
 #endif
