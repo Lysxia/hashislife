@@ -144,7 +144,7 @@ int read_rle_(FILE *file, Rle *rle)
       case DEAD_RLE_TOKEN:
         if ( new_run_alive ^ cur_run_alive )
         {
-          da_push(cur_line, (char *) &cur_run);
+          da_push(cur_line, &cur_run);
           cur_run_alive = !cur_run_alive;
           cur_run = run_len;
         }
@@ -173,14 +173,14 @@ void rle_push_line_(Darray *lines, Darray *cur_line, int cur_run,
                    int cur_run_alive, int line_num)
 {
   if ( cur_run_alive )
-    da_push(cur_line, (char *) &cur_run);
+    da_push(cur_line, &cur_run);
 
   struct Rle_line new_line;
   new_line.line_num = line_num;
   new_line.line = da_unpack(cur_line, &new_line.line_length);
 
   if ( new_line.line_length > 0 )
-    da_push(lines, (char *) &new_line);
+    da_push(lines, &new_line);
 }
 
 void rle_abort_(Darray *lines, Darray *cur_line)

@@ -78,7 +78,7 @@ Prgrph read_prgrph(FILE *file)
     }
 
     buff[linelen-1] = '\0';
-    da_push(da, (char *) &buff);
+    da_push(da, &buff);
 
     buff = malloc((buffsize + 1) * sizeof(char));
 

@@ -213,11 +213,11 @@ struct Quad_rle rle_to_qrle(Rle *rle)
         n[1] = 0;
       }
 
-      da_push(da_line, (char *) &qr);
+      da_push(da_line, &qr);
     }
 
     qrle_l.qrle_line = da_unpack(da_line, &qrle_l.qrle_linelen);
-    da_push(da, (char *) &qrle_l);
+    da_push(da, &qrle_l);
   }
 
   struct Quad_rle qrle;
@@ -347,7 +347,7 @@ struct Quad_rle_line map_cons_line(
       id2 = 0;
     }
 
-    da_push(da, (char *) &qr);
+    da_push(da, &qr);
   }
 
   struct Quad_rle_line line_;

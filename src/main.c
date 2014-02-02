@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
       hashtbl_stat(htbl);
 
       bi_free(t);
-      hashtbl_free(htbl);
+      free_hashtbl(htbl);
 
       break;
     case 1:

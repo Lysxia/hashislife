@@ -147,7 +147,7 @@ Hashtbl *hashtbl_new(rule r)
   return htbl;
 }
 
-void hashtbl_free(Hashtbl *htbl)
+void free_hashtbl(Hashtbl *htbl)
 {
   free      (htbl->tbl);
   free      (htbl->dead_quad);
