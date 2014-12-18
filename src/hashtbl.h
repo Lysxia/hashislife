@@ -9,23 +9,23 @@ typedef struct Quad_map Quad_map;
 
 typedef struct Quad Quad;
 
+struct InNode
+{
+  Quad     *sub[4]; // subtrees : 0:upper left,  1:upper right,
+  Quad_map *next;   //            2:bottom left, 3:bottom right
+};
+
+struct Leaf
+{
+  int map[4];
+  // 0 1
+  // 2 3
+};
+
 union Node
 {
-  // internal node
-  struct
-  {
-    Quad     *sub[4]; // subtrees : 0:upper left,  1:upper right,
-    Quad_map *next;   //            2:bottom left, 3:bottom right
-  } n;
-
-  // leaf
-  struct
-  {
-    int map[4];
-    /* 0 1
-     * 2 3
-     * */
-  } l;
+  struct InNode n;
+  struct Leaf l;
 };
 
 struct Quad
