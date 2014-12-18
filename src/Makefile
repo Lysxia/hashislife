@@ -1,10 +1,19 @@
-#HDR=definitions.h
-OBJ=definitions.o darray.o bigint.o hashtbl.o hashlife.o lifecount.o \
-		parsers.o runlength.o prgrph.o conversion.o
+HDR=quad.h
+SRC=definitions\
+    darray\
+    bigint\
+    hashtbl\
+    hashlife\
+    lifecount\
+		parsers\
+    runlength\
+    prgrph\
+    conversion
 MAIN=main.c
 CC=gcc -W -Wall -O2
+OBJ=$(SRC:%=%.o)
 
-hashlife: $(HDR) $(OBJ) $(MAIN)
+hashlife: $(HDR) $(SRC:%=%.o) $(MAIN)
 	$(CC) $(OBJ) $(MAIN) -o $@
 
 %.o: %.c %.h
