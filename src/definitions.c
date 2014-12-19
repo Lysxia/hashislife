@@ -1,12 +1,22 @@
+#include <assert.h>
 #include "definitions.h"
 
-int itoa(char *dest, int src)
-{
+char digit_to_char(int d) {
+  if ( d < 10 )
+    return '0' + d;
+  else if ( d < 36 )
+    return 'A' + d - 10;
+  else
+    return '?';
+}
+
+int itoa(char *dest, int src, int base) {
+  assert( base < 36 );
   int i = 0, j;
   do
   {
-    dest[i++] = '0' + src % 10;
-    src /= 10;
+    dest[i++] = digit_to_char(src % base);
+    src /= base;
   }
   while ( src > 0 );
 
