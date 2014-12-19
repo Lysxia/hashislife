@@ -1,74 +1,29 @@
+/* Quadtree hashconsing */
+
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "hashtbl.h"
 
-typedef struct Quad_list Quad_list;
-typedef struct Quad_block Quad_block;
+/*! \defgroup hashtbl_aux Auxiliary definitions (hashtables) */
+/*!@{*/
+QuadList *quadlist_alloc(Hashtbl *htbl);
+//void       map_block_compact();
+//Map_block *map_block_compact_(Map_block *);
 
-struct Hashtbl
-{
-  int          size;
-  int          count;
-  int          dead_size;
-  Quad       **dead_quad;
-  Quad_block  *blocks;
-  Quad_list  **tbl;
-};
-
-struct Quad_list
-{
-  Quad       head;
-  Quad_list *tail;
-};
-
-// A faster memory allocation, malloc chunks of memory
-#define BLOCK_MAX_LEN 1048576
-
-struct Quad_block
-{
-  Quad_block *next_block;
-  int         block_len;
-  Quad_list   block[BLOCK_MAX_LEN];
-};
-
-typedef struct Quad_map Quad_map;
-typedef struct Map_block Map_block;
-
-struct Quad_map
-{
-  Map_block *qm_block;
-  int        k;
-  Quad      *v;
-  Quad_map  *map_tail;
-};
-
-struct Map_block
-{
-  int        m_block_alive;
-  Map_block *next_m_block;
-  int        m_block_len;
-  Quad_map   m_block[BLOCK_MAX_LEN];
-};
-
-/*** Auxiliary functions ***/
-
-Quad_list *alloc_quad(Hashtbl *htbl);
-Quad_map  *alloc_map();
-void       map_block_compact();
-Map_block *map_block_compact_(Map_block *);
-
-// create depth 1 nodes. Part of hashlife_init() logic.
+//! Create depth 1 node.
 void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r); 
 
 int  hash(Quad*[4]);
 Quad *hashtbl_find(Hashtbl *htbl, int h, Quad* key[4]);
-void hashtbl_add(Hashtbl *htbl, int h, Quad_list *elt);
-Quad *list_find(Quad* key[4], Quad_list *list);
+void hashtbl_add(Hashtbl *htbl, int h, QuadList *elt);
+Quad *list_find(Quad* key[4], QuadList *list);
 
-void free_block(Quad_block *);
-void free_quad(Quad *);
-void free_map(Quad_map *); 
+void block_free(QuadBlock *);
+void quad_free(Quad *);
+//void free_map(Quad_map *); 
+/*!@}*/
 
 /*** Constants and global elements ***/
 
@@ -76,85 +31,96 @@ const int init_size = 1 << 25; // size of hashtbl
 const int init_dead_size = 32;
 
 /* The address of a leaf is a 4 digit binary number 0123
- * representing the 4 bit map
- * 0 1
- * 2 3 */
-const int  leaves_count = 16;
-Quad      *leaves       = NULL;
+  representing the 4 bit map
+  0 1
+  2 3 */
+Quad      *leaves = NULL;
 
 Map_block *map_blocks = NULL;
 
-/**************************************/
+/*! Allocates, initializes and returns a new `Hashtbl` structure.
+ 
+  @param r The initialization precomputes patterns for this rule set.
+               (So the same hashtable can not be used for different
+               rule sets.)
 
+  \see rules
+  \see hashtbl_delete
+*/
 Hashtbl *hashtbl_new(rule r)
 {
-  if (leaves == NULL) // Must initialize
+  /* The first call initializes global parameters */
+  if (leaves == NULL)
     hashlife_init();
 
   Hashtbl *htbl = malloc(sizeof(Hashtbl));
 
   if (htbl == NULL)
   {
-    perror("hashtbl_new()");
+    perror("hashtbl_new(): Failed to allocate table.");
     exit(1);
   }
 
-  // Initialize fields
+  /* Initialize hashtable fields */
   htbl->size      = init_size;
   htbl->count     = 0;
-  htbl->dead_size = init_dead_size;
+  htbl->tbl       = malloc(init_size * sizeof(QuadList*));
 
-  htbl->blocks    = malloc(sizeof(Quad_block));
-  htbl->tbl       = malloc(init_size * sizeof(Quad_list*));
+  htbl->dead_size = init_dead_size;
   htbl->dead_quad = malloc(init_dead_size * sizeof(Quad*));
+
+  htbl->blocks    = malloc(sizeof(QuadBlock));
 
   if ( !htbl->blocks || !htbl->tbl || !htbl->dead_quad )
   {
-    perror("hashtbl_new()");
+    perror("hashtbl_new(): Failed to allocate one or several field(s).");
     exit(1);
   }
 
-  // First block
-  htbl->blocks->next_block = NULL;
+  /* First memory block */
+  htbl->blocks->block_next = NULL;
   htbl->blocks->block_len  = 0;
 
   int i;
 
-  for ( i = 0 ; i < init_size ; i++ )
-    htbl->tbl[i] = NULL;
+  /* The leaf (depth 0) of all zero bits */
+  htbl->dead_quad[0] = &leaves[0]; // The zero leaf should be at index 0
 
-  htbl->dead_quad[0] = &leaves[0];
-
+  /* All other cells are left blank (to-be-computed) */
   for ( i = 1 ; i < htbl->dead_size ; i++ )
     htbl->dead_quad[i] = NULL;
 
-  int k[4];
+  /* Zero-initialize hashtable */
+  for ( i = 0 ; i < init_size ; i++ )
+    htbl->tbl[i] = NULL;
 
-  for ( k[0] = 0 ; k[0] < leaves_count ; k[0]++ )
-    for ( k[1] = 0 ; k[1] < leaves_count ; k[1]++ )
-      for ( k[2] = 0 ; k[2] < leaves_count ; k[2]++ )
-        for ( k[3] = 0 ; k[3] < leaves_count ; k[3]++ )
-        {
-          Quad *quad[4];
-
-          int j;
-          for ( j = 0 ; j < 4 ; j++ )
-            quad[j] = &leaves[k[j]];
-
-          quad_d1(htbl, quad, r);
-        }
+  /* Insert depth 1 nodes
+    There are depth1_count = 16^4 of these, indexed by k4.
+    The subtree (leaves) indices are obtained with four bitmasks. */
+  int k4;
+  for ( k4 = 0 ; k4 < depth1_count ; k4++ )
+  {
+    Quad *quad[4];
+    int j;
+    const int four_1 = (1 << 4) - 1;
+    for ( j = 0 ; j < 4 ; j++ )
+      quad[j] = &leaves[(k4 >> (4*j)) & four_1];
+    quad_d1(htbl, quad, r);
+  }
 
   return htbl;
 }
 
-void free_hashtbl(Hashtbl *htbl)
+/*! \see hashtbl_new */
+void hashtbl_delete(Hashtbl *htbl)
 {
-  free      (htbl->tbl);
-  free      (htbl->dead_quad);
-  free_block(htbl->blocks);
-  free      (htbl);
+        free(htbl->tbl);
+        free(htbl->dead_quad);
+  block_free(htbl->blocks);
+        free(htbl);
 }
 
+/*! Leaves are indexed from 0 to \link leaves_count \endlink-1 = 15. */
 Quad *leaf(int k)
 {
   return &leaves[k];
@@ -162,11 +128,11 @@ Quad *leaf(int k)
 
 Quad *dead_space(Hashtbl *htbl, int d)
 {
-  if ( htbl->dead_size <= d )
+  if ( htbl->dead_size <= d ) // The dead areas array is too small
   {
     const int old_size = htbl->dead_size;
-    int i;
 
+    /* Increase size until d fits */
     do htbl->dead_size *= 2;
     while ( htbl->dead_size <= d );
 
@@ -175,17 +141,19 @@ Quad *dead_space(Hashtbl *htbl, int d)
 
     if ( !htbl->dead_quad )
     {
-      perror("dead_space()");
+      perror("dead_space(): Failed to reallcoate space.");
       exit(1);
     }
 
+    /* NULL-initialize new cells */
+    int i;
     for ( i = old_size ; i < htbl->dead_size ; i++ )
       htbl->dead_quad[i] = NULL;
   }
 
-  if ( !htbl->dead_quad[d] )
+  if ( !htbl->dead_quad[d] ) // The requested area does not exist yet
   {
-    Quad *ds = dead_space(htbl, d-1);
+    Quad *ds = dead_space(htbl, d-1); // Recursively find its subtrees
     Quad *zero[4] = {ds, ds, ds, ds};
 
     return htbl->dead_quad[d] = cons_quad(htbl, zero, d);
@@ -194,36 +162,36 @@ Quad *dead_space(Hashtbl *htbl, int d)
     return htbl->dead_quad[d];
 }
 
-// Prerequisite : the four sub trees were computed and hashed.
-// This is the only constructor of quadtrees to be used
+/*! Prerequisite : the four subtrees were computed and hashed.
+  
+  Use this function to construct new nodes.
+*/
 Quad *cons_quad(
-  Hashtbl *htbl,
-  Quad *quad[4],
-  int d)
+  Hashtbl *htbl, //!< Current hashtable
+  Quad *quad[4], //!< Array of subtrees
+  int d)         //!< Depth of current node
 {
-  if ( quad[0]->depth != quad[1]->depth ||
-       quad[0]->depth != quad[2]->depth ||
-       quad[0]->depth != quad[3]->depth ||
-       quad[0]->depth != d-1 )
-    exit(2);
+  assert(quad[0]->depth == quad[1]->depth
+      && quad[0]->depth == quad[2]->depth
+      && quad[0]->depth == quad[3]->depth
+      && quad[0]->depth == d-1);
 
   int h = hash(quad);
 
-  // Check if we didn't already memoize requested node
   Quad *q = hashtbl_find(htbl, h, quad);
 
-  if ( q )
+  if ( q ) // The requested node has been memoized already
     return q;
   else
   {
-    Quad_list *ql = alloc_quad(htbl);
+    QuadList *ql = quadlist_alloc(htbl);
 
     ql->head.depth = d;
     ql->head.cell_count = NULL;
-    ql->head.node.n.next = NULL;
+    ql->head.node.n.skip = NULL;
+    ql->head.node.n.short_skip = NULL;
 
     int i;
-
     for ( i = 0 ; i < 4 ; i++ )
       ql->head.node.n.sub[i] = quad[i];
  
@@ -233,11 +201,10 @@ Quad *cons_quad(
   }
 }
 
-/*** Initialize hashlife ***/
+/*! This is automatically called at the first call of `hashtbl_new()` */
 void hashlife_init(void)
 {
-  int i;
-
+  // Initialize quadtree leaves
   leaves = malloc(leaves_count * sizeof(Quad));
 
   if ( !leaves )
@@ -246,39 +213,46 @@ void hashlife_init(void)
     exit(1);
   }
 
+  int i;
   for (i = 0 ; i < leaves_count ; i++)
   {
     Quad *q = &leaves[i];
 
+    q->depth = 0;
+    q->cell_count = NULL;
+
     int j;
     for ( j = 0 ; j < 4 ; j++ )
       q->node.l.map[j] = (i >> (3 - j)) & 1;
-
-    q->cell_count = NULL;
-    q->depth = 0;
   }
 }
 
-/* Depth 1 nodes are computed at the beginning of the program */
-// rule : B/S
-// Create depth 1 node
-void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
+/*! Part of hashlife_init() logic.
+
+  Depth 1 nodes and their `skip` field (QInNode; one step progress)
+  are computed at hashtable creation (\link hashtable_new() \endlink) */
+void quad_d1(
+  Hashtbl *htbl,
+  Quad    *quad[4], //!< Subtrees (four leaves)
+  rule     r)       //!< Rule set
 {
+  // Coordinates of the neighbors of the four center cells
   const int coord[4][8][2] = {
     {{0,0},{0,1},{1,0},{0,2},{1,2},{2,0},{2,1},{3,0}},
     {{0,1},{1,0},{1,1},{0,3},{1,3},{2,1},{3,0},{3,1}},
     {{0,2},{0,3},{1,2},{2,0},{3,0},{2,2},{2,3},{3,2}},
     {{0,3},{1,2},{1,3},{2,1},{3,1},{2,3},{3,2},{3,3}}
-  },
-  pos[4][2] = {{0,3},{1,2},{2,1},{3,0}};
+  };
+  // Coordinates of the center cells
+  const int pos[4][2] = {{0,3},{1,2},{2,1},{3,0}};
 
-  Quad_list *ql = alloc_quad(htbl);
+  QuadList *ql = quadlist_alloc(htbl);
 
   ql->head.depth = 1;
   ql->head.cell_count = NULL;
 
+  // Fill skip field
   int acc = 0, i;
-
   for ( i = 0 ; i < 4 ; ++i )
   {
     int j, sum = 0; 
@@ -295,25 +269,13 @@ void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r)
       acc |= ((r >> sum) & 1) << (3 - i);
   }
 
-  Quad_map *qm = alloc_map();
-
-  if ( !qm )
-  {
-    perror("quad_d1()");
-    exit(1);
-  }
-
-  qm->k = 0;
-  qm->v = &leaves[acc];
-  qm->map_tail = NULL;
-
-  ql->head.node.n.next = qm;
+  ql->head.node.n.skip = &leaves[acc];
 
   hashtbl_add(htbl, hash(quad), ql);
 }
 
 /*** Map functions ***/
-
+/*
 Quad *map_assoc(Quad_map *map, int k)
 {
   if ( !map || map->k > k )
@@ -340,25 +302,26 @@ Quad_map *map_add(Quad_map *map, int k, Quad* v)
     return map;
   }
 }
+*/
 
 /*** Memory management ***/
 
-Quad_list *alloc_quad(Hashtbl *htbl)
+QuadList *quadlist_alloc(Hashtbl *htbl)
 {
   htbl->count++;
 
   if ( htbl->blocks->block_len == BLOCK_MAX_LEN )
   {
-    Quad_block *new_qb = malloc(sizeof(Quad_block));
+    QuadBlock *new_qb = malloc(sizeof(QuadBlock));
     
     if ( !new_qb )
     {
-      perror("alloc_quad()");
+      perror("quadlist_alloc(): Failed to allocate new block.");
       exit(1);
     }
 
     new_qb->block_len = 0;
-    new_qb->next_block = htbl->blocks;
+    new_qb->block_next = htbl->blocks;
 
     htbl->blocks = new_qb;
   }
@@ -366,6 +329,7 @@ Quad_list *alloc_quad(Hashtbl *htbl)
   return htbl->blocks->block + htbl->blocks->block_len++;
 }
 
+/*
 Quad_map *alloc_map()
 {
   if ( !map_blocks || map_blocks->m_block_len == BLOCK_MAX_LEN )
@@ -419,6 +383,7 @@ Map_block *map_block_compact_(Map_block *qb)
   else
     return NULL;
 }
+*/
 
 /*** Hashtable functions ***/
 
@@ -464,13 +429,13 @@ Quad *hashtbl_find(Hashtbl *htbl, int h, Quad* key[4])
   return list_find(key, htbl->tbl[h]);
 }
 
-void hashtbl_add(Hashtbl *htbl, int h, Quad_list *elt)
+void hashtbl_add(Hashtbl *htbl, int h, QuadList *elt)
 {
   elt->tail = htbl->tbl[h];
   htbl->tbl[h] = elt;
 }
 
-Quad *list_find(Quad* key[4], Quad_list *list)
+Quad *list_find(Quad* key[4], QuadList *list)
 {
   if ( !list )
     return NULL;
@@ -484,27 +449,28 @@ Quad *list_find(Quad* key[4], Quad_list *list)
   }
 }
 
-void free_block(Quad_block *qb)
+void block_free(QuadBlock *qb)
 {
   while ( qb )
   {
     int i;
     for ( i = 0 ; i < qb->block_len ; i++ )
-      free_quad(&qb->block[i].head);
+      quad_free(&qb->block[i].head);
 
-    Quad_block *next = qb->next_block;
+    QuadBlock *next = qb->block_next;
     free(qb);
     qb = next;
   }
 }
 
-void free_quad(Quad *q)
+// TODO
+void quad_free(Quad *q)
 {
   if ( q->cell_count )
     bi_free(q->cell_count);
-  free_map(q->node.n.next);
 }
 
+/*
 void free_map(Quad_map *qm)
 {
   if ( qm )
@@ -515,6 +481,7 @@ void free_map(Quad_map *qm)
     // v member is going to be freed outside as it should be in the hashtbl
   }
 }
+*/
 
 /*** Debug functions ***/
 
@@ -540,7 +507,7 @@ void print_quad(Quad *q)
   }
 }
 
-int list_length(Quad_list *list)
+int list_length(QuadList *list)
 {
   if ( !list )
     return 0;
@@ -569,6 +536,8 @@ void hashtbl_stat(Hashtbl *htbl)
   return;
 }
 
+#undef BUCKET_COUNT
+
 const int *step(Hashtbl *htbl, int state[4])
 {
   Quad *quad[4];
@@ -579,5 +548,5 @@ const int *step(Hashtbl *htbl, int state[4])
 
   Quad *q = hashtbl_find(htbl, hash(quad), quad);
 
-  return q->node.n.next->v->node.l.map;
+  return q->node.n.skip->node.l.map;
 }
