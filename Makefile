@@ -1,45 +1,38 @@
-CC=gcc -W -Wall -O2
+CC=gcc -W -Wall -O0 -fmax-errors=2
 BUILDDIR=build
+TESTDIR=test
+SRCDIR=src
 
-HDR_NAME=quad
-SRC=\
-  definitions\
-  darray\
-  bigint\
-  hashtbl\
-  hashlife\
-  lifecount\
-  parsers\
-  runlength\
-  prgrph\
-  conversion
-MAIN=src/main.c
-
-OBJ=$(SRC:%=$(BUILDDIR)/%.o)
-HDR=$(HDR_NAME:%=src/%.h)
+SRC=$(shell ls -1 src | grep \\.c)
+OBJ=$(SRC:%.c=$(BUILDDIR)/%.o)
 
 hashlife: $(BUILDDIR) $(BUILDDIR)/hashlife
 
 $(BUILDDIR):
-	mkdir $(BUILDDIR)
+	@mkdir -p $(BUILDDIR)
 
-test: hashlife
-	$(BUILDDIR)/hashlife ../patterns/glider_gun.txt 0
+$(BUILDDIR)/hashlife: $(OBJ)
+	$(CC) $(OBJ) -o $@
 
-$(BUILDDIR)/hashlife: $(HDR) $(OBJ) $(MAIN)
-	$(CC) $(OBJ) $(MAIN) -o $@
-
-$(BUILDDIR)/%.o: src/%.c
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c $< -o $@
+
+$(BUILDDIR)/%.d: $(SRCDIR)/%.c $(BUILDDIR)
+	@gcc -MM $< -MT $(@:.d=.o) -MF $@
 
 clean:
 	rm -rf $(BUILDDIR)
 
-$(BUILDDIR)/%.d: src/%.c $(BUILDDIR)
-	gcc -MM $< -MF $@
-
 .PHONY: clean
 
-.SECONDARY: $(OBJ)
+ifneq ($(MAKECMDGOALS), clean)
+-include $(OBJ:.o=.d)
+endif
 
-include $(OBJ:.o=.d)
+tests: hashlife
+	$(BUILDDIR)/hashlife ../patterns/glider_gun.txt 0
+
+test/test_chunks: build/chunks.o build/definitions.o test/test_chunks.c
+	$(CC) -Isrc build/chunks.o build/definitions.o test/test_chunks.c \
+		-o test/test_chunks
+
