@@ -1,42 +1,43 @@
 #ifndef QUAD_H
 #define QUAD_H
+#include "bigint.h"
 
-typedef struct QuadList QuadList;
-
+/*! \defgroup quad Quadtrees */
+/*!@{*/
 typedef struct Quad Quad;
+typedef struct QuadTaskList QuadTaskList;
 
 //! List of quad elements, with task identifier
 /*! */
-struct QuadList {
-  int       ql_skip_id;
-  Quad     *ql_head;
-  QuadList *ql_tail;
+struct QuadTaskList {
+  int           ql_skip_id;
+  Quad         *ql_head;
+  QuadTaskList *ql_tail;
 };
 
 //! Quadtree internal node
 struct QInNode
 {
-  Quad *skip;           /*!< State of the center area after `2^depth` steps */
-  QuadList *short_skip; /*! State of the center area after less than
-                          `2^depth` steps */
-  Quad *sub[4];
-  /*!< Subtrees,
-    layout:
+  Quad         *skip;       //!< \brief State of the center area after
+                            //!< `2^depth` steps
+  QuadTaskList *short_skip; //!< \brief State of the center area after
+                            //!< less than `2^depth` steps
+  Quad         *sub[4];     //!< Subtrees
+  /*!< Layout:
 
-        0 1
-        2 3
+     0 1
+     2 3
   */
 };
 
 //! Quadtree leaf
 struct QLeaf
 {
-  int map[4];
-  /*!< 2x2 square map,
-    layout:
+  int map[4]; //!< 2x2 square map
+  /*!< Layout:
 
-        0 1
-        2 3
+     0 1
+     2 3
   */
 };
 
@@ -65,8 +66,11 @@ union Node
 struct Quad
 {
   int         depth;      
+  BigInt     *cell_count; //!< Number of alive cells
   union Node  node;       
-  BigInt     *cell_count; /*!< Number of cells */
 };
 
+const int  leaves_count = 1 << 4; //!< Number of leaves
+const int  depth1_count = 1 << 16; //!< Number of depth 1 nodes
+/*@}*/
 #endif
