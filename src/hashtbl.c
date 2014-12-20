@@ -26,10 +26,6 @@ Hashtbl *hashtbl_new(rule r)
   if (leaves == NULL)
     hashlife_init();
 
-#ifdef DEBUG_HTBL_NEW
-  fprintf(stderr, "init OK\n");
-#endif
-
   Hashtbl *htbl = malloc(sizeof(Hashtbl));
 
   if (htbl == NULL)
@@ -162,6 +158,10 @@ void hashlife_init(void)
     for ( j = 0 ; j < 4 ; j++ )
       q->node.l.map[j] = (i >> (3 - j)) & 1;
   }
+#ifdef DEBUG_HTBL_NEW
+  fprintf(stderr, "init OK\n");
+#endif
+
 }
 
 /*! Part of `hashlife_init()` logic.
@@ -232,20 +232,16 @@ void binary(uintptr_t w)
 {
   int k;
   for ( k = 0 ; k < 32 ; k++, w >>= 1 )
-    fprintf(stderr, "%u", (w & 1));
+    fprintf(stderr, "%d", (char) (w & 1));
   fprintf(stderr, " !\n");
 }
 
 /*! Hashes the pointers to the four subtrees. */
 int hash(Quad* key[4])
 {
-  uintptr_t a[4], x;
-  int i;
+  uintptr_t *a = (uintptr_t *) key, x;
 
-  for ( i = 0 ; i < 4 ; i++ )
-    a[i] = ((uintptr_t) key[i]) >> 4;
-
-  x = (a[0] >> 6) + a[1] + (a[2] << 10) + (a[3] << 20);
+  x = (a[0] >> 6) ^ a[1] ^ (a[2] << 10) ^ (a[3] << 15);
 
 #ifdef HASHSAMPLE
   //sample

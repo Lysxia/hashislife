@@ -6,5 +6,6 @@
 int main(void) {
   Hashtbl *htbl = hashtbl_new(CONWAY);
   hashtbl_stat(htbl);
+  hashtbl_delete(htbl);
   return 0;
 }
