@@ -13,8 +13,8 @@ const BigInt *cell_count(Quad *q)
 
 const BigInt *cell_count_(Quad *q)
 {
-  if ( q->cell_count )
-    return q->cell_count;
+  if ( q->alive )
+    return q->alive;
   else if ( q->depth > 0 )
   {
     BigInt *tmp[2];
@@ -22,12 +22,12 @@ const BigInt *cell_count_(Quad *q)
     for ( i = 0 ; i < 2 ; i++ )
         tmp[i] = bi_add(cell_count_(q->node.n.sub[2*i]),
                         cell_count_(q->node.n.sub[2*i+1]));
-    q->cell_count = bi_add(tmp[0], tmp[1]);
+    q->alive = bi_add(tmp[0], tmp[1]);
 
     bi_free(tmp[0]);
     bi_free(tmp[1]);
 
-    return q->cell_count;
+    return q->alive;
   }
   else // q->depth == 0
   {
@@ -35,7 +35,7 @@ const BigInt *cell_count_(Quad *q)
     for ( i = 0 ; i < 4 ; i++ )
       k += q->node.l.map[i];
 
-    return q->cell_count = bi_from_int(k);
+    return q->alive = bi_from_int(k);
   }
 }
 
