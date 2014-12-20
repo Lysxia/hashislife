@@ -9,11 +9,11 @@ ChunksBlocks *chunksblocks_new(size_t n)
   if ( cb == NULL )
     return NULL;
 
-  cb->chunksb_size = 0;
-  cb->chunksb_block = malloc(n);
-  cb->chunksb_next = NULL;
+  cb->size = 0;
+  cb->block = malloc(n);
+  cb->next = NULL;
 
-  if ( cb->chunksb_block == NULL ) {
+  if ( cb->block == NULL ) {
     free(cb);
     return NULL;
   }
@@ -21,14 +21,14 @@ ChunksBlocks *chunksblocks_new(size_t n)
     return cb;
 }
 
-/*! In case of failure, the `.chunks_blocks` field is set to `NULL`
+/*! In case of failure, the `blocks` field is set to `NULL`
 */
 Chunks chunks_new(const size_t data_size, const int max_len)
 {
   Chunks c = {
-    .chunks_data_size = data_size,
-    .chunks_max_len = max_len,
-    .chunks_blocks = chunksblocks_new(data_size * max_len) };
+    .data_size = data_size,
+    .max_len = max_len,
+    .blocks = chunksblocks_new(data_size * max_len) };
 
   return c;
 }
@@ -38,11 +38,11 @@ Chunks chunks_new(const size_t data_size, const int max_len)
 */
 void chunks_delete(Chunks c)
 {
-  ChunksBlocks *cb = c.chunks_blocks;
+  ChunksBlocks *cb = c.blocks;
   while ( cb != NULL )
   {
-    ChunksBlocks *cb_next = cb->chunksb_next;
-    free(cb->chunksb_block);
+    ChunksBlocks *cb_next = cb->next;
+    free(cb->block);
     free(cb);
     cb = cb_next;
   }
@@ -51,8 +51,8 @@ void chunks_delete(Chunks c)
 /*! Allocates a unit of memory */
 void *chunks_alloc(Chunks c)
 {
-  if (    (unsigned) c.chunks_blocks->chunksb_size
-       == c.chunks_data_size * c.chunks_max_len ) // Current block is full
+  if (    (unsigned) c.blocks->size
+       == c.data_size * c.max_len ) // Current block is full
   {
     /* Create new block
       A little hack to get around the fact that c is passed by value:
@@ -65,23 +65,37 @@ void *chunks_alloc(Chunks c)
     if ( cb == NULL )
       return NULL;
 
-    char *block = malloc(c.chunks_data_size * c.chunks_max_len);
+    char *block = malloc(c.data_size * c.max_len);
 
     if ( block == NULL ) {
       free(cb);
       return NULL;
     }
 
-    *cb = *c.chunks_blocks;
+    *cb = *c.blocks;
 
-    c.chunks_blocks->chunksb_size = 0;
-    c.chunks_blocks->chunksb_block = block;
-    c.chunks_blocks->chunksb_next = cb;
+    c.blocks->size = 0;
+    c.blocks->block = block;
+    c.blocks->next = cb;
   }
 
-  void *p
-    = &c.chunks_blocks->chunksb_block[c.chunks_blocks->chunksb_size];
-  c.chunks_blocks->chunksb_size += c.chunks_data_size;
+  void *p = &c.blocks->block[c.blocks->size];
+  c.blocks->size += c.data_size;
   return p;
+}
+
+void chunks_print(Chunks c) {
+  printf("sizeof: %zu, length: %d\n", c.data_size, c.max_len);
+  ChunksBlocks *cb;
+  for ( cb = c.blocks ; cb != NULL ; cb = cb->next ) {
+    int i;
+    for ( i = 0 ; i < cb->size ; i++ ) {
+      if ( i % c.data_size == 0 && i != 0 )
+        printf(" ");
+      printf("%c%c", digit_to_char(cb->block[i]/16),
+                     digit_to_char(cb->block[i]%16));
+    }
+    printf("\n");
+  }
 }
 

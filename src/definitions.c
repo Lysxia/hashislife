@@ -2,12 +2,7 @@
 #include "definitions.h"
 
 char digit_to_char(int d) {
-  if ( d < 10 )
-    return '0' + d;
-  else if ( d < 36 )
-    return 'A' + d - 10;
-  else
-    return '?';
+  return ( d < 10 ) ? '0' + d : ( d < 36 ) ? 'A' + d - 10 : '?';
 }
 
 int itoa(char *dest, int src, int base) {
