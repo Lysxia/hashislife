@@ -1,42 +1,28 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "definitions.h"
 #include "darray.h"
 #include "bitmaps.h"
 
-void bm_free(BitMap *bm)
-{
-  switch ( bm->map_type )
-  {
-    case RLE:
-      if ( bm->map.rle != NULL)
-        rle_map_free(bm->map.rle);
-      break;
-    case RAW:
-      if ( bm->map.raw != NULL )
-        free_matrix(bm->map.raw, bm->y);
-      break;
-  }
-
-  free(bm);
-}
-
-BitMap *bm_new(enum MapType t)
+/*! \param map must be a pointer to `RLE` or `char*`
+  depending on the value of the tag `t`. */
+BitMap *bm_new(enum MapType t, void *map)
 {
   BitMap *bm = malloc(sizeof(BitMap));
 
-  if ( bm == NULL )
+  if ( NULL == bm )
   {
-    perror("bm_new()");
+    perror("bm_new(): failed to allocate bm");
     exit(1);
   }
 
   switch ( t )
   {
     case RLE:
-      bm->map.rle = NULL;
+      bm->map.rle = map;
       break;
     case RAW:
-      bm->map.raw = NULL;
+      bm->map.raw = map;
       break;
   }
 
@@ -49,15 +35,42 @@ BitMap *bm_new(enum MapType t)
   return bm;
 }
 
-void rle_map_free(Rle_line *rle)
+void bm_delete(BitMap *bm)
 {
-  int l;
-  for ( l = 0 ; l < rle->array_length ; l++ )
-    da_clear(&((Rle_line *) rle->da)[l].line_rle);
+  switch ( bm->map_type )
+  {
+    case RLE:
+      if ( bm->map.rle != NULL)
+        RleMap_delete(bm->map.rle);
+      break;
+    case RAW:
+      if ( bm->map.raw != NULL )
+        matrix_delete((void **) bm->map.raw, bm->y);
+      break;
+  }
 
-  da_clear(rle);
+  free(bm);
 }
 
+/*! \param `rle` and subfields must be `malloc()`ated pointers. */
+void RleMap_delete(RleMap *rle)
+{
+  int l;
+  for ( l = 0 ; l < rle->nb_lines ; l++ )
+    free(rle->lines[l].encoding);
+  free(rle->lines);
+  free(rle);
+}
+
+void matrix_delete(void **a, int m)
+{
+  int i;
+  for ( i = 0 ; i < m ; i++ )
+    free(a[i]);
+  free(a);
+}
+
+/*
 Rle_line *bm_rle_newline(Darray *rle, int line_num)
 {
   Rle_line *dest = da_append(rle, NULL);
@@ -67,4 +80,5 @@ Rle_line *bm_rle_newline(Darray *rle, int line_num)
 
   return dest;
 }
+*/
 

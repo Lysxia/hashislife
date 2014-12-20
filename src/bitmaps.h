@@ -3,44 +3,51 @@
 
 #include "definitions.h"
 #include "darray.h"
-
+/*! \defgroup bmp Cell matrix representation */
+/*!@{*/
+//! Types of supported map
 enum MapType { RAW, RLE };
 
-typedef struct Rle_line
+//! Run length encoded line
+typedef struct RleLine
 {
-  int *line_rle;
-  int line_length;
-  int line_num;
-} Rle_line;
+  struct {
+    int state;
+    int repeat;
+  }   *encoding;
+  int  length;
+  int  line_num;
+} RleLine;
 
+typedef struct RLE
+{
+  RleLine *lines;
+  int      nb_lines;
+} RleMap;
+
+//! Tagged union type
 typedef struct
 {
   union
   {
-    struct
-    {
-      Rle_line *rle_lines;
-      int rle_lines_c;
-    } rle;
-
-    char **raw;
+    RleMap *rle; //!< Run length encoding
+    char  **raw; //!< Raw matrix
   } map;
 
-  enum MapType map_type;
+  enum MapType map_type; //!< Type tag
 
-  // x increasing towards the right
-  // y towards the bottom
-  int x, y;
-  int corner_x, corner_y; // position of top-left corner
+  int x; //!< x increasing towards the right
+  int y; //!< y towards the bottom
+  int corner_x, corner_y; //!< position of top-left corner
   rule r;
 } BitMap;
 
-void bm_free(BitMap *map);
+BitMap *bm_new(enum MapType t, void *map); //!< Create map
+void    bm_delete(BitMap *map); //!< Destroy map
 
-BitMap *bm_new(enum MapType t);
-
-void rle_map_free(Rle_line *rle);
+void RleMap_delete(RleMap *rle);
+void matrix_delete(void **a, int m);
 
 //Rle_line *bm_rle_newline(Darray *rle, int line_num);
-
+/*!@}*/
 #endif
