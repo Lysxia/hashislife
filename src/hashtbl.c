@@ -1,34 +1,9 @@
-/* Quadtree hashconsing */
-
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "hashtbl.h"
-
-/*! \defgroup hashtbl_aux Auxiliary definitions (hashtables) */
-/*!@{*/
-QuadList *quadlist_alloc(Hashtbl *htbl);
-//void       map_block_compact();
-//Map_block *map_block_compact_(Map_block *);
-
-//! Create depth 1 node.
-void quad_d1(Hashtbl *htbl, Quad *quad[4], rule r); 
-
-int  hash(Quad*[4]);
-Quad *hashtbl_find(Hashtbl *htbl, int h, Quad* key[4]);
-void hashtbl_add(Hashtbl *htbl, int h, QuadList *elt);
-Quad *list_find(Quad* key[4], QuadList *list);
-
-void block_free(QuadBlock *);
-void quad_free(Quad *);
-//void free_map(Quad_map *); 
-/*!@}*/
-
-/*** Constants and global elements ***/
-
-const int init_size = 1 << 25; // size of hashtbl
-const int init_dead_size = 32;
+#include "hashtbl_aux.h"
 
 /* The address of a leaf is a 4 digit binary number 0123
   representing the 4 bit map
@@ -36,15 +11,13 @@ const int init_dead_size = 32;
   2 3 */
 Quad      *leaves = NULL;
 
-Map_block *map_blocks = NULL;
-
 /*! Allocates, initializes and returns a new `Hashtbl` structure.
- 
+
   @param r The initialization precomputes patterns for this rule set.
                (So the same hashtable can not be used for different
                rule sets.)
 
-  \see rules
+  \see rule
   \see hashtbl_delete
 */
 Hashtbl *hashtbl_new(rule r)
@@ -52,6 +25,10 @@ Hashtbl *hashtbl_new(rule r)
   /* The first call initializes global parameters */
   if (leaves == NULL)
     hashlife_init();
+
+#ifdef DEBUG_HTBL_NEW
+  fprintf(stderr, "init OK\n");
+#endif
 
   Hashtbl *htbl = malloc(sizeof(Hashtbl));
 
@@ -62,6 +39,7 @@ Hashtbl *hashtbl_new(rule r)
   }
 
   /* Initialize hashtable fields */
+  htbl->rule      = r;
   htbl->size      = init_size;
   htbl->count     = 0;
   htbl->tbl       = malloc(init_size * sizeof(QuadList*));
@@ -69,17 +47,15 @@ Hashtbl *hashtbl_new(rule r)
   htbl->dead_size = init_dead_size;
   htbl->dead_quad = malloc(init_dead_size * sizeof(Quad*));
 
-  htbl->blocks    = malloc(sizeof(QuadBlock));
+  htbl->chunks    = chunks_new(sizeof(QuadList), chunk_max_len);
 
-  if ( !htbl->blocks || !htbl->tbl || !htbl->dead_quad )
+  if (    NULL == htbl->chunks.blocks
+       || NULL == htbl->tbl
+       || NULL == htbl->dead_quad )
   {
     perror("hashtbl_new(): Failed to allocate one or several field(s).");
     exit(1);
   }
-
-  /* First memory block */
-  htbl->blocks->block_next = NULL;
-  htbl->blocks->block_len  = 0;
 
   int i;
 
@@ -114,13 +90,13 @@ Hashtbl *hashtbl_new(rule r)
 /*! \see hashtbl_new */
 void hashtbl_delete(Hashtbl *htbl)
 {
-        free(htbl->tbl);
-        free(htbl->dead_quad);
-  block_free(htbl->blocks);
-        free(htbl);
+  chunks_delete(htbl->chunks);
+  free(htbl->tbl);
+  free(htbl->dead_quad);
+  free(htbl);
 }
 
-/*! Leaves are indexed from 0 to \link leaves_count \endlink-1 = 15. */
+/*! Leaves are indexed from 0 to `leaves_count`-1 = 15. */
 Quad *leaf(int k)
 {
   return &leaves[k];
@@ -162,64 +138,25 @@ Quad *dead_space(Hashtbl *htbl, int d)
     return htbl->dead_quad[d];
 }
 
-/*! Prerequisite : the four subtrees were computed and hashed.
-  
-  Use this function to construct new nodes.
-*/
-Quad *cons_quad(
-  Hashtbl *htbl, //!< Current hashtable
-  Quad *quad[4], //!< Array of subtrees
-  int d)         //!< Depth of current node
-{
-  assert(quad[0]->depth == quad[1]->depth
-      && quad[0]->depth == quad[2]->depth
-      && quad[0]->depth == quad[3]->depth
-      && quad[0]->depth == d-1);
-
-  int h = hash(quad);
-
-  Quad *q = hashtbl_find(htbl, h, quad);
-
-  if ( q ) // The requested node has been memoized already
-    return q;
-  else
-  {
-    QuadList *ql = quadlist_alloc(htbl);
-
-    ql->head.depth = d;
-    ql->head.cell_count = NULL;
-    ql->head.node.n.skip = NULL;
-    ql->head.node.n.short_skip = NULL;
-
-    int i;
-    for ( i = 0 ; i < 4 ; i++ )
-      ql->head.node.n.sub[i] = quad[i];
- 
-    hashtbl_add(htbl, h, ql);
-
-    return &ql->head;
-  }
-}
-
 /*! This is automatically called at the first call of `hashtbl_new()` */
 void hashlife_init(void)
 {
   // Initialize quadtree leaves
   leaves = malloc(leaves_count * sizeof(Quad));
 
-  if ( !leaves )
+  if ( leaves == NULL )
   {
     perror("hashlife_init()");
     exit(1);
   }
 
   int i;
-  for (i = 0 ; i < leaves_count ; i++)
+  for ( i = 0 ; i < leaves_count ; i++ )
   {
     Quad *q = &leaves[i];
 
     q->depth = 0;
-    q->cell_count = NULL;
+    q->alive = NULL;
 
     int j;
     for ( j = 0 ; j < 4 ; j++ )
@@ -227,10 +164,10 @@ void hashlife_init(void)
   }
 }
 
-/*! Part of hashlife_init() logic.
+/*! Part of `hashlife_init()` logic.
 
-  Depth 1 nodes and their `skip` field (QInNode; one step progress)
-  are computed at hashtable creation (\link hashtable_new() \endlink) */
+  Depth 1 nodes and their `.skip` field (`QInNode`; one step progress)
+  are computed at hashtable creation (`hashtbl_new()`) */
 void quad_d1(
   Hashtbl *htbl,
   Quad    *quad[4], //!< Subtrees (four leaves)
@@ -249,20 +186,20 @@ void quad_d1(
   QuadList *ql = quadlist_alloc(htbl);
 
   ql->head.depth = 1;
-  ql->head.cell_count = NULL;
+  ql->head.alive = NULL;
 
   // Fill skip field
   int acc = 0, i;
   for ( i = 0 ; i < 4 ; ++i )
   {
-    int j, sum = 0; 
+    int j, sum = 0;
 
     ql->head.node.n.sub[i] = quad[i];
 
     // Count alive neighbors
     for ( j = 0 ; j < 8 ; j++ )
       sum += quad[coord[i][j][0]]->node.l.map[coord[i][j][1]];
-    
+
     if ( quad[pos[i][0]]->node.l.map[pos[i][1]] )
       acc |= ((r >> (sum + 9)) & 1) << (3 - i);
     else
@@ -274,214 +211,108 @@ void quad_d1(
   hashtbl_add(htbl, hash(quad), ql);
 }
 
-/*** Map functions ***/
-/*
-Quad *map_assoc(Quad_map *map, int k)
-{
-  if ( !map || map->k > k )
-    return NULL;
-  else if ( map->k == k )
-    return map->v;
-  else
-    return map_assoc(map->map_tail, k);
-}
-
-Quad_map *map_add(Quad_map *map, int k, Quad* v)
-{
-  if ( !map || map->k > k )
-  {
-    Quad_map *new_map = alloc_map();
-    new_map->k = k;
-    new_map->v = v;
-    new_map->map_tail = map;
-    return new_map;
-  }
-  else
-  {
-    map->map_tail = map_add(map->map_tail, k, v);
-    return map;
-  }
-}
-*/
-
 /*** Memory management ***/
 
+/*! Returns a fresh pointer to a `QuadList` element. */
 QuadList *quadlist_alloc(Hashtbl *htbl)
 {
+  QuadList *ql = chunks_alloc(htbl->chunks);
+  if ( NULL == ql )
+  {
+    perror("quadlist_alloc(): Failed to allocate element.");
+    exit(1);
+  }
   htbl->count++;
-
-  if ( htbl->blocks->block_len == BLOCK_MAX_LEN )
-  {
-    QuadBlock *new_qb = malloc(sizeof(QuadBlock));
-    
-    if ( !new_qb )
-    {
-      perror("quadlist_alloc(): Failed to allocate new block.");
-      exit(1);
-    }
-
-    new_qb->block_len = 0;
-    new_qb->block_next = htbl->blocks;
-
-    htbl->blocks = new_qb;
-  }
-  
-  return htbl->blocks->block + htbl->blocks->block_len++;
+  return ql;
 }
-
-/*
-Quad_map *alloc_map()
-{
-  if ( !map_blocks || map_blocks->m_block_len == BLOCK_MAX_LEN )
-  {
-    Map_block *new_mb = malloc(sizeof(Map_block));
-
-    if ( !new_mb )
-    {
-      perror("alloc_map()");
-      exit(1);
-    }
-
-    new_mb->m_block_len   = 0;
-    new_mb->m_block_alive = 0;
-    new_mb->next_m_block  = map_blocks;
-
-    int i;
-    for ( i = 0 ; i < BLOCK_MAX_LEN ; i++ )
-      new_mb->m_block[i].qm_block = new_mb;
-
-    map_blocks = new_mb;
-  }
-
-  map_blocks->m_block_alive++;
-
-  return map_blocks->m_block + map_blocks->m_block_len++;
-}
-
-void map_block_compact()
-{
-  map_blocks = map_block_compact_(map_blocks);
-}
-
-Map_block *map_block_compact_(Map_block *qb)
-{
-  if ( qb )
-  {
-    Map_block *next = map_block_compact_(qb->next_m_block);
-
-    if ( qb->m_block_alive )
-    {
-      qb->next_m_block = next;
-      return qb;
-    }
-    else
-    {
-      free(qb);
-      return next;
-    }
-  }
-  else
-    return NULL;
-}
-*/
 
 /*** Hashtable functions ***/
 
-/*
-void binary(intptr_t w)
+void binary(uintptr_t w)
 {
   int k;
-  for ( k = 0 ; k < 64 ; k++, w >>= 1 )
-    fprintf(stderr, "%d", (w & 1));
+  for ( k = 0 ; k < 32 ; k++, w >>= 1 )
+    fprintf(stderr, "%u", (w & 1));
   fprintf(stderr, " !\n");
 }
-*/
 
+/*! Hashes the pointers to the four subtrees. */
 int hash(Quad* key[4])
 {
-  intptr_t a[4], x;
+  uintptr_t a[4], x;
   int i;
 
   for ( i = 0 ; i < 4 ; i++ )
-    a[i] = (intptr_t) key[i];
+    a[i] = ((uintptr_t) key[i]) >> 4;
 
-  x = (a[0] * a[3]) / 1000 ^ (a[2] * a[1]) / 68 ^ (a[1] * a[3] >> 12) ^ (a[0] >> 4);
+  x = (a[0] >> 6) + a[1] + (a[2] << 10) + (a[3] << 20);
 
-  /* sample
+#ifdef HASHSAMPLE
+  //sample
   static int t = 0;
 
   t++;
 
-  if ( !(t % 20021) )
+  if ( 0 == t % 20021 )
   {
     binary(a[0]);
     binary(a[1]);
     binary(a[2]);
     binary(a[3]);
   }
-  */
-
-  return (int) x & (init_size - 1);
+#endif
+  return (int) ((unsigned) x % (unsigned) init_size);
 }
 
+/*! Find a quadtree in a hashtable.
+
+  \param h `hash(key)`
+
+  Returns a pointer to an already hashed `Quad`,
+  or `NULL` if it doesn't exist. */
 Quad *hashtbl_find(Hashtbl *htbl, int h, Quad* key[4])
 {
-  return list_find(key, htbl->tbl[h]);
+  return list_find(htbl->tbl[h], key);
 }
 
+/*! Insert element in a hashtable. */
 void hashtbl_add(Hashtbl *htbl, int h, QuadList *elt)
 {
   elt->tail = htbl->tbl[h];
   htbl->tbl[h] = elt;
 }
 
-Quad *list_find(Quad* key[4], QuadList *list)
+/*! Find a quadtree in a list. Returns `NULL` if not found.*/
+Quad *list_find(QuadList *list, Quad* key[4])
 {
-  if ( !list )
-    return NULL;
-  else
+  for ( ; NULL != list ; list = list->tail )
   {
     int i;
     for ( i = 0 ; i < 4 ; i++ )
       if ( key[i] != list->head.node.n.sub[i] )
-        return list_find(key, list->tail);
-    return &list->head;
+        break;
+    if ( i == 4 )
+      return &list->head;
   }
+  return NULL;
 }
 
-void block_free(QuadBlock *qb)
+int list_length(QuadList *list)
 {
-  while ( qb )
-  {
-    int i;
-    for ( i = 0 ; i < qb->block_len ; i++ )
-      quad_free(&qb->block[i].head);
-
-    QuadBlock *next = qb->block_next;
-    free(qb);
-    qb = next;
-  }
+  if ( NULL == list )
+    return 0;
+  else
+    return 1 + list_length(list->tail);
 }
 
-// TODO
+/*! Clean up (part of `hashtbl_delete()`) */
 void quad_free(Quad *q)
 {
-  if ( q->cell_count )
-    bi_free(q->cell_count);
+  if ( NULL != q->alive )
+    bi_free(q->alive);
+  // Other references (including the `.short_skip` list and `q` itself)
+  // are currently managed elsewhere...
 }
-
-/*
-void free_map(Quad_map *qm)
-{
-  if ( qm )
-  {
-    qm->qm_block->m_block_alive--;
-    qm->qm_block = NULL;
-    free_map(qm->map_tail);
-    // v member is going to be freed outside as it should be in the hashtbl
-  }
-}
-*/
 
 /*** Debug functions ***/
 
@@ -507,16 +338,9 @@ void print_quad(Quad *q)
   }
 }
 
-int list_length(QuadList *list)
-{
-  if ( !list )
-    return 0;
-  else 
-    return 1 + list_length(list->tail);
-}
-
 #define BUCKET_COUNT 100
 
+/*! Print hashtable bucket length distribution. */
 void hashtbl_stat(Hashtbl *htbl)
 {
   int i, max[BUCKET_COUNT] = {0};
@@ -526,11 +350,11 @@ void hashtbl_stat(Hashtbl *htbl)
     max[l >= BUCKET_COUNT ? BUCKET_COUNT - 1 : l]++;
   }
 
-  fprintf(stderr, "LENGTH: %d\n", htbl->count);
+  fprintf(stderr, "length: %d\n", htbl->count);
   for ( i = 0 ; i < BUCKET_COUNT ; i++ )
   {
     if ( max[i] )
-      fprintf(stderr, "%3d %d\n", i, max[i]);
+      fprintf(stderr, "%3d %9d\n", i, max[i]);
   }
 
   return;
@@ -538,15 +362,20 @@ void hashtbl_stat(Hashtbl *htbl)
 
 #undef BUCKET_COUNT
 
-const int *step(Hashtbl *htbl, int state[4])
+/*! Use hashtable to compute the `.skip` field of a depth 1 node,
+  given with four leaves given by their indices.
+  Return the center leaf by its index (whose 4 least significant bits
+  actually give its state). */
+int depth1_skip(Hashtbl *htbl, int state[4])
 {
   Quad *quad[4];
-  int i;
 
+  int i;
   for ( i = 0 ; i < 4 ; i++ )
     quad[i] = &leaves[state[i]];
 
   Quad *q = hashtbl_find(htbl, hash(quad), quad);
 
-  return q->node.n.skip->node.l.map;
+  return q->node.n.skip - leaves;
 }
+

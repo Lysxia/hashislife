@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "definitions.h"
 #include "chunks.h"
 
 int main(void) {
@@ -14,6 +13,7 @@ int main(void) {
     }
     chunks_print(c);
   }
+  chunks_delete(c);
   return 0;
 }
 

@@ -20,8 +20,6 @@ const char *collect_arg3(char *argv, BigInt **t);
 
 int main(int argc, char *argv[])
 {
-  const rule conway = 6152; // parse_rule("b3/s23");
-
   int h = 0;
   BigInt *t;
   char *filename;
@@ -38,7 +36,7 @@ int main(int argc, char *argv[])
       file = fopen(filename, "r");
 
 
-      Hashtbl *htbl = hashtbl_new(conway);
+      Hashtbl *htbl = hashtbl_new(CONWAY);
       Quad *q;
 
       if ( strcmp(get_filename_ext(filename), "rle") == 0 )

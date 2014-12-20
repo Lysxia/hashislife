@@ -10,9 +10,9 @@ typedef struct QuadTaskList QuadTaskList;
 //! List of quad elements, with task identifier
 /*! */
 struct QuadTaskList {
-  int           ql_skip_id;
-  Quad         *ql_head;
-  QuadTaskList *ql_tail;
+  int           task_id;
+  Quad         *head;
+  QuadTaskList *tail;
 };
 
 //! Quadtree internal node
@@ -20,7 +20,7 @@ struct QInNode
 {
   Quad         *skip;       //!< \brief State of the center area after
                             //!< `2^depth` steps
-  QuadTaskList *short_skip; //!< \brief State of the center area after
+  QuadTaskList *short_skip; //!< \brief State(s) of the center area after
                             //!< less than `2^depth` steps
   Quad         *sub[4];     //!< Subtrees
   /*!< Layout:
@@ -66,11 +66,11 @@ union Node
 struct Quad
 {
   int         depth;      
-  BigInt     *cell_count; //!< Number of alive cells
+  BigInt     *alive; //!< Number of alive cells
   union Node  node;       
 };
 
-const int  leaves_count = 1 << 4; //!< Number of leaves
-const int  depth1_count = 1 << 16; //!< Number of depth 1 nodes
+static const int  leaves_count = 1 << 4; //!< Number of leaves
+static const int  depth1_count = 1 << 16; //!< Number of depth 1 nodes
 /*@}*/
 #endif

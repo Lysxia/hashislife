@@ -1,4 +1,6 @@
-CC=gcc -W -Wall -O0 -fmax-errors=2
+CC=gcc
+CFLAGS=-W -Wall -O2
+#CFLAGS=-W -Wall -O0 -g
 BUILDDIR=build
 TESTDIR=test
 SRCDIR=src
@@ -12,13 +14,13 @@ $(BUILDDIR):
 	@mkdir -p $(BUILDDIR)
 
 $(BUILDDIR)/hashlife: $(OBJ)
-	$(CC) $(OBJ) -o $@
+	$(CC) $(CFLAGS) $(OBJ) -o $@
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILDDIR)/%.d: $(SRCDIR)/%.c $(BUILDDIR)
-	@gcc -MM $< -MT $(@:.d=.o) -MF $@
+	@$(CC) -MM $< -MT $(@:.d=.o) -MF $@
 
 clean:
 	rm -rf $(BUILDDIR)
@@ -32,7 +34,11 @@ endif
 tests: hashlife
 	$(BUILDDIR)/hashlife ../patterns/glider_gun.txt 0
 
-test/test_chunks: build/chunks.o build/definitions.o test/test_chunks.c
-	$(CC) -Isrc build/chunks.o build/definitions.o test/test_chunks.c \
-		-o test/test_chunks
+TEST_CHUNKS=build/chunks.o build/definitions.o test/test_chunks.c
+test/test_chunks: $(TEST_CHUNKS)
+	$(CC) $(CFLAGS) -Isrc $(TEST_CHUNKS) -o $@
+
+TEST_HTBL=build/definitions.o build/chunks.o build/bigint.o build/create_quad.o build/hashtbl.o test/test_htbl.c
+test/test_htbl: $(TEST_HTBL)
+	$(CC) $(CFLAGS) -Isrc $(TEST_HTBL) -o $@
 
