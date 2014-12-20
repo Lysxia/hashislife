@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include "definitions.h"
 #include "chunks.h"
 
 //! Create single block
@@ -84,18 +86,20 @@ void *chunks_alloc(Chunks c)
   return p;
 }
 
+/*! Debug information on stderr
+*/
 void chunks_print(Chunks c) {
-  printf("sizeof: %zu, length: %d\n", c.data_size, c.max_len);
+  fprintf(stderr, "sizeof: %zu, length: %d\n", c.data_size, c.max_len);
   ChunksBlocks *cb;
   for ( cb = c.blocks ; cb != NULL ; cb = cb->next ) {
     int i;
     for ( i = 0 ; i < cb->size ; i++ ) {
       if ( i % c.data_size == 0 && i != 0 )
-        printf(" ");
-      printf("%c%c", digit_to_char(cb->block[i]/16),
+        fprintf(stderr, " ");
+      fprintf(stderr, "%c%c", digit_to_char(cb->block[i]/16),
                      digit_to_char(cb->block[i]%16));
     }
-    printf("\n");
+    fprintf(stderr, "\n");
   }
 }
 
