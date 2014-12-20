@@ -39,6 +39,7 @@ Hashtbl *hashtbl_new(rule r); //!< Create hashtbl
 void     hashtbl_delete(Hashtbl*); //!< Deallocate hashtbl
 
 void hashlife_init(void); //!< Global initializer
+void hashlife_cleanup(void); //!< Clear hashlife resources
 
 Quad *leaf(int k); //!< `int` to leaf
 Quad *dead_space(Hashtbl *htbl, int d);

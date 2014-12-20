@@ -161,7 +161,13 @@ void hashlife_init(void)
 #ifdef DEBUG_HTBL_NEW
   fprintf(stderr, "init OK\n");
 #endif
+}
 
+/*! Frees resources allocated by `hashlife_init()`. */
+void hashlife_cleanup(void)
+{
+  free(leaves);
+  leaves = NULL;
 }
 
 /*! Part of `hashlife_init()` logic.
