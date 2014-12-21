@@ -1,6 +1,7 @@
 #ifndef BITMAPS_H
 #define BITMAPS_H
 
+#include "runlength.h"
 #include "definitions.h"
 #include "darray.h"
 /*! \defgroup bmp Cell matrix representation */
@@ -9,20 +10,17 @@
 enum MapType { RAW, RLE };
 
 //! Run length encoded line
-typedef struct RleLine
+struct RleLine
 {
-  struct {
-    int state;
-    int repeat;
-  }   *encoding;
-  int  length;
-  int  line_num;
-} RleLine;
+  struct RleToken *tokens;
+  int nb_tokens;
+  int line_num;
+};
 
-typedef struct RLE
+typedef struct
 {
-  RleLine *lines;
-  int      nb_lines;
+  struct RleLine *lines;
+  int nb_lines;
 } RleMap;
 
 //! Tagged union type
@@ -48,6 +46,8 @@ void    bm_delete(BitMap *map); //!< Destroy map
 void RleMap_delete(RleMap *rle);
 void matrix_delete(void **a, int m);
 
+RleMap *align_tokens(struct RleToken *rle);
+void RleMap_write(FILE *file, RleMap *);
 //Rle_line *bm_rle_newline(Darray *rle, int line_num);
 /*!@}*/
 #endif

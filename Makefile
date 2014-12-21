@@ -1,6 +1,6 @@
-CC=gcc
-CFLAGS=-W -Wall -O2 -fmax-errors=2
-#CFLAGS=-W -Wall -O0 -g
+CC=gcc -std=c99
+#CFLAGS=-W -Wall -O2 -fmax-errors=2
+CFLAGS=-W -Wall -O0 -g
 BUILDDIR=build
 TESTDIR=test
 SRCDIR=src
@@ -45,6 +45,7 @@ TEST_HTBL=build/definitions.o build/chunks.o build/bigint.o build/create_quad.o 
 test/test_htbl: $(TEST_HTBL)
 	$(CC) $(CFLAGS) -Isrc $(TEST_HTBL) -o $@
 
-TEST_RUNLENGTH=build/definitions.o build/parsers.o build/darray.o build/runlength.o test/test_runlength.c
+TEST_RUNLENGTH_OBJ=definitions bitmaps parsers darray runlength
+TEST_RUNLENGTH=$(TEST_RUNLENGTH_OBJ:%=build/%.o) test/test_runlength.c
 test/test_runlength: $(TEST_RUNLENGTH)
 	$(CC) $(CFLAGS) -Isrc $(TEST_RUNLENGTH) -o $@

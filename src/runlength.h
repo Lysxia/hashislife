@@ -25,19 +25,28 @@ struct TokenParser
   int   i;
 };
 
-struct TokenPrinter
+struct TokenWriter
 {
   FILE *file;
   int   line_length;
+};
+
+struct RLE
+{
+  int x;
+  int y;
+  rule r;
+  struct RleToken *tokens;
 };
 
 struct TokenParser tp_new(FILE *file);
 int tp_regenerate(struct TokenParser *tp);
 struct RleToken rle_token(struct TokenParser *tp);
 
-void rle_print(struct TokenPrinter *, struct RleToken);
+void write_tokens(struct TokenWriter *, struct RleToken *);
+void write_one_token(struct TokenWriter *, struct RleToken);
 
-struct RleToken *read_rle(FILE *file);
-void            write_rle(FILE *file, struct RleToken *rle);
+struct RLE read_rle(FILE *file);
+void       write_rle(FILE *file, struct RLE rle);
 
 #endif
