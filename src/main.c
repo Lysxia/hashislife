@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
       hashtbl_stat(htbl);
 
       bi_free(t);
-      free_hashtbl(htbl);
+      hashtbl_delete(htbl);
 
       break;
     case 1:
@@ -107,18 +107,25 @@ void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
 
   UMatrix um = quad_to_prgrph(bi_z, bi_z, m, n, 0, q);
 #else
-  int shift_e;
+#define CHUNKS_LEN 1024
+  struct Task task = {
+    .id = 0,
+    .steps = t,
+    .chunks = chunks_new(sizeof(QuadTaskList), CHUNKS_LEN) };
 
-  q = destiny(htbl, q, t, &shift_e);
+  int d = q->depth;
+  q = destiny(htbl, q, &task);
 
-  BigInt *bi_l = bi_power_2(shift_e - h);
+  /*
+  while (q->depth > d)
+    q = center(htbl, q->node.n.sub, q->depth-1);
+    */
 
-  UMatrix um = quad_to_matrix(bi_l, bi_l, m, n, h, q); 
-  bi_free(bi_l);
+  UMatrix um = quad_to_matrix(bi_zero(), bi_zero(), m, n, h, q); 
 #endif
 
   Prgrph next_p;
-  if ( !h )
+  if ( h == 0 )
   {
     next_p.prgrph = um.um_char;
   }
@@ -136,7 +143,7 @@ void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
 
   //htbl_stat(htbl);
 
-  if ( !h )
+  if ( h == 0 )
   {
     free_um_char(um, m);
   }

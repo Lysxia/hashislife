@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-W -Wall -O2
-#CFLAGS=-W -Wall -O0 -g
+#CFLAGS=-W -Wall -O2
+CFLAGS=-W -Wall -O0 -g
 BUILDDIR=build
 TESTDIR=test
 SRCDIR=src
@@ -24,6 +24,7 @@ $(BUILDDIR)/%.d: $(SRCDIR)/%.c $(BUILDDIR)
 
 clean:
 	rm -rf $(BUILDDIR)
+	rm -f $(TESTS)
 
 .PHONY: clean
 
@@ -33,6 +34,8 @@ endif
 
 tests: hashlife
 	$(BUILDDIR)/hashlife ../patterns/glider_gun.txt 0
+
+TESTS=test/test_chunks test/test_htbl
 
 TEST_CHUNKS=build/chunks.o build/definitions.o test/test_chunks.c
 test/test_chunks: $(TEST_CHUNKS)

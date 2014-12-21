@@ -25,54 +25,64 @@ Quad *skip(
   else if ( !long_skip && task_done )
     return q->node.n.short_skip->head;
 
-  /* qs is the array of depth d-2 subtrees:
+  Quad *q_out;
+  if ( q->depth == 1 )
+  {
+    q_out = ( bi_digit(task->steps, 0) )
+          ? q->node.n.skip
+          : center(htbl, q->node.n.sub, 0);
+  }
+  else
+  {
+    /* qs is the array of depth d-2 subtrees:
 
-      00 01 02 03
-      10 11 12 13
-      20 21 22 23
-      30 31 32 33 */
-  Quad *qs[4][4];
-  flatten(qs, q);
-  
-  /* q1 contains the progress after 2^(d-1) steps at the centers of
-     2x2 subblocks of qs:
+        00 01 02 03
+        10 11 12 13
+        20 21 22 23
+        30 31 32 33 */
+    Quad *qs[4][4];
+    flatten(qs, q);
+    
+    /* q1 contains the progress after 2^(d-1) steps at the centers of
+       2x2 subblocks of qs:
 
-      00 01 02
-      10 11 12
-      20 21 22 */
-  Quad *q1[3][3];
-  int i, j;
-  for ( i = 0 ; i < 3 ; i++ )
-    for ( j = 0 ; j < 3 ; j++ )
-    {
-      Quad *cur_quad[4];
+        00 01 02
+        10 11 12
+        20 21 22 */
+    Quad *q1[3][3];
+    int i, j;
+    for ( i = 0 ; i < 3 ; i++ )
+      for ( j = 0 ; j < 3 ; j++ )
+      {
+        Quad *cur_quad[4];
 
-      int k;
-      for ( k = 0 ; k < 4 ; k++ )
-        cur_quad[k] = qs[i + (k >> 1)][j + (k & 1)];
+        int k;
+        for ( k = 0 ; k < 4 ; k++ )
+          cur_quad[k] = qs[i + (k >> 1)][j + (k & 1)];
 
-      if ( half_skip )
-        q1[i][j] = skip(htbl, cons_quad(htbl, cur_quad, d - 1), NULL);
-      else
-        q1[i][j] = center(htbl, cur_quad, d-2);
-    }
+        if ( half_skip )
+          q1[i][j] = skip(htbl, cons_quad(htbl, cur_quad, d - 1), NULL);
+        else
+          q1[i][j] = center(htbl, cur_quad, d-2);
+      }
 
-  /* Holds the subtrees after step 2^d */
-  Quad *nxt[4];
+    /* Holds the subtrees after step 2^d */
+    Quad *nxt[4];
 
-  for ( i = 0 ; i < 2 ; i++ )
-    for ( j = 0 ; j < 2 ; j++ )
-    {
-      Quad *cur_quad[4];
+    for ( i = 0 ; i < 2 ; i++ )
+      for ( j = 0 ; j < 2 ; j++ )
+      {
+        Quad *cur_quad[4];
 
-      int k;
-      for ( k = 0 ; k < 4 ; k++ )
-        cur_quad[k] = q1[i + (k >> 1)][j + (k & 1)];
+        int k;
+        for ( k = 0 ; k < 4 ; k++ )
+          cur_quad[k] = q1[i + (k >> 1)][j + (k & 1)];
 
-      nxt[2 * i + j] = skip(htbl, cons_quad(htbl, cur_quad, d - 1), task);
-    }
+        nxt[2 * i + j] = skip(htbl, cons_quad(htbl, cur_quad, d - 1), task);
+      }
 
-  Quad *q_out = cons_quad(htbl, nxt, d-1);
+    q_out = cons_quad(htbl, nxt, d-1);
+  }
 
   if ( long_skip )
     q->node.n.skip = q_out;

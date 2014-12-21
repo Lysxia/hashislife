@@ -238,7 +238,7 @@ void bounded_lines(int run_count, char tag, FILE *new_file)
   else if ( file == NULL ) // no file to print to
     return;
 
-  int written = itoa(a, run_count);
+  int written = itoa(a, run_count, 10);
 
   if ( run_count == 1 )
     a[0] = tag;

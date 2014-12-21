@@ -161,7 +161,7 @@ struct Quad_rle rle_to_qrle(Rle *rle)
     qrle_l.qrle_linenum = rle->rle_lines[i].line_num / 2;
     Darray *da_line = da_new(sizeof(struct Quad_repeat));
 
-    if ( rle->rle_lines[i].line_num % 2 )
+    if ( 1 == rle->rle_lines[i].line_num % 2 )
     {
       line[0] = NULL;
       len[0] = 0;
@@ -236,8 +236,17 @@ Quad *condense_(Hashtbl *htbl, struct Quad_rle qrle)
   int d;
   for ( d = 0 ; qrle.qrle_len > 1 || qrle.qrle[0].qrle_linelen > 1 ; d++ )
   {
-    //printf("-%d %d", qrle.qrle_len, qrle.qrle[0].qrle_linelen); fflush(stdout);
+    {
+      printf("-%d-", qrle.qrle_len);
+      int i;
+      for ( i = 0 ; i < qrle.qrle_len ; i++ )
+        printf("%d %d, ", qrle.qrle[i].qrle_linelen, qrle.qrle[i].qrle_linenum);
+    }
     qrle = map_cons(htbl, dead_space(htbl, d), d+1, qrle);
+    {
+      printf("\n");
+      fflush(stdout);
+    }
   }
 
   Quad *q = qrle.qrle[0].qrle_line[0].qr_q;
@@ -269,7 +278,7 @@ struct Quad_rle map_cons(
   while ( i < qrle.qrle_len )
   {
     int linenum = qrle.qrle[i].qrle_linenum / 2;
-    if ( qrle.qrle[i].qrle_linenum % 2 )
+    if ( qrle.qrle[i].qrle_linenum % 2 == 1 )
     {
       qrle2.qrle[l] =
         map_cons_line(htbl, ds, d,
@@ -378,7 +387,7 @@ int line_take_two(
     else
     {
       quad[1] = line[*j].qr_q;
-      if ( !--line[*j].qr_n )
+      if ( 0 == --line[*j].qr_n )
         ++*j;
     }
     return 1;
@@ -387,7 +396,7 @@ int line_take_two(
   {
     quad[0] = quad[1] = line[*j].qr_q;
     int len = line[*j].qr_n / 2;
-    if ( !(line[*j].qr_n %= 2) )
+    if ( 0 == (line[*j].qr_n %= 2) )
       ++*j;
     return len;
   }
@@ -411,37 +420,31 @@ int rle_take_two(
   if ( *buff == -1 )
     *buff = line[*j];
 
-  if ( *buff == 0 )
-  {
-    if ( ++*j < linelen )
-      *buff = line[*j];
-    else
-    {
-      *leaf = 0;
-      return INT_MAX;
-    }
-  }
+  int len;
 
   if ( *buff == 1 )
   {
     *leaf = (*j & 1) << 1;
+    len = 1;
 
-    if ( ++*j == linelen )
-      return 1;
-    else
+    if ( ++*j < linelen )
     {
       *leaf |= *j & 1;
       *buff = line[*j] - 1;
-      return 1;
+      len = 1;
     }
   }
   else
   {
     *leaf = (*j & 1) ? 3 : 0;
-    int len = *buff / 2;
+    len = *buff / 2;
     *buff %= 2;
-    return len;
   }
+
+  if ( *buff == 0 && ++*j < linelen )
+    *buff = line[*j];
+
+  return len;
 }
 
 /*** -to matrix conversion ***/
@@ -532,7 +535,7 @@ void quad_to_matrix_(
       for ( j = 0 ; j < nlen ; j++ )
       {
         p.um_char[m_mmin+i][m_nmin+j] =
-          (i < 2 && j < 2) && q->node.l.map[2*(mmin_+i)+(nmin_+j)]
+          (mmin_+i < 2 && nmin_+j < 2 && q->node.l.map[2*(mmin_+i)+(nmin_+j)])
           ? ALIVE : DEAD;
       }
   }
