@@ -28,4 +28,5 @@ struct QRleMap RleMap_to_QRleMap(RleMap *rle_m);
 
 Quad *condense(Hashtbl *htbl, struct QRleMap qrle_m);
 
+struct QRleLine fuse_RleLines(struct RleLine line[2]);
 #endif

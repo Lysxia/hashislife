@@ -23,52 +23,127 @@ Quad *condense(Hashtbl *htbl, struct QRleMap qrle_m)
 
 struct QRleMap RleMap_to_QRleMap(RleMap *rle_m)
 {
+#define EMPTY(n) \
+  (struct RleLine) { \
+    .tokens = NULL, \
+    .nb_tokens = 0, \
+    .line_num = (n) \
+  }
+  Darray *lines = da_new(sizeof(struct QRleLine));
+  for ( int i = 0 ; i < rle_m->nb_lines ; )
+  {
+    struct QRleLine ql;
+    struct RleLine line[2];
+    if ( 1 == rle_m->lines[i].line_num % 2 ) // preceding line is empty
+    {
+      line[0] = EMPTY(rle_m->lines[i].line_num - 1);
+      line[1] = rle_m->lines[i];
+      i++;
+    }
+    else if ( i + 1 < rle_m->nb_lines
+           && rle_m->lines[i].line_num + 1 == rle_m->lines[i+1].line_num )
+      // successive lines
+    {
+      line[0] = rle_m->lines[i];
+      line[1] = rle_m->lines[i+1];
+      i += 2;
+    }
+    else // following line is empty
+    {
+      line[0] = rle_m->lines[i];
+      line[1] = EMPTY(rle_m->lines[i].line_num + 1);
+      i++;
+    }
+    ql = fuse_RleLines(line);
+    da_push(lines, &ql);
+  }
+  struct QRleMap qrle_m;
+  qrle_m.lines = da_unpack(lines, &qrle_m.nb_lines);
+  return qrle_m;
 }
 
-struct LineFuser {
-  struct RleLine line[2];
-  int i[2];
+struct TokenTaker {
+  struct RleToken *tokens;
+  int nb_tokens;
+  int i;
+  struct RleToken cur_tok;
 };
 
 struct QRleLine fuse_RleLines(struct RleLine line[2])
 {
   Darray *qtokens = da_new(sizeof(struct QRleToken));
-  struct LineFuser lf = {
-    .line = {line[0], line[1]},
-    .i = {0}
-  };
-  while ( lf.i[0] < lf.line[0].nb_tokens || lf.i[1] < lf.line[1].nb_tokens )
+  struct TokenTaker tt[2];
+  for ( int k = 0 ; k < 2 ; k++ )
   {
-    int leaf = 0;
-    int repeat = -1; // +infinity
-    for ( int k = 0 ; k < 2 ; k++ ) // line number
+    tt[k].tokens = line[k].tokens;
+    tt[k].nb_tokens = line[k].nb_tokens;
+    tt[k].i = 0;
+    tt[k].cur_tok.repeat = 0;
+  }
+  while ( tt[0].i < tt[0].nb_tokens || tt[1].i < tt[1].nb_tokens )
+  {
+    int repeat = INT_MAX; /*pretty much infinity*/
+    int leaf_id = 0;
+    /* _Popping_ tokens places them in the fields of tt[]
+      to make it simple to _take_ them.
+      Because we are trying to zip two lines,
+      we may not _take_ all of the lastly popped tokens at once.
+    */
+    for ( int k = 0 ; k < 2 ; k++ )
     {
-      // Two cells to extract
-      if ( i[k] == line[k].nb_tokens ) // no tokens left
-        cell = 0;
-      else if ( line[k].tokens[i[k]].repeat == 1 )
+      if ( tt[k].cur_tok.repeat == 0 )
       {
-
-        cell = line[k].tokens[i[k]].value;
-        repeat
-          = ( repeat == -1 || line[k].tokens[i[k]].repeat < repeat )
-          ? line[k].tokens[i[k]].repeat : repeat;
+#define POP(k) \
+        if ( tt[k].i == tt[k].nb_tokens ) \
+        { \
+          tt[k].cur_tok.value = 0; \
+          tt[k].cur_tok.repeat = INT_MAX; /*pretty much infinity*/\
+        } \
+        else \
+        { \
+          tt[k].cur_tok.repeat = tt[k].tokens[tt[k].i].repeat; \
+          switch ( tt[k].tokens[tt[k].i].value ) \
+          { \
+            case ALIVE_CELL_CHAR: \
+              tt[k].cur_tok.value = 1; \
+              break; \
+            case DEAD_CELL_CHAR: \
+              tt[k].cur_tok.value = 0; \
+            default: \
+              perror("fuse_RleLines()"); \
+              exit(3); \
+          }  \
+          tt[k].i++; \
+        }
+        POP(k);
+      }
+      if ( tt[k].cur_tok.repeat == 1 )
+      {
+        repeat = 1;
+        leaf_id |= tt[k].cur_tok.value << (3 - 2*k);
+        POP(k); // One token taken
+        leaf_id |= tt[k].cur_tok.value << (2 - 2*k);
+      }
+      else
+      {
+        int can_repeat = tt[k].cur_tok.repeat / 2;
+        repeat = ( repeat < can_repeat ) ? repeat : can_repeat;
+        leaf_id |= (tt[k].cur_tok.value * 3) << (2 - 2*k);
       }
     }
-  }
-}
-
-struct RleToken *appariate_tokens(struct RleLine line)
-{
-  struct RleToken *t = malloc(3 * line.nb_tokens * sizeof(struct RleToken));
-  for ( int i = 0, j = 0 ; i < line.nb_tokens ; )
-  {
-    if ( line.tokens[i].repeat == 1 )
+    for ( int k = 0 ; k < 2 ; k++ ) // Take popped token
     {
-      t[j] = line.tokens[i];
-      t[j+1] = ( i + 1 < line.nb_tokens ) 
+      tt[k].cur_tok.repeat -= 2 * repeat;
     }
+    struct QRleToken qt = {
+      .value = leaf(leaf_id),
+      .repeat = repeat
+    };
+    da_push(qtokens, &qt);
   }
+  struct QRleLine ql = { .line_num = line[0].line_num / 2 };
+  ql.tokens = da_unpack(qtokens, &ql.nb_tokens);
+  return ql;
 }
 
 #if 0
