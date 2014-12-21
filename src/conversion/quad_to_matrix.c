@@ -213,18 +213,32 @@ UMatrix quad_to_matrix(
     }
   }
 
-  struct FramePositionBig m = {
-    .m_min = 0,
-    .min = mmin,
-    .len = mlen
-  };
-  struct FramePositionBig n = {
-    .m_min = 0,
-    .min = nmin,
-    .len = nlen
-  };
-
-  quad_to_matrix_(p, q, q->depth - zoom + 1, m, n);
+  const int tree_h = q->depth - zoom + 1;
+  if ( tree_h <= 30 ) {
+    struct FramePosition m = {
+      .m_min = 0,
+      .min = bi_to_int(mmin),
+      .len = mlen
+    };
+    struct FramePosition n = {
+      .m_min = 0,
+      .min = bi_to_int(nmin),
+      .len = nlen
+    };
+    simple_quad_to_matrix(p, q, tree_h, m, n);
+  } else {
+    struct FramePositionBig m = {
+      .m_min = 0,
+      .min = mmin,
+      .len = mlen
+    };
+    struct FramePositionBig n = {
+      .m_min = 0,
+      .min = nmin,
+      .len = nlen
+    };
+    quad_to_matrix_(p, q, q->depth - zoom + 1, m, n);
+  }
 
   return p;
 }
@@ -241,22 +255,6 @@ void quad_to_matrix_(
   struct FramePositionBig m,
   struct FramePositionBig n)
 {
-  if ( tree_h <= 30 )
-  {
-    struct FramePosition m_ = {
-      .m_min = m.m_min,
-      .min = bi_to_int(m.min),
-      .len = m.len
-    };
-    struct FramePosition n_ = {
-      .m_min = n.m_min,
-      .min = bi_to_int(n.min),
-      .len = n.len
-    };
-    simple_quad_to_matrix(p, q, tree_h, m_, n_);
-    return;
-  }
-
   Quad *quad[4], *quad_next[4];
   memcpy(quad, q->node.n.sub, sizeof(Quad*[4]));
   for ( ; tree_h > 30 ; tree_h-- )
