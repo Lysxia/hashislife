@@ -108,6 +108,23 @@ void simple_quad_to_matrix(
   }
 }
 
+/*! Crops the area outside the quadtree `q`.
+  For example, again with the 4-by-4 area:
+
+      0 1 2 3
+      4 5 6 7
+      8 9 A B
+      C D E F
+
+  if we try to draw a 3-by-3 area with top left corner 9,
+  
+      m.min == 2
+      m.len == 3
+      n.min == 1
+      n.len == 3
+
+  then `m.len` gets cropped to 2.
+*/
 void cropping_quad_to_matrix(
   UMatrix p,
   Quad *q,
@@ -183,6 +200,15 @@ void cropping_quad_to_matrix(
 }
 #endif
 
+/*! Draw the cells in a subarea covered by `q`.
+
+  The top left corner of `q` is at `{m,n} == {0,0}`
+  (`m`: vertical, `n`: horizontal).
+  The top left corner of the subarea `p` is at `{mmin,nmin}`,
+  and the area has dimensions `{mlen,nlen}`.
+
+  The values of cells that are not covered by `q` are currently left undefined.
+*/
 UMatrix quad_to_matrix(
   Quad *q,
   int zoom, //! >= 0
@@ -245,8 +271,8 @@ UMatrix quad_to_matrix(
 
 /*!
   Here we exploit the fact that the matrix size is only on 30-ish bits
-  (bigger than that and we run into memory problems) to "zoom" in the
-  relevant area.
+  (bigger than that and we run into memory problems anyway) to "zoom"
+  in the relevant area.
 */
 void quad_to_matrix_(
   UMatrix p,
