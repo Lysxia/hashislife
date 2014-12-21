@@ -9,7 +9,7 @@
   representing the 4 bit map
   0 1
   2 3 */
-Quad      *leaves = NULL;
+Quad *leaves = NULL;
 
 /*! Allocates, initializes and returns a new `Hashtbl` structure.
 

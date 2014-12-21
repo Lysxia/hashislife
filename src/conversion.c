@@ -10,36 +10,14 @@
 #include "darray.h"
 #include "prgrph.h"
 #include "runlength.h"
+#include "conversion_aux.h"
 
 /*** Matrix to- conversion ***/
-struct Quad_repeat
-{
-  Quad *qr_q;
-  int   qr_n;
-};
 
-struct Quad_rle_line
-{
-  struct Quad_repeat *qrle_line;
-  int                 qrle_linelen;
-  int                 qrle_linenum;
-};
+struct QRleMap prgrph_to_qrle(Prgrph p);
+struct QRleMap RleMap_to_QRleMap(RleMap *rle_m);
 
-struct Quad_rle
-{
-  struct Quad_rle_line *qrle;
-  int                   qrle_len;
-};
-
-const struct Quad_rle qrle_error = {
-  .qrle     = NULL,
-  .qrle_len = -1,
-};
-
-struct Quad_rle prgrph_to_qrle(Prgrph p);
-struct Quad_rle    rle_to_qrle(Rle *rle);
-
-Quad *condense_(Hashtbl *htbl, struct Quad_rle qrle);
+Quad *condense(Hashtbl *htbl, struct QRleMap qrle_m);
 
 struct Quad_rle map_cons(
   Hashtbl *htbl,
@@ -77,7 +55,7 @@ Quad *prgrph_to_quad(Hashtbl *htbl, Prgrph p)
 
 Quad *rle_to_quad(Hashtbl *htbl, Rle *rle)
 {
-  return condense_(htbl, rle_to_qrle(rle));
+  return condense(htbl, rle_to_qrle(rle));
 }
 
 struct Quad_rle prgrph_to_qrle(Prgrph p)
@@ -147,83 +125,6 @@ struct Quad_rle prgrph_to_qrle(Prgrph p)
   };
 
   return rle;
-}
-
-struct Quad_rle rle_to_qrle(Rle *rle)
-{
-  Darray *da = da_new(sizeof(struct Quad_rle_line));
-
-  int i = 0;
-  while ( i < rle->rle_lines_c )
-  {
-    int *line[2], j[2] = {0}, buff[2] = {-1, -1}, l[2], n[2] = {0}, len[2];
-    struct Quad_rle_line qrle_l;
-    qrle_l.qrle_linenum = rle->rle_lines[i].line_num / 2;
-    Darray *da_line = da_new(sizeof(struct Quad_repeat));
-
-    if ( 1 == rle->rle_lines[i].line_num % 2 )
-    {
-      line[0] = NULL;
-      len[0] = 0;
-      line[1] = rle->rle_lines[i].line;
-      len[1] = rle->rle_lines[i].line_length;
-      i++;
-    }
-    else
-    {
-      line[0] = rle->rle_lines[i].line;
-      len[0] = rle->rle_lines[i].line_length;
-
-      if ( i + 1 < rle->rle_lines_c
-        && rle->rle_lines[i+1].line_num == rle->rle_lines[i].line_num + 1 )
-      {
-        line[1] = rle->rle_lines[i+1].line;
-        len[1] = rle->rle_lines[i+1].line_length;
-        i += 2;
-      }
-      else
-      {
-        line[1] = NULL;
-        len[1] = 0;
-        i++;
-      }
-    }
-
-    while ( j[0] < len[0] || j[1] < len[1] )
-    {
-      int k;
-      for ( k = 0 ; k < 2 ; k++ )
-        if ( n[k] == 0 )
-          n[k] = rle_take_two(line[k], len[k], &j[k], &l[k], &buff[k]);
-
-      struct Quad_repeat qr;
-
-      qr.qr_q = leaf(l[0] << 2 | l[1]);
-
-      if ( n[0] < n[1] )
-      {
-        qr.qr_n = n[0];
-        n[1] -= n[0];
-        n[0] = 0;
-      }
-      else
-      {
-        qr.qr_n = n[1];
-        n[0] -= n[1];
-        n[1] = 0;
-      }
-
-      da_push(da_line, &qr);
-    }
-
-    qrle_l.qrle_line = da_unpack(da_line, &qrle_l.qrle_linelen);
-    da_push(da, &qrle_l);
-  }
-
-  struct Quad_rle qrle;
-  qrle.qrle = da_unpack(da, &qrle.qrle_len);
-
-  return qrle;
 }
 
 Quad *condense_(Hashtbl *htbl, struct Quad_rle qrle)

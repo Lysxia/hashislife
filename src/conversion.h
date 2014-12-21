@@ -12,9 +12,12 @@ typedef union UMatrix
   const BigInt ***um_bi;
 } UMatrix;
 
+#if 0
 // Assume the remaining cells are dead cells 
 // A more general setting could be imagined... Toric prgrph...
 Quad *prgrph_to_quad(Hashtbl *htbl, Prgrph p);
+#endif
+
 Quad *rle_to_quad(Hashtbl *htbl, RleMap *rle);
 
 // Draw the prgrph described by q at the specified location

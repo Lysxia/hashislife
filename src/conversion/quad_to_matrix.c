@@ -59,7 +59,7 @@
 void simple_quad_to_matrix(
   UMatrix p,
   Quad *q,
-  const int tree_h, // < 31
+  const int tree_h, //! < 31
   const struct FramePosition m,
   const struct FramePosition n)
 {
