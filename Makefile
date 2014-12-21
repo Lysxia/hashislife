@@ -1,6 +1,6 @@
 CC=gcc
-#CFLAGS=-W -Wall -O2
-CFLAGS=-W -Wall -O0 -g
+CFLAGS=-W -Wall -O2 -fmax-errors=2
+#CFLAGS=-W -Wall -O0 -g
 BUILDDIR=build
 TESTDIR=test
 SRCDIR=src
@@ -35,7 +35,7 @@ endif
 tests: hashlife
 	$(BUILDDIR)/hashlife ../patterns/glider_gun.txt 0
 
-TESTS=test/test_chunks test/test_htbl
+TESTS=test/test_chunks test/test_htbl test/test_runlength
 
 TEST_CHUNKS=build/chunks.o build/definitions.o test/test_chunks.c
 test/test_chunks: $(TEST_CHUNKS)
@@ -45,3 +45,6 @@ TEST_HTBL=build/definitions.o build/chunks.o build/bigint.o build/create_quad.o 
 test/test_htbl: $(TEST_HTBL)
 	$(CC) $(CFLAGS) -Isrc $(TEST_HTBL) -o $@
 
+TEST_RUNLENGTH=build/definitions.o build/parsers.o build/darray.o build/runlength.o test/test_runlength.c
+test/test_runlength: $(TEST_RUNLENGTH)
+	$(CC) $(CFLAGS) -Isrc $(TEST_RUNLENGTH) -o $@

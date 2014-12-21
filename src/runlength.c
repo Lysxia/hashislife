@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,46 +9,57 @@
 
 #define RLE_LINE_LENGTH 100
 
-int rle_token(FILE *new_file, char *tag);
-
-int rle_token(FILE *new_file, char *tag)
+int tp_regenerate(struct TokenParser *tp)
 {
-  static FILE *file = NULL;
-  static char buff[RLE_LINE_LENGTH];
-  static int i;
-
-  if ( new_file != NULL )
-  {
-    file = new_file;
-    buff[0] = '\0';
-    i = 0;
-  }
-  else if ( file == NULL )
-    return -1;
-
-  i += strspn(buff + i, " \n\t\r");
-
-  if ( buff[i] == '\0' )
-  {
-    i = 0;
-    if ( fgets(buff, RLE_LINE_LENGTH, file) == NULL )
-      return -1;
-  }
-  else if ( buff[i] == '!' )
-    return 0;
-
-  int len;
-
-  len = atoi(buff + i);
-  i += strspn(buff +i, "0123456789");
-  *tag = buff[i++];
-
-  return len ? len : 1;
+  tp->i = 0;
+  return ( tp->file != NULL
+        && fgets(tp->buff, RLE_LINE_LENGTH, tp->file) != NULL );
 }
 
-int read_rle_(FILE *file, Rle *rle);
+struct RleToken rle_token(struct TokenParser *tp)
+{
+  char buff[10] = {'\0'};
+  int j;
+  struct RleToken t = {
+    .value = 0,
+    .repeat = -1 };
 
-Rle *read_rle(FILE *file)
+  while ( tp->buff[tp->i] == '\0' || isspace(tp->buff[tp->i]) )
+  {
+    tp->i += strspn(tp->buff + tp->i, " \t\n"); // Skip spaces
+    if ( tp->buff[tp->i] == '\0' && !tp_regenerate(tp) )
+      return t; // EOF
+  }
+  j = strspn(tp->buff + tp->i, "0123456789");
+  if ( j > 10 )
+    return t; // integer too large
+  memcpy(buff, tp->buff + tp->i, j);
+  tp->i += j;
+  int z = ( j == 0 ) ? 1 : atoi(buff);
+  switch ( tp->buff[tp->i] )
+  {
+    case END_RLE_TOKEN:
+    case DEAD_RLE_TOKEN:
+    case ALIVE_RLE_TOKEN:
+    case NEWLINE_RLE_TOKEN:
+      t.value = tp->buff[tp->i];
+      t.repeat = z;
+      break;
+  }
+  tp->i++;
+  return t;
+}
+
+struct TokenParser tp_new(FILE *file)
+{
+  return (struct TokenParser) {
+    .file = file,
+    .buff = calloc(RLE_LINE_LENGTH, sizeof(char)),
+    .i = 0
+  };
+}
+
+struct RleToken *read_rle(FILE *file)
 {
   char buff[RLE_LINE_LENGTH];
   int linum = 0;
@@ -64,209 +76,92 @@ Rle *read_rle(FILE *file)
   while ( buff[0] == '#' );
 
   char s[22];
-  Rle *rle = malloc(sizeof(Rle));
-
-  if ( rle == NULL )
-  {
-    perror("read_rle()");
-    return NULL;
-  }
-
-  switch ( sscanf(buff, "x = %d, y = %d, rule = %21s ",
-                        &rle->rle_meta.rle_x,
-                        &rle->rle_meta.rle_y,
-                        s) )
+  int x, y;
+  rule r;
+  switch ( sscanf(buff, "x = %d, y = %d, rule = %21s ", &x, &y, s) )
   {
     case 2:
-      rle->rle_meta.rle_r = 0;
+      r = 0;
       break;
     case 3:
-      if ( (rle->rle_meta.rle_r = parse_rule(s)) != (rule) -1 )
+      if ( (r = parse_rule(s)) != (rule) (-1) )
         break;
     case EOF:
     case 1:
     default:
-      free(rle);
-      fprintf(stderr, "read_rle(): Bad format\n");
+      perror("read_rle(): Syntax error.");
       fprintf(stderr,"Line %d: %s\n", linum, s);
       exit(3);
       return NULL;
   }
 
-  if ( !read_rle_(file, rle) )
+  Darray *rle = da_new(sizeof(struct RleToken));
+  if ( rle == NULL )
   {
-    free(rle);
-    return NULL;
+    perror("read_rle()");
+    exit(1);
   }
 
-  return rle;
-}
-
-void rle_push_line_(Darray *lines, Darray *cur_line, int cur_run,
-                   int cur_run_alive, int line_num);
-void rle_abort_(Darray *lines, Darray *cur_line);
-
-int read_rle_(FILE *file, Rle *rle)
-{
-  int i = 0, cur_run = 0, cur_run_alive = 0, new_run_alive = 0;
-
-  Darray *lines = da_new(sizeof(struct Rle_line));
-  Darray *cur_line = da_new(sizeof(int));
-
-  int run_len;
-  char tag;
-
-  // Initializes rle_token
-  // Subsequent calls pass NULL
-  run_len = rle_token(file, &tag);
-
-  while ( run_len )
-  {
-    if ( run_len < 0 )
+  struct RleToken t;
+  struct TokenParser tp = tp_new(file);
+  do {
+    t = rle_token(&tp);
+    if ( t.repeat < 0 )
     {
-      fprintf(stderr, "read_rle(...): File has invalid format\n");
-      rle_abort_(lines, cur_line);
-      return 0;
+      free(da_unpack(rle, NULL));
+      perror("read_rle(): Syntax error.");
+      exit(3);
     }
+    da_push(rle, &t);
+  } while ( t.value != END_RLE_TOKEN );
 
-    switch ( tag )
-    {
-      case NEWLINE_RLE_TOKEN:
-        rle_push_line_(lines, cur_line, cur_run,
-                       cur_run_alive, i);
-        cur_line = da_new(sizeof(int));
-        i += run_len;
-        cur_run = 0;
-        cur_run_alive = 0;
-        break;
-      case ALIVE_RLE_TOKEN:
-        new_run_alive = 1; // fall through
-      case DEAD_RLE_TOKEN:
-        if ( new_run_alive ^ cur_run_alive )
-        {
-          da_push(cur_line, &cur_run);
-          cur_run_alive = !cur_run_alive;
-          cur_run = run_len;
-        }
-        else
-          cur_run += run_len;
-        new_run_alive = 0;
-        break;
-      default:
-        fprintf(stderr, "read_rle(): Unrecognized token, %d\n", tag);
-        rle_abort_(lines, cur_line);
-        return 0;
-    }
-    
-    run_len = rle_token(NULL, &tag);
-  }
-
-  rle_push_line_(lines, cur_line, cur_run,
-                 cur_run_alive, i);
-
-  rle->rle_lines = da_unpack(lines, &rle->rle_lines_c);
-
-  return 1;
+  return da_unpack(rle, NULL);
 }
-
-void rle_push_line_(Darray *lines, Darray *cur_line, int cur_run,
-                   int cur_run_alive, int line_num)
-{
-  if ( cur_run_alive )
-    da_push(cur_line, &cur_run);
-
-  struct Rle_line new_line;
-  new_line.line_num = line_num;
-  new_line.line = da_unpack(cur_line, &new_line.line_length);
-
-  if ( new_line.line_length > 0 )
-    da_push(lines, &new_line);
-}
-
-void rle_abort_(Darray *lines, Darray *cur_line)
-{
-  int k, len;
-
-  free(da_unpack(cur_line, &len));
-  struct Rle_line *rle_lines = da_unpack(lines, &len);
-
-  for ( k = 0 ; k < len ; k++)
-    free(rle_lines[k].line);
-
-  free(rle_lines);
-}
-
-/**/
-
-void bounded_lines(int run_count, char tag, FILE *new_file);
 
 #define MIN(a,b) (((a) < (b)) ? a : b)
 
-void write_rle(FILE *file, Rle *rle)
+void write_rle(FILE *file, struct RleToken *rle)
 {
-  int l, c;
-  int prev_line_num = 0;
-
-  bounded_lines(0, '\0', file);
-
-  for ( l = 0 ; l < MIN(40, rle->rle_lines_c) ; l++ )
+  int i;
+  struct TokenPrinter tp = {
+    .file = file,
+    .line_length = 0
+  };
+  for ( i = 0 ; rle[i].value != END_RLE_TOKEN ; i++ )
   {
-    bounded_lines(rle->rle_lines[l].line_num - prev_line_num,
-                  NEWLINE_RLE_TOKEN, NULL);
-
-    for ( c = 0 ; c < rle->rle_lines[l].line_length ; c++ )
-      bounded_lines(rle->rle_lines[l].line[c],
-                    c % 2 ? ALIVE_RLE_TOKEN : DEAD_RLE_TOKEN, NULL);
-
-    prev_line_num = rle->rle_lines[l].line_num;
+    rle_print(&tp, rle[i]);
   }
-  printf("\n!\n");
+  struct RleToken t_end = {
+    .value = END_RLE_TOKEN,
+    .repeat = 1
+  };
+  rle_print(&tp, t_end);
   fflush(file);
 }
 
-void bounded_lines(int run_count, char tag, FILE *new_file)
+#define MAX_COLS 79
+void rle_print(struct TokenPrinter *tp, struct RleToken t)
 {
-  static FILE *file = NULL;
-  static char a[20];
-  static int line;
+  char a[12];
 
-  if ( new_file != NULL )
-  {
-    file = new_file;
-    line = 0;
-  }
-  else if ( file == NULL ) // no file to print to
-    return;
-
-  int written = itoa(a, run_count, 10);
-
-  if ( run_count == 1 )
-    a[0] = tag;
-  else if ( run_count > 1 )
-  {
-    a[written] = tag;
+  int written;
+  if ( t.repeat == 1 ) {
+    a[0] = t.value;
+    a[1] = '\0';
+    written = 1;
+  } else {
+    written = itoa(a, t.repeat, 10);
+    a[written] = t.value;
     a[written+1] = '\0';
     written++;
   }
-  else
-    return;
 
-  if ( (line += written) > 70 )
+  if ( (tp->line_length += written) > MAX_COLS )
   {
-    printf("\n");
-    line = 0;
+    fputc('\n', tp->file);
+    tp->line_length = 0;
   }
   
-  printf("%s", a);
+  fputs(a, tp->file);
 }
 
-/**/
-
-void free_rle(Rle *rle)
-{
-  int l;
-  for ( l = 0 ; l < rle->rle_lines_c ; l++ )
-    free(rle->rle_lines[l].line);
-  free(rle->rle_lines);
-  free(rle);
-}

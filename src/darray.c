@@ -62,7 +62,8 @@ void *da_unpack(Darray *da, int *length)
     }
   }
   
-  *length = da->array_length;
+  if ( NULL != length )
+    *length = da->array_length;
 
   free(da);
   return a;
