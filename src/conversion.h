@@ -19,14 +19,20 @@ Quad *rle_to_quad(Hashtbl *htbl, RleMap *rle);
 
 // Draw the prgrph described by q at the specified location
 UMatrix quad_to_matrix(
+  Quad *q,
+  int zoom,
   BigInt *mmin,
-  BigInt *nmin,
   int mlen,
-  int nlen,
-  int height,
-  Quad *q);
+  BigInt *nmin,
+  int nlen);
 
-struct FrameIndices {
+struct FramePositionBig {
+  int m_min;
+  BigInt *min;
+  int len;
+};
+
+struct FramePosition {
   int m_min;
   int min;
   int len;
@@ -36,15 +42,30 @@ void simple_quad_to_matrix(
   UMatrix p,
   Quad *q,
   const int tree_h, // < 31
-  const struct FrameIndices m,
-  const struct FrameIndices n);
+  const struct FramePosition m,
+  const struct FramePosition n);
 
 void cropping_quad_to_matrix(
   UMatrix p,
   Quad *q,
   const int tree_h, // < 31
-  struct FrameIndices m,
-  struct FrameIndices n);
+  struct FramePosition m,
+  struct FramePosition n);
+
+void quad_to_matrix_(
+  UMatrix p,
+  Quad *q,
+  int tree_h,
+  struct FramePositionBig m,
+  struct FramePositionBig n);
+
+UMatrix quad_to_matrix(
+  Quad *q,
+  int zoom, //! >= 0
+  BigInt *mmin,
+  int mlen,
+  BigInt *nmin,
+  int nlen);
 
 Prgrph bi_mat_to_prgrph(
   const BigInt ***bm,

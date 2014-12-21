@@ -1,20 +1,10 @@
 #include <assert.h>
+#include <string.h>
 
 #include "bigint.h"
 #include "conversion.h"
 #include "definitions.h"
 #include "lifecount.h"
-
-void quad_to_matrix_(
-  UMatrix p,
-  int m_mmin,
-  int m_nmin,
-  BigInt *mmin,
-  BigInt *nmin,
-  int mlen,
-  int nlen,
-  const int height_,
-  Quad *q);
 
 /*!
   \param p Matrix (`M`-by-`N`)
@@ -58,6 +48,8 @@ void quad_to_matrix_(
   Invariants:
 
       tree_h - 1 <= q->depth
+      // tree_h may be negative, in which case it is treated like
+      // tree_h == 0
 
       {
         0 <= m.m_min < m.m_min + m.len < M
@@ -68,12 +60,12 @@ void simple_quad_to_matrix(
   UMatrix p,
   Quad *q,
   const int tree_h, // < 31
-  const struct FrameIndices m,
-  const struct FrameIndices n)
+  const struct FramePosition m,
+  const struct FramePosition n)
 {
   if ( m.len <= 0 || n.len <= 0 )
     return;
-  else if ( tree_h == 0 )
+  else if ( tree_h <= 0 )
   {
     assert( m.len == 1 && n.len == 1 );
     p.um_bi[m.m_min][n.m_min] = cell_count(q);
@@ -92,20 +84,22 @@ void simple_quad_to_matrix(
   else
   {
     const int two_h = 1 << (tree_h - 1);
-    const struct FrameIndices z[2] = {m, n};
-    struct FrameIndices u[2][2];
+    const struct FramePosition z[2] = {m, n};
+    struct FramePosition u[2][2];
     // *_[1] does not matter if *diff >= *len (*len_[1] <= 0 and stop)
     for ( int x = 0 ; x < 2 ; x++ )
     {
-      int diff = two_h - z[x].min;
-      u[x][0] = (struct FrameIndices) {
+      const int diff = two_h - z[x].min;
+      u[x][0] = (struct FramePosition) {
+        // ~ (two_h < z[x].min + z[x].len ?) but protected against overflow
+        // for nonnegative parameters
         .len = diff < z[x].len ? diff : z[x].len,
         .min = z[x].min,
         .m_min = z[x].m_min };
-      u[x][1] = (struct FrameIndices) {
-        .len = z[x].len - diff,
-        .min = diff < 0 ? -diff : 0,
-        .m_min = ( 0 < diff ) ? z[x].m_min + z[x].len : z[x].m_min };
+      u[x][1] = (struct FramePosition) {
+        .len = z[x].min < two_h ? z[x].len - diff : z[x].len,
+        .min = z[x].min < two_h ? 0 : -diff,
+        .m_min = z[x].min < two_h ? z[x].m_min + diff : z[x].m_min };
     }
     for ( int i = 0 ; i < 2 ; i++ )
       for ( int j = 0 ; j < 2 ; j++ )
@@ -114,13 +108,44 @@ void simple_quad_to_matrix(
   }
 }
 
+void cropping_quad_to_matrix(
+  UMatrix p,
+  Quad *q,
+  const int tree_h, // < 31
+  struct FramePosition m,
+  struct FramePosition n)
+{
+  if ( m.min < 0 )
+  {
+    m.len += m.min;
+    m.min = 0;
+  }
+  if ( (1 << tree_h) - m.min < m.len )
+  {
+    m.len = (1 << tree_h) - m.min;
+  }
+  if ( n.min < 0 )
+  {
+    n.len += n.min;
+    n.min = 0;
+  }
+  if ( (1 << tree_h) - n.min < n.len )
+  {
+    n.len = (1 << tree_h) - n.min;
+  }
+  simple_quad_to_matrix(p, q, tree_h, m, n);
+}
+
+#if 0
+// This is a neat use of macros but too bad
+// I finally don't want to fill out of bounds cells with zeros.
 /*! Takes care of bounds outside the quadtree `q`. */
 void cropping_quad_to_matrix(
   UMatrix p,
   Quad *q,
   const int tree_h, // < 31
-  struct FrameIndices m,
-  struct FrameIndices n)
+  struct FramePosition m,
+  struct FramePosition n)
 {
 #define FILL(imin,imax,jmin,jmax) \
   { \
@@ -156,94 +181,111 @@ void cropping_quad_to_matrix(
 #undef FILL
   simple_quad_to_matrix(p, q, tree_h, m, n);
 }
+#endif
 
 UMatrix quad_to_matrix(
+  Quad *q,
+  int zoom, //! >= 0
   BigInt *mmin,
-  BigInt *nmin,
   int mlen,
-  int nlen,
-  int height,
-  Quad *q)
+  BigInt *nmin,
+  int nlen)
 {
   UMatrix p;
 
-  if ( height <= 0 )
+  assert( zoom >= 0 );
+  if ( zoom == 0 )
   {
-    height = 0;
-
     p.um_char = alloc_prgrph(mlen, nlen, sizeof(char));
-
     if ( !p.um_char )
     {
-      perror("quad_to_matrix()");
+      perror("quad_to_matrix(): char");
       return p;
     }
   }
   else
   {
     p.um_bi = alloc_prgrph(mlen, nlen, sizeof(const BigInt *));
-
     if ( !p.um_bi )
     {
-      perror("quad_to_matrix()");
+      perror("quad_to_matrix(): bi");
       return p;
     }
   }
 
-  quad_to_matrix_(p,
-    0, 0,
-    mmin, nmin,
-    mlen, nlen,
-    height, q);
+  struct FramePositionBig m = {
+    .m_min = 0,
+    .min = mmin,
+    .len = mlen
+  };
+  struct FramePositionBig n = {
+    .m_min = 0,
+    .min = nmin,
+    .len = nlen
+  };
+
+  quad_to_matrix_(p, q, q->depth - zoom + 1, m, n);
 
   return p;
 }
 
+/*!
+  Here we exploit the fact that the matrix size is only on 30-ish bits
+  (bigger than that and we run into memory problems) to "zoom" in the
+  relevant area.
+*/
 void quad_to_matrix_(
   UMatrix p,
-  int m_mmin,
-  int m_nmin,
-  BigInt *mmin,
-  BigInt *nmin,
-  int mlen,
-  int nlen,
-  const int height,
-  Quad *q)
+  Quad *q,
+  int tree_h,
+  struct FramePositionBig m,
+  struct FramePositionBig n)
 {
-    int m_mmin_[2], m_nmin_[2];
-    BigInt *mmin_[2], *nmin_[2];
-    int mlen_[2], nlen_[2];
+  if ( tree_h <= 30 )
+  {
+    struct FramePosition m_ = {
+      .m_min = m.m_min,
+      .min = bi_to_int(m.min),
+      .len = m.len
+    };
+    struct FramePosition n_ = {
+      .m_min = n.m_min,
+      .min = bi_to_int(n.min),
+      .len = n.len
+    };
+    simple_quad_to_matrix(p, q, tree_h, m_, n_);
+    return;
+  }
 
-    int diff = 0;
-
-    mmin_[0] = mmin;
-    mmin_[1] = bi_minus_pow(mmin, q->depth - height, &diff);
-    m_mmin_[0] = m_mmin;
-    m_mmin_[1] = m_mmin + diff;
-    mlen_[0] = mlen < diff ? mlen : diff;
-    mlen_[1] = mlen - diff;
-
-    nmin_[0] = nmin;
-    nmin_[1] = bi_minus_pow(nmin, q->depth - height, &diff);
-    m_nmin_[0] = m_nmin;
-    m_nmin_[1] = m_nmin + diff;
-    nlen_[0] = nlen < diff ? nlen : diff;
-    nlen_[1] = nlen - diff;
-
-    int i;
-
-    for ( i = 0 ; i < 4 ; i++ )
+  Quad *quad[4], *quad_next[4];
+  memcpy(quad, q->node.n.sub, sizeof(Quad*[4]));
+  for ( ; tree_h > 30 ; tree_h-- )
+  {
+    int y = bi_slice(m.min, tree_h-2);
+    int x = bi_slice(n.min, tree_h-2);
+    for ( int i = 0 ; i < 2 ; i++ )
+      for ( int j = 0 ; j < 2 ; j++ )
+      {
+        quad_next[2*i+j] = quad[(y & 2) + ((x & 2) >> 1)]->node.n.sub[((y & 1) << 1) + (x & 1)];
+      }
+    memcpy(quad, quad_next, sizeof(Quad*[4]));
+  }
+  int mmin = bi_to_int(m.min);
+  int nmin = bi_to_int(n.min);
+  for ( int i = 0 ; i < 2 ; i++ )
+    for ( int j = 0 ; j < 2 ; j++ )
     {
-      const int x = i >> 1, y = i & 1;
-
-      quad_to_matrix_(p,
-                      m_mmin_[x], m_nmin_[y],
-                      mmin_[x], nmin_[y],
-                      mlen_[x], nlen_[y],
-                      height, q->node.n.sub[i]);
+      struct FramePosition m_ = {
+        .m_min = m.m_min,
+        .min = mmin - (i << tree_h),
+        .len = m.len
+      };
+      struct FramePosition n_ = {
+        .m_min = n.m_min,
+        .min = nmin - (j << tree_h),
+        .len = n.len
+      };
+      cropping_quad_to_matrix(p, quad[2*i+j], tree_h, m_, n_);
     }
-
-    bi_free(mmin_[1]);
-    bi_free(nmin_[1]);
 }
 
