@@ -112,12 +112,9 @@ RleMap *align_tokens(struct RleToken *rle)
   return rle_m;
 }
 
-void RleMap_write(FILE *file, RleMap *rle_m)
+struct RleToken *rle_flatten(RleMap *rle_m)
 {
-  struct TokenWriter tw = {
-    .file = file,
-    .line_length = 0
-  };
+  Darray *rle_da = da_new(sizeof(struct RleToken));
   for ( int i = 0 ; i < rle_m->nb_lines ; i++ )
   {
     struct RleToken t_nl = {
@@ -125,17 +122,46 @@ void RleMap_write(FILE *file, RleMap *rle_m)
       .repeat = rle_m->lines[i].line_num
               - (( i == 0 ) ? 0 : rle_m->lines[i-1].line_num)
     };
-    write_one_token(&tw, t_nl);
+    if ( t_nl.repeat > 0 )
+      da_push(rle_da, &t_nl);
     for ( int j = 0 ; j < rle_m->lines[i].nb_tokens ; j++ )
-      write_one_token(&tw, rle_m->lines[i].tokens[j]);
+      da_push(rle_da, &rle_m->lines[i].tokens[j]);
   }
   struct RleToken t_end = {
     .value = END_RLE_TOKEN,
     .repeat = 1
   };
-  write_one_token(&tw, t_end);
-  fputc('\n', file);
-  fflush(file);
+  da_push(rle_da, &t_end);
+  return da_unpack(rle_da, NULL);
+}
+
+BitMap *rle_to_bm(struct RLE rle)
+{
+  BitMap *bm = bm_new(RLE, align_tokens(rle.tokens));
+  bm->x = rle.x;
+  bm->y = rle.y;
+  bm->r = rle.r;
+  return bm;
+}
+
+void bm_write(FILE *file, BitMap *bm)
+{
+  switch ( bm->map_type )
+  {
+    case RLE:
+      {
+        struct RLE rle = {
+          .x = bm->x,
+          .y = bm->y,
+          .r = bm->r,
+          .tokens = rle_flatten(bm->map.rle)
+        };
+        write_rle(file, rle);
+      }
+      break;
+    case RAW:
+      break; // unimplemented
+  }
 }
 
 /*

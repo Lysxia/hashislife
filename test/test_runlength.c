@@ -11,8 +11,8 @@ int main(int argc, char *argv[]) {
     fflush(stdout);
     write_rle(stdout, rle);
     fflush(stdout);
-    puts("Aligned tokens");
-    RleMap_write(stdout, align_tokens(rle.tokens));
+    puts("BM");
+    bm_write(stdout, rle_to_bm(rle));
   }
   return 0;
 }

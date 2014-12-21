@@ -144,6 +144,7 @@ void write_rle(FILE *file, struct RLE rle)
   fputc('\n', file);
   fflush(file);
 }
+#undef MIN
 
 void write_tokens(struct TokenWriter *tw, struct RleToken *rle)
 {
@@ -187,4 +188,5 @@ void write_one_token(struct TokenWriter *tw, struct RleToken t)
   
   fputs(a, tw->file);
 }
+#undef MAX_COLS
 

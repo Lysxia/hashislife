@@ -47,7 +47,12 @@ void RleMap_delete(RleMap *rle);
 void matrix_delete(void **a, int m);
 
 RleMap *align_tokens(struct RleToken *rle);
-void RleMap_write(FILE *file, RleMap *);
+struct RleToken *rle_flatten(RleMap *rle_m);
+
+BitMap *rle_to_bm(struct RLE rle);
+
+void bm_write(FILE *file, BitMap *bm);
+
 //Rle_line *bm_rle_newline(Darray *rle, int line_num);
 /*!@}*/
 #endif
