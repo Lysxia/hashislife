@@ -16,21 +16,14 @@ void quad_to_matrix_(
   const int height_,
   Quad *q);
 
-struct FrameIndices {
-  int m_min;
-  int min;
-  int len;
-};
-
 /*!
   \param p Matrix (`M`-by-`N`)
   \param q Quadtree
-  \param tree_h Gives zoom level (smaller = zoom out)
+  \param tree_h < 31. Gives zoom level (smaller = zoom out)
   \param m Vertical indices.
-           The top left corner of the area to be drawn
-           is at position `m.m_min` in the matrix `p`,
-           at position `m.min` in the quadtree `q`
-           (0 is the top left corner of `q`),
+           The top left corner of the area to be drawn is at position
+           `m.m_min` in the matrix `p`, at position `m.min` in the
+           quadtree `q` (0 is the top left corner of `q`),
            and has height `m.len`.
   \param n Horizontal indices
 

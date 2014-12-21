@@ -26,6 +26,26 @@ UMatrix quad_to_matrix(
   int height,
   Quad *q);
 
+struct FrameIndices {
+  int m_min;
+  int min;
+  int len;
+};
+
+void simple_quad_to_matrix(
+  UMatrix p,
+  Quad *q,
+  const int tree_h, // < 31
+  const struct FrameIndices m,
+  const struct FrameIndices n);
+
+void cropping_quad_to_matrix(
+  UMatrix p,
+  Quad *q,
+  const int tree_h, // < 31
+  struct FrameIndices m,
+  struct FrameIndices n);
+
 Prgrph bi_mat_to_prgrph(
   const BigInt ***bm,
   int m,
