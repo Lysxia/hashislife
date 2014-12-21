@@ -98,7 +98,7 @@ void simple_quad_to_matrix(
   }
   else
   {
-    const int two_h = 1 << tree_h;
+    const int two_h = 1 << (tree_h - 1);
     const struct FrameIndices z[2] = {m, n};
     struct FrameIndices u[2][2];
     // *_[1] does not matter if *diff >= *len (*len_[1] <= 0 and stop)
@@ -121,13 +121,47 @@ void simple_quad_to_matrix(
   }
 }
 
+/*! Takes care of bounds outside the quadtree `q`. */
 void cropping_quad_to_matrix(
   UMatrix p,
   Quad *q,
   const int tree_h, // < 31
-  const struct FrameIndices m,
-  const struct FrameIndices n)
+  struct FrameIndices m,
+  struct FrameIndices n)
 {
+#define FILL(imin,imax,jmin,jmax) \
+  { \
+    for ( int i = (imin) ; i < (imax) ; i++ ) \
+      for ( int j = (jmin) ; j < (jmax) ; j++ ) \
+        if ( tree_h - 1 == q->depth ) \
+          p.um_char[m.m_min+i][n.m_min+j] = DEAD_CELL_CHAR; \
+        else \
+          p.um_bi[m.m_min+i][n.m_min+j] = bi_zero_const; \
+  }
+  if ( m.min < 0 )
+  {
+    FILL(0, -m.min, 0, n.len);
+    m.len += m.min;
+    m.min = 0;
+  }
+  if ( (1 << tree_h) - m.min < m.len )
+  {
+    FILL((1 << tree_h) - m.min, m.len, 0, n.len);
+    m.len = (1 << tree_h) - m.min;
+  }
+  if ( n.min < 0 )
+  {
+    FILL(0, m.len, 0, -n.min);
+    n.len += n.min;
+    n.min = 0;
+  }
+  if ( (1 << tree_h) - n.min < n.len )
+  {
+    FILL(0, m.len, (1 << tree_h) - n.min, n.len);
+    n.len = (1 << tree_h) - n.min;
+  }
+#undef FILL
+  simple_quad_to_matrix(p, q, tree_h, m, n);
 }
 
 UMatrix quad_to_matrix(
