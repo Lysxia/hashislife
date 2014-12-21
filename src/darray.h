@@ -1,6 +1,8 @@
 #ifndef DARRAY_H
 #define DARRAY_H
 
+#include <stdlib.h>
+
 /* (Generic) dynamic array implementation. (Well, as generic as C allows) */
 // Implements a stack
 // push elements, then recover the array of pushed elements

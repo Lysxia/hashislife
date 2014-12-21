@@ -1,5 +1,7 @@
 #ifndef MATRIX_H
 #define MATRIX_H
+#include <stdlib.h>
+#include <stdio.h>
 
 // Paragraph: an array of null-terminated strings
 typedef struct Prgrph
@@ -7,9 +9,6 @@ typedef struct Prgrph
   char **prgrph;
   int    m;
 } Prgrph;
-
-#define ALIVE 'O'
-#define DEAD '.'
 
 // void **
 void   *alloc_prgrph(int m, int n, size_t size);

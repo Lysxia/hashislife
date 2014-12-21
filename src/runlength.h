@@ -3,6 +3,9 @@
 
 /* Run length encoding */
 
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "darray.h"
 #include "definitions.h"
 #include "parsers.h"

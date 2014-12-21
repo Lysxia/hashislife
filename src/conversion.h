@@ -2,8 +2,8 @@
 #define CONVERSION_H
 
 #include "bigint.h"
+#include "bitmaps.h"
 #include "prgrph.h"
-#include "runlength.h"
 #include "hashtbl.h"
 
 typedef union UMatrix
@@ -15,7 +15,7 @@ typedef union UMatrix
 // Assume the remaining cells are dead cells 
 // A more general setting could be imagined... Toric prgrph...
 Quad *prgrph_to_quad(Hashtbl *htbl, Prgrph p);
-Quad *rle_to_quad(Hashtbl *htbl, Rle *rle);
+Quad *rle_to_quad(Hashtbl *htbl, RleMap *rle);
 
 // Draw the prgrph described by q at the specified location
 UMatrix quad_to_matrix(

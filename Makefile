@@ -1,26 +1,30 @@
-CC=gcc -std=c99
-#CFLAGS=-W -Wall -O2 -fmax-errors=2
-CFLAGS=-W -Wall -O0 -g
 BUILDDIR=build
 TESTDIR=test
 SRCDIR=src
 
-SRC=$(shell ls -1 src | grep \\.c)
+CC=gcc -std=c99
+#CFLAGS=-W -Wall -O2 -fmax-errors=2
+CFLAGS=-W -Wall -O0 -g -fmax-errors=2
+INCLUDES=-I$(SRCDIR)
+
+SRC=$(shell ls -1 src | grep \\.c) \
+		$(shell ls -1 src/conversion | sed "s:\(.*\.c\):conversion/\1:")
 OBJ=$(SRC:%.c=$(BUILDDIR)/%.o)
 
 hashlife: $(BUILDDIR) $(BUILDDIR)/hashlife
 
 $(BUILDDIR):
 	@mkdir -p $(BUILDDIR)
+	@mkdir -p $(BUILDDIR)/conversion
 
 $(BUILDDIR)/hashlife: $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(OBJ) -o $@
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 $(BUILDDIR)/%.d: $(SRCDIR)/%.c $(BUILDDIR)
-	@$(CC) -MM $< -MT $(@:.d=.o) -MF $@
+	@$(CC) $(INCLUDES) -MM $< -MT $(@:.d=.o) -MF $@
 
 clean:
 	rm -rf $(BUILDDIR)
