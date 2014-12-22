@@ -18,7 +18,7 @@
   \param n Horizontal indices
 
   E.g. if `q` represents this 4-by-4 area:
-  
+
       0 1 2 3
       4 5 6 7
       8 9 A B
@@ -117,7 +117,7 @@ void simple_quad_to_matrix(
       C D E F
 
   if we try to draw a 3-by-3 area with top left corner 9,
-  
+
       m.min == 2
       m.len == 3
       n.min == 1

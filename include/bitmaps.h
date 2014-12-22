@@ -8,7 +8,7 @@
 /*! \defgroup bmp Cell matrix representation */
 /*!@{*/
 //! Types of supported maps
-enum MapType { RAW, RLE };
+enum MapType { MAT, RLE };
 
 //! Run length encoded line
 struct RleLine
@@ -29,8 +29,8 @@ typedef struct
 {
   union
   {
-    struct RleMap *rle; //!< Run length encoding. More below.
-    char         **raw; //!< Raw matrix
+    struct RleMap rle; //!< Run length encoding. More below.
+    char         **mat; //!< Raw matrix
   } map;
   /*!< `.map.rle`: This encoding uses `int` tokens of binary values
     `0`, `1` to encode a map line by line, possibly skipping empty
@@ -44,7 +44,8 @@ typedef struct
   rule r;
 } BitMap;
 
-BitMap *bm_new(enum MapType t, void *map); //!< Create map
+BitMap *bm_new_rle(struct LifeRle);
+BitMap *bm_new_mat(char **, int, int); //!< Create matrix
 void    bm_delete(BitMap *map); //!< Destroy map
 
 void RleMap_delete(struct RleMap rle);
@@ -52,8 +53,6 @@ void matrix_delete(void **a, int m);
 
 struct RleMap align_tokens(struct RleToken *rle);
 struct RleToken *rle_flatten(struct RleMap rle_m);
-
-BitMap *rle_to_bm(struct LifeRle rle);
 
 void bm_write(FILE *file, BitMap *bm);
 

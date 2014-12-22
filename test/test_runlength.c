@@ -6,13 +6,11 @@
 int main(int argc, char *argv[]) {
   if ( argc > 1 ) {
     FILE *file = fopen(argv[1], "r");
-    struct RLE rle = read_rle(file);
-    puts("RLE");
-    fflush(stdout);
-    write_rle(stdout, rle);
-    fflush(stdout);
-    puts("BM");
-    bm_write(stdout, rle_to_bm(rle));
+    struct LifeRle rle = LifeRle_read(file);
+    puts("RLE file contents");
+    LifeRle_write(stdout, rle);
+    puts("Convert to bitmap and back again");
+    bm_write(stdout, bm_new_rle(rle));
   }
   return 0;
 }

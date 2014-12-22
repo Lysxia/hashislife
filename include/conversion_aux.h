@@ -18,7 +18,7 @@
 
   When no more tokens are available, infinitely many `0` tokens will
   be returned.
-  
+
   The implementation guarantees that the `.tokens` array is left untouched. */
 struct PopToken
 {
@@ -31,7 +31,7 @@ struct PopToken
 
 //! Facility for acquiring sequences of pairs of RLE tokens.
 /*! State for `pop_two_tokens()`.
- 
+
   When no more tokens are available, infinitely many pairs of `0`
   (corresponding to `DEAD_CELL_CHAR`) will be returned;
   `.empty` is also set to `true`. */
@@ -50,31 +50,35 @@ struct TokenCurry
   void *args;
 };
 
-/* Error value. Recognizable by its `.nb_token` field set to -1. */
-static struct RleLine RleLine_error =
+struct ZipParam
 {
-  .tokens = NULL,
-  .nb_tokens = -1,
-  .line_num = 0
+  struct TokenCurry tc;
+  struct RleToken deflt;
+};
+
+struct ZipArgs_cons
+{
+  Hashtbl *h;
+  int d;
 };
 
 struct RleMap prgrph_to_qrle(Prgrph p);
 Quad *condense(Hashtbl *htbl, struct RleMap q_rle_m);
 
-struct RleMap fuse_adjacent_lines(
+struct RleMap zip_adjacent_lines(
   struct RleMap rle_m,
-  struct TokenCurry);
+  struct ZipParam);
 
-struct RleLine fuse_RleLines(
+struct RleLine zip_RleLines(
   struct RleLine line[2],
-  struct TokenCurry);
+  struct ZipParam);
 
 //! Create a new `struct PopTwoTokens`
-struct PopTwoTokens p2t_new(struct RleLine);
+struct PopTwoTokens p2t_new(struct RleLine line, struct RleToken deflt);
 void pop_token(struct PopToken *);
 void pop_two_tokens(struct PopTwoTokens *);
 
-const struct TokenCurry token_leaf;
-struct TokenCurry token_cons_with(Hashtbl *);
+const struct ZipParam param_leaf;
+struct ZipParam param_cons_with(Hashtbl *, int);
 /*@}*/
 #endif

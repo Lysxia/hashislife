@@ -24,31 +24,21 @@ static const struct RleLine empty_line =
   .line_num = -1 // Does not matter
 };
 
-union Tokenizable token_leaf_(void *ptr, union Tokenizable cells[4])
+/* Error value. Recognizable by its `.nb_token` field set to -1. */
+static const struct RleLine RleLine_error =
 {
-  (void) ptr;
-  unsigned l = 0;
-  for ( int i = 0 ; i < 4 ; i++ )
-  {
-    assert( cells[i].int_ == 0 || cells[i].int_ == 1 );
-    l |= cells[i].int_ << (3 - i);
-  }
-  return (union Tokenizable) { .ptr_ = leaf(l) };
-}
-
-const struct TokenCurry token_leaf =
-{
-  .f = &token_leaf_,
-  .args = NULL,
+  .tokens = NULL,
+  .nb_tokens = -1,
+  .line_num = 0
 };
 
 /* Variables corresponding to RLE encoding of `Quad*` arrays are
   prefixed with `q_`. The fusion functions have been generalized but
   the notation we use is within the context of the fusion of two
   "bit" RleMap into a "quadtree" RleMap. */
-struct RleMap fuse_adjacent_lines(
+struct RleMap zip_adjacent_lines(
   struct RleMap rle_m,
-  struct TokenCurry f) //!< Fusion function
+  struct ZipParam p) //!< Fusion function
 {
   Darray *lines = da_new(sizeof(struct RleLine));
   for ( int i = 0 ; i < rle_m.nb_lines ; )
@@ -76,7 +66,7 @@ struct RleMap fuse_adjacent_lines(
       line[1] = empty_line;
       i++;
     }
-    q_l = fuse_RleLines(line, f);
+    q_l = zip_RleLines(line, p);
     q_l.line_num = rle_m.lines[i_].line_num / 2;
     da_push(lines, &q_l);
   }
@@ -85,18 +75,18 @@ struct RleMap fuse_adjacent_lines(
   return q_rle_m;
 }
 
-/* \deprecated Return the fused line on success (newly allocated `.tokens`),
+/* \deprecated Return the zipd line on success (newly allocated `.tokens`),
   a line with its `.nb_token` field set to `-1` on failure
   (unrecognized token was found). */
 /*! Leaves `.line_num` undefined! */
-struct RleLine fuse_RleLines(
-  struct RleLine line[2], //!< Two lines to fuse
-  struct TokenCurry f) //!< Fusion function
+struct RleLine zip_RleLines(
+  struct RleLine line[2], //!< Two lines to zip
+  struct ZipParam p) //!< Fusion function
 {
   struct PopTwoTokens p2t[2];
   // Initialize p2t
   for ( int k = 0 ; k < 2 ; k++ )
-    p2t[k] = p2t_new(line[k]);
+    p2t[k] = p2t_new(line[k], p.deflt);
   // Create line
   Darray *q_tokens = da_new(sizeof(struct RleToken));
   while ( !p2t[0].empty || !p2t[1].empty )
@@ -113,7 +103,7 @@ struct RleLine fuse_RleLines(
     for ( int l = 0 ; l < 4 ; l++ )
       q_ts[l] = p2t[l >> 1].t[l & 1];
     struct RleToken q_t = {
-      .value = (*f.f)(f.args, q_ts),
+      .value = (*p.tc.f)(p.tc.args, q_ts),
       .repeat = MIN(p2t[0].repeat, p2t[1].repeat)
     };
     // Consume the token pairs
@@ -128,7 +118,7 @@ struct RleLine fuse_RleLines(
 
 /*!
   \see struct PopTwoTokens */
-struct PopTwoTokens p2t_new(struct RleLine line)
+struct PopTwoTokens p2t_new(struct RleLine line, struct RleToken deflt)
 {
   return (struct PopTwoTokens) {
     .pt = (struct PopToken) {
@@ -136,12 +126,13 @@ struct PopTwoTokens p2t_new(struct RleLine line)
       .nb_tokens = line.nb_tokens,
       .i = 0,
       .cur_tok.repeat = 0,
+      .def_tok = deflt,
     },
     .repeat = 0,
     /* One (safe) risk of this initialization is that two empty lines
-      will be popped at least once in `fuse_RleLines()` (for which the
+      will be popped at least once in `zip_RleLines()` (for which the
       present function was defined) when it could return an empty line.
-      However `fuse_RleLines()` is always called with at least one
+      However `zip_RleLines()` is always called with at least one
       nonempty line. */
     .empty = false
   };
@@ -150,7 +141,7 @@ struct PopTwoTokens p2t_new(struct RleLine line)
 /*! Pops a token from the given array and places it in the `.cur_tok`
   field.  The current token (if any) is discarded even if its `.repeat`
   field is not 0.
-  
+
   \see struct PopToken */
 void pop_token(struct PopToken *pt)
 {
@@ -167,7 +158,7 @@ void pop_token(struct PopToken *pt)
 
 /*! Return 0 on success, 1 on failure
   (`pop_token()` met an unrecognized token).
-  
+
   \see struct PopTwoTokens */
 void pop_two_tokens(struct PopTwoTokens *p2t)
 {

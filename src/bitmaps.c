@@ -6,34 +6,40 @@
 #include "definitions.h"
 #include "runlength.h"
 
-/*! \param map must be a pointer to `RLE` or `char*`
-  depending on the value of the tag `t`. */
-BitMap *bm_new(enum MapType t, void *map)
+BitMap *bm_new_rle(struct LifeRle rle)
 {
-  BitMap *bm = malloc(sizeof(BitMap));
-
+  BitMap *bm = malloc(sizeof(*bm));
   if ( NULL == bm )
   {
-    perror("bm_new(): failed to allocate bm");
-    exit(1);
+    perror("bm_new_rle()");
+    return NULL;
   }
-
-  switch ( t )
+  bm->map_type = RLE;
+  bm->map.rle = align_tokens(rle.tokens);
+  if ( bm->map.rle.nb_lines < 0 )
   {
-    case RLE:
-      bm->map.rle = map;
-      break;
-    case RAW:
-      bm->map.raw = map;
-      break;
+    free(bm);
+    perror("bm_new_rle()");
+    return NULL;
   }
+  bm->x = rle.x;
+  bm->y = rle.y;
+  bm->r = rle.r;
+  return bm;
+}
 
-  bm->map_type = t;
-
-  bm->corner_x = bm->corner_y = 0;
-  bm->x = bm->y = 0;
-  bm->r = 0;
-
+BitMap *bm_new_mat(char **mat, int m, int n)
+{
+  BitMap *bm = malloc(sizeof(*bm));
+  if ( NULL == bm )
+  {
+    perror("bm_new_rle()");
+    return NULL;
+  }
+  bm->map_type = MAT;
+  bm->map.mat = mat;
+  bm->x = m;
+  bm->y = n;
   return bm;
 }
 
@@ -42,12 +48,11 @@ void bm_delete(BitMap *bm)
   switch ( bm->map_type )
   {
     case RLE:
-      if ( bm->map.rle != NULL)
-        RleMap_delete(bm->map.rle);
+      RleMap_delete(bm->map.rle);
       break;
-    case RAW:
-      if ( bm->map.raw != NULL )
-        matrix_delete((void **) bm->map.raw, bm->y);
+    case MAT:
+      if ( bm->map.mat != NULL )
+        matrix_delete((void **) bm->map.mat, bm->y);
       break;
   }
 
@@ -58,9 +63,9 @@ void bm_delete(BitMap *bm)
 void RleMap_delete(struct RleMap rle)
 {
   int l;
-  for ( l = 0 ; l < rle->nb_lines ; l++ )
-    free(rle->lines[l].tokens);
-  free(rle->lines);
+  for ( l = 0 ; l < rle.nb_lines ; l++ )
+    free(rle.lines[l].tokens);
+  free(rle.lines);
 }
 
 void matrix_delete(void **a, int m)
@@ -141,15 +146,6 @@ struct RleToken *rle_flatten(struct RleMap rle_m)
   return da_unpack(rle_da, NULL);
 }
 
-BitMap *rle_to_bm(struct LifeRle rle)
-{
-  BitMap *bm = bm_new(RLE, align_tokens(rle.tokens));
-  bm->x = rle.x;
-  bm->y = rle.y;
-  bm->r = rle.r;
-  return bm;
-}
-
 void bm_write(FILE *file, BitMap *bm)
 {
   switch ( bm->map_type )
@@ -165,20 +161,8 @@ void bm_write(FILE *file, BitMap *bm)
         LifeRle_write(file, rle);
       }
       break;
-    case RAW:
+    case MAT:
       break; // unimplemented
   }
 }
-
-/*
-Rle_line *bm_rle_newline(Darray *rle, int line_num)
-{
-  Rle_line *dest = da_append(rle, NULL);
-
-  da_init(&dest->line_rle, sizeof(int));
-  dest->line_num = line_num;
-
-  return dest;
-}
-*/
 
