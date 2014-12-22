@@ -5,7 +5,7 @@ SRCDIR=src
 CC=gcc -std=c99
 #CFLAGS=-W -Wall -O2 -fmax-errors=2
 CFLAGS=-W -Wall -O0 -g -fmax-errors=2
-INCLUDES=-I$(SRCDIR)
+INCLUDES=-Iinclude
 
 SRC=$(shell ls -1 src | grep \\.c) \
 		$(shell ls -1 src/conversion | sed "s:\(.*\.c\):conversion/\1:")
