@@ -3,21 +3,30 @@
 
 /* Run length encoding */
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "darray.h"
 #include "definitions.h"
 #include "parsers.h"
 
-#define END_RLE_TOKEN '!'
-#define DEAD_RLE_TOKEN 'b'
-#define ALIVE_RLE_TOKEN 'o'
+#define     END_RLE_TOKEN '!'
+#define    DEAD_RLE_TOKEN 'b'
+#define   ALIVE_RLE_TOKEN 'o'
 #define NEWLINE_RLE_TOKEN '$'
+
+//! Polymorphism!
+/*! A union for RleToken */
+union Tokenizable
+{
+  char char_;
+  int int_;
+  void *ptr_;
+};
 
 struct RleToken
 {
-  int value;
+  union Tokenizable value;
   int repeat;
 };
 
@@ -34,22 +43,23 @@ struct TokenWriter
   int   line_length;
 };
 
-struct RLE
+//! Game of Life .rle file contents
+struct LifeRle
 {
+  struct RleToken *tokens;
   int x;
   int y;
   rule r;
-  struct RleToken *tokens;
 };
 
 struct TokenParser tp_new(FILE *file);
 int tp_regenerate(struct TokenParser *tp);
-struct RleToken rle_token(struct TokenParser *tp);
+struct RleToken life_rle_token(struct TokenParser *tp);
 
 void write_tokens(struct TokenWriter *, struct RleToken *);
 void write_one_token(struct TokenWriter *, struct RleToken);
 
-struct RLE read_rle(FILE *file);
-void       write_rle(FILE *file, struct RLE rle);
+struct LifeRLE LifeRle_read(FILE *file);
+void       LifeRle_write(FILE *file, struct LifeRLE rle);
 
 #endif

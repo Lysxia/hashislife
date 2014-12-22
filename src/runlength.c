@@ -7,12 +7,12 @@
 #include "darray.h"
 #include "parsers.h"
 
-#define RLE_LINE_LENGTH 100
+#define Rle_LINE_LENGTH 100
 
 int tp_regenerate(struct TokenParser *tp)
 {
   if ( tp->file != NULL
-    && fgets(tp->buff, RLE_LINE_LENGTH, tp->file) != NULL )
+    && fgets(tp->buff, Rle_LINE_LENGTH, tp->file) != NULL )
   {
     tp->i = 0;
     return 1;
@@ -22,17 +22,20 @@ int tp_regenerate(struct TokenParser *tp)
   }
 }
 
-struct RleToken rle_token(struct TokenParser *tp)
+struct RleToken life_rle_token(struct TokenParser *tp)
 {
   char buff[10] = {'\0'};
   int j;
-  struct RleToken t = {
-    .value = 0,
-    .repeat = -1 };
+  struct RleToken t =
+  {
+    .value.char_ = 0,
+    .repeat = -1
+  };
 
   while ( tp->buff[tp->i] == '\0' || isspace(tp->buff[tp->i]) )
   {
-    tp->i += strspn(tp->buff + tp->i, "\x20\x0c\x0a\x0d\x09\x0b"); // Skip spaces
+    // Skip spaces
+    tp->i += strspn(tp->buff + tp->i, "\x20\x0c\x0a\x0d\x09\x0b");
     if ( tp->buff[tp->i] == '\0' && !tp_regenerate(tp) )
       return t; // EOF
   }
@@ -48,7 +51,7 @@ struct RleToken rle_token(struct TokenParser *tp)
     case DEAD_RLE_TOKEN:
     case ALIVE_RLE_TOKEN:
     case NEWLINE_RLE_TOKEN:
-      t.value = tp->buff[tp->i];
+      t.value.char_ = tp->buff[tp->i];
       t.repeat = z;
       break;
   }
@@ -60,30 +63,30 @@ struct TokenParser tp_new(FILE *file)
 {
   return (struct TokenParser) {
     .file = file,
-    .buff = calloc(RLE_LINE_LENGTH, sizeof(char)),
+    .buff = calloc(Rle_LINE_LENGTH, sizeof(char)),
     .i = 0
   };
 }
 
-struct RLE read_rle(FILE *file)
+struct LifeRle life_rle_read(FILE *file)
 {
-  char buff[RLE_LINE_LENGTH];
+  char buff[Rle_LINE_LENGTH];
   int linum = 0;
-  const struct RLE fail_RLE = { .tokens = NULL };
+  const struct LifeRle fail_rle = { .tokens = NULL, .r = -1 };
 
   do
   {
     linum++;
-    if ( fgets(buff, RLE_LINE_LENGTH, file) == NULL )
+    if ( fgets(buff, Rle_LINE_LENGTH, file) == NULL )
     {
       perror("read_rle(): Error on input");
-      return fail_RLE;
+      return fail_rle;
     }
   }
   while ( buff[0] == '#' );
 
   char s[22];
-  struct RLE rle;
+  struct LifeRle rle;
   switch ( sscanf(buff, "x = %d, y = %d, rule = %21s ", &rle.x, &rle.y, s) )
   {
     case 2:
@@ -97,7 +100,7 @@ struct RLE read_rle(FILE *file)
     default:
       perror("read_rle(): Syntax error.");
       fprintf(stderr,"Line %d: %s\n", linum, s);
-      return fail_RLE;
+      return fail_rle;
   }
 
   Darray *rle_da = da_new(sizeof(struct RleToken));
@@ -110,7 +113,7 @@ struct RLE read_rle(FILE *file)
   struct RleToken t;
   struct TokenParser tp = tp_new(file);
   do {
-    t = rle_token(&tp);
+    t = life_rle_token(&tp);
     if ( t.repeat < 0 )
     {
       free(da_unpack(rle_da, NULL));
@@ -118,7 +121,7 @@ struct RLE read_rle(FILE *file)
       exit(3);
     }
     da_push(rle_da, &t);
-  } while ( t.value != END_RLE_TOKEN );
+  } while ( t.value.char_ != END_RLE_TOKEN );
 
   rle.tokens = da_unpack(rle_da, NULL);
   return rle;
@@ -126,14 +129,14 @@ struct RLE read_rle(FILE *file)
 
 #define MIN(a,b) (((a) < (b)) ? a : b)
 
-void write_rle(FILE *file, struct RLE rle)
+void life_rle_write(FILE *file, struct LifeRle rle)
 {
   struct TokenWriter tw = {
     .file = file,
     .line_length = 0
   };
-  char buff[RLE_LINE_LENGTH];
-  snprintf(buff, RLE_LINE_LENGTH, "x = %d, y = %d", rle.x, rle.y);
+  char buff[Rle_LINE_LENGTH];
+  snprintf(buff, Rle_LINE_LENGTH, "x = %d, y = %d", rle.x, rle.y);
   fputs(buff, file);
   if ( rle.r != 0 )
   {
@@ -149,12 +152,13 @@ void write_rle(FILE *file, struct RLE rle)
 void write_tokens(struct TokenWriter *tw, struct RleToken *rle)
 {
   int i;
-  for ( i = 0 ; rle[i].value != END_RLE_TOKEN ; i++ )
+  for ( i = 0 ; rle[i].value.char_ != END_RLE_TOKEN ; i++ )
   {
     write_one_token(tw, rle[i]);
   }
-  struct RleToken t_end = {
-    .value = END_RLE_TOKEN,
+  struct RleToken t_end =
+  {
+    .value = { .char_ = END_RLE_TOKEN },
     .repeat = 1
   };
   write_one_token(tw, t_end);
@@ -170,12 +174,12 @@ void write_one_token(struct TokenWriter *tw, struct RleToken t)
 
   int written;
   if ( t.repeat == 1 ) {
-    a[0] = t.value;
+    a[0] = t.value.char_;
     a[1] = '\0';
     written = 1;
   } else {
     written = itoa(a, t.repeat, 10);
-    a[written] = t.value;
+    a[written] = t.value.char_;
     a[written+1] = '\0';
     written++;
   }
