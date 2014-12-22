@@ -55,7 +55,7 @@ void bm_delete(BitMap *bm)
 }
 
 /*! \param `rle` and subfields must be `malloc()`ated pointers. */
-void RleMap_delete(RleMap *rle)
+void RleMap_delete(struct RleMap *rle)
 {
   int l;
   for ( l = 0 ; l < rle->nb_lines ; l++ )
@@ -72,7 +72,7 @@ void matrix_delete(void **a, int m)
   free(a);
 }
 
-RleMap *align_tokens(struct RleToken *rle)
+struct RleMap *align_tokens(struct RleToken *rle)
 {
   Darray *lines = da_new(sizeof(struct RleLine));
   Darray *cur_tokens = NULL;
@@ -109,7 +109,7 @@ RleMap *align_tokens(struct RleToken *rle)
   AT_newline;
 #undef AT_newline
 
-  RleMap *rle_m = malloc(sizeof(RleMap));
+  struct RleMap *rle_m = malloc(sizeof(struct RleMap));
   if ( NULL == rle_m )
   {
     perror("align_tokens(): Failed to allocate memory");
@@ -119,7 +119,7 @@ RleMap *align_tokens(struct RleToken *rle)
   return rle_m;
 }
 
-struct RleToken *rle_flatten(RleMap *rle_m)
+struct RleToken *rle_flatten(struct RleMap *rle_m)
 {
   Darray *rle_da = da_new(sizeof(struct RleToken));
   for ( int i = 0 ; i < rle_m->nb_lines ; i++ )

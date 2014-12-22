@@ -18,19 +18,19 @@ struct RleLine
   int line_num;
 };
 
-typedef struct
+struct RleMap
 {
   struct RleLine *lines;
   int nb_lines;
-} RleMap;
+};
 
 //! Tagged union type
 typedef struct
 {
   union
   {
-    RleMap *rle; //!< Run length encoding. More below.
-    char  **raw; //!< Raw matrix
+    struct RleMap *rle; //!< Run length encoding. More below.
+    char         **raw; //!< Raw matrix
   } map;
   /*!< `.map.rle`: This encoding uses `int` tokens of binary values
     `0`, `1` to encode a map line by line, possibly skipping empty
@@ -47,11 +47,11 @@ typedef struct
 BitMap *bm_new(enum MapType t, void *map); //!< Create map
 void    bm_delete(BitMap *map); //!< Destroy map
 
-void RleMap_delete(RleMap *rle);
+void RleMap_delete(struct RleMap *rle);
 void matrix_delete(void **a, int m);
 
-RleMap *align_tokens(struct RleToken *rle);
-struct RleToken *rle_flatten(RleMap *rle_m);
+struct RleMap *align_tokens(struct RleToken *rle);
+struct RleToken *rle_flatten(struct RleMap *rle_m);
 
 BitMap *rle_to_bm(struct LifeRle rle);
 

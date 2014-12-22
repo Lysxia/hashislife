@@ -10,26 +10,6 @@
 /*! \defgroup conversion_aux Auxiliary definitions (RLE to quadtree) */
 /*!@{*/
 
-/* Mirroring the basic RLE structures */ 
-struct QRleToken
-{
-  Quad *value;
-  int   repeat;
-};
-
-struct QRleLine
-{
-  struct QRleToken *tokens;
-  int nb_tokens;
-  int line_num;
-};
-
-struct QRleMap
-{
-  struct QRleLine *lines;
-  int nb_lines;
-};
-
 //! Facility for acquiring RLE tokens.
 /*! State for `pop_token()`.
 
@@ -39,13 +19,14 @@ struct QRleMap
   When no more tokens are available, infinitely many `0` tokens will
   be returned.
   
-  The implementation guarantees that the `.tokens` array is lefti untouched. */
+  The implementation guarantees that the `.tokens` array is left untouched. */
 struct PopToken
 {
   const struct RleToken *tokens; //!< Token buffer
   int nb_tokens;
   int i; //!< Next token index
   struct RleToken cur_tok; //!< Current token
+  struct RleToken def_tok; //!< Default token to use when the buffer is spent
 };
 
 //! Facility for acquiring sequences of pairs of RLE tokens.
@@ -57,32 +38,32 @@ struct PopToken
 struct PopTwoTokens
 {
   struct PopToken pt;
-  unsigned two_t; //!< Two tokens are read into the two least significant bits.
-               /*!< Unrecognized tokens make the program abort */
-  int repeat;
-  int empty;
+  union Tokenizable t[2]; //!< Two tokens
+  /*!< Unrecognized tokens make the program abort */
+  int repeat; //!< Token repetition
+  int empty; //!< Empty token array flag
 };
 
 /* Error value. Recognizable by its `.nb_token` field set to -1. */
-static struct QRleLine error_QL =
+static struct RleLine RleLine_error =
 {
   .tokens = NULL,
   .nb_tokens = -1,
   .line_num = 0
 };
 
-struct QRleMap prgrph_to_qrle(Prgrph p);
-struct QRleMap RleMap_to_QRleMap(RleMap *rle_m);
+struct RleMap prgrph_to_qrle(Prgrph p);
+struct RleMap RleMap_of_quad(struct RleMap *rle_m);
 
-Quad *condense(Hashtbl *htbl, struct QRleMap qrle_m);
+Quad *condense(Hashtbl *htbl, struct RleMap qrle_m);
 
-struct QRleLine fuse_RleLines(struct RleLine line[2]);
+struct RleLine fuse_RleLines(
+  struct RleLine line[2],
+  union Tokenizable (*f)(union Tokenizable[4]));
 
 //! Create a new `struct PopTwoTokens`
 struct PopTwoTokens p2t_new(struct RleLine);
-int pop_token(struct PopToken *);
-int pop_two_tokens(struct PopTwoTokens *);
-
-void QRleMap_delete(struct QRleMap);
+void pop_token(struct PopToken *);
+void pop_two_tokens(struct PopTwoTokens *);
 /*@}*/
 #endif
