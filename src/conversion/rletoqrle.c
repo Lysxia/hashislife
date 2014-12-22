@@ -8,23 +8,14 @@
 #include "bigint.h"
 #include "conversion.h"
 #include "conversion_aux.h"
-#include "darray.h"
 #include "hashtbl.h"
+#include "darray.h"
 #include "prgrph.h"
 #include "runlength.h"
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 /*** Matrix to- conversion ***/
-
-Quad *rle_to_quad(Hashtbl *htbl, RleMap *rle_m)
-{
-  return condense(htbl, RleMap_to_QRleMap(rle_m));
-}
-
-Quad *condense(Hashtbl *htbl, struct QRleMap qrle_m)
-{
-}
 
 static const struct RleLine empty_line = {
   .tokens = NULL,
@@ -84,6 +75,7 @@ struct QRleLine fuse_RleLines(struct RleLine line[2])
   Darray *qtokens = da_new(sizeof(struct QRleToken));
   while ( !p2t[0].empty || !p2t[1].empty )
   {
+    // Pop a pair of tokens (possibly repeated) on each line
     for ( int k = 0 ; k < 2 ; k++ )
     {
       if ( p2t[k].repeat == 0 && pop_two_tokens(&p2t[k]) )
@@ -92,10 +84,13 @@ struct QRleLine fuse_RleLines(struct RleLine line[2])
         return error_QL;
       }
     }
+    /* Make a quad leaf (possibly repeated, at most as many
+      times as the least repeated pair) */
     struct QRleToken qt = {
       .value = leaf((p2t[0].two_t << 2) | p2t[1].two_t),
       .repeat = MIN(p2t[0].repeat, p2t[1].repeat)
     };
+    // Consume the token pairs
     for ( int k = 0 ; k < 2 ; k++ )
       p2t[k].repeat -= qt.repeat;
     da_push(qtokens, &qt);
@@ -105,6 +100,8 @@ struct QRleLine fuse_RleLines(struct RleLine line[2])
   return ql;
 }
 
+/*!
+  \see struct PopTwoTokens */
 struct PopTwoTokens p2t_new(struct RleLine line)
 {
   return (struct PopTwoTokens) {
@@ -187,83 +184,4 @@ int pop_two_tokens(struct PopTwoTokens *p2t)
   return 0;
 #undef POP
 }
-
-#if 0
-struct Quad_rle rle_to_qrle(Rle *rle)
-{
-  Darray *da = da_new(sizeof(struct Quad_rle_line));
-
-  int i = 0;
-  while ( i < rle->rle_lines_c )
-  {
-    int *line[2], j[2] = {0}, buff[2] = {-1, -1}, l[2], n[2] = {0}, len[2];
-    struct Quad_rle_line qrle_l;
-    qrle_l.qrle_linenum = rle->rle_lines[i].line_num / 2;
-    Darray *da_line = da_new(sizeof(struct Quad_repeat));
-
-    if ( 1 == rle->rle_lines[i].line_num % 2 )
-    {
-      line[0] = NULL;
-      len[0] = 0;
-      line[1] = rle->rle_lines[i].line;
-      len[1] = rle->rle_lines[i].line_length;
-      i++;
-    }
-    else
-    {
-      line[0] = rle->rle_lines[i].line;
-      len[0] = rle->rle_lines[i].line_length;
-
-      if ( i + 1 < rle->rle_lines_c
-        && rle->rle_lines[i+1].line_num == rle->rle_lines[i].line_num + 1 )
-      {
-        line[1] = rle->rle_lines[i+1].line;
-        len[1] = rle->rle_lines[i+1].line_length;
-        i += 2;
-      }
-      else
-      {
-        line[1] = NULL;
-        len[1] = 0;
-        i++;
-      }
-    }
-
-    while ( j[0] < len[0] || j[1] < len[1] )
-    {
-      int k;
-      for ( k = 0 ; k < 2 ; k++ )
-        if ( n[k] == 0 )
-          n[k] = rle_take_two(line[k], len[k], &j[k], &l[k], &buff[k]);
-
-      struct Quad_repeat qr;
-
-      qr.qr_q = leaf(l[0] << 2 | l[1]);
-
-      if ( n[0] < n[1] )
-      {
-        qr.qr_n = n[0];
-        n[1] -= n[0];
-        n[0] = 0;
-      }
-      else
-      {
-        qr.qr_n = n[1];
-        n[0] -= n[1];
-        n[1] = 0;
-      }
-
-      da_push(da_line, &qr);
-    }
-
-    qrle_l.qrle_line = da_unpack(da_line, &qrle_l.qrle_linelen);
-    da_push(da, &qrle_l);
-  }
-
-  struct Quad_rle qrle;
-  qrle.qrle = da_unpack(da, &qrle.qrle_len);
-
-  return qrle;
-}
-#endif
 
