@@ -1,7 +1,11 @@
 #ifndef CONVERSION_AUX_H
 #define CONVERSION_AUX_H
 
+#include "bitmaps.h"
+#include "hashtbl.h"
+#include "prgrph.h"
 #include "quad.h"
+#include "runlength.h"
 
 /*! \defgroup conversion_aux Auxiliary definitions (RLE to quadtree) */
 /*!@{*/
@@ -76,5 +80,7 @@ struct QRleLine fuse_RleLines(struct RleLine line[2]);
 struct PopTwoTokens p2t_new(struct RleLine);
 int pop_token(struct PopToken *);
 int pop_two_tokens(struct PopTwoTokens *);
+
+void QRleMap_delete(struct QRleMap);
 /*@}*/
 #endif
