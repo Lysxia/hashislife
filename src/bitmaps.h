@@ -1,9 +1,10 @@
 #ifndef BITMAPS_H
 #define BITMAPS_H
 
-#include "runlength.h"
-#include "definitions.h"
 #include "darray.h"
+#include "definitions.h"
+#include "runlength.h"
+
 /*! \defgroup bmp Cell matrix representation */
 /*!@{*/
 //! Types of supported map

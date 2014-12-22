@@ -1,8 +1,10 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include "definitions.h"
-#include "darray.h"
+#include <stdlib.h>
+
 #include "bitmaps.h"
+#include "darray.h"
+#include "definitions.h"
+#include "runlength.h"
 
 /*! \param map must be a pointer to `RLE` or `char*`
   depending on the value of the tag `t`. */
