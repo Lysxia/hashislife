@@ -47,11 +47,11 @@ typedef struct
 BitMap *bm_new(enum MapType t, void *map); //!< Create map
 void    bm_delete(BitMap *map); //!< Destroy map
 
-void RleMap_delete(struct RleMap *rle);
+void RleMap_delete(struct RleMap rle);
 void matrix_delete(void **a, int m);
 
-struct RleMap *align_tokens(struct RleToken *rle);
-struct RleToken *rle_flatten(struct RleMap *rle_m);
+struct RleMap align_tokens(struct RleToken *rle);
+struct RleToken *rle_flatten(struct RleMap rle_m);
 
 BitMap *rle_to_bm(struct LifeRle rle);
 

@@ -47,37 +47,37 @@ const struct TokenCurry token_leaf =
   the notation we use is within the context of the fusion of two
   "bit" RleMap into a "quadtree" RleMap. */
 struct RleMap fuse_adjacent_lines(
-  struct RleMap *rle_m,
+  struct RleMap rle_m,
   struct TokenCurry f) //!< Fusion function
 {
   Darray *lines = da_new(sizeof(struct RleLine));
-  for ( int i = 0 ; i < rle_m->nb_lines ; )
+  for ( int i = 0 ; i < rle_m.nb_lines ; )
   {
     const int i_ = i;
     struct RleLine q_l;
     struct RleLine line[2];
-    if ( 1 == rle_m->lines[i].line_num % 2 ) // preceding line is empty
+    if ( 1 == rle_m.lines[i].line_num % 2 ) // preceding line is empty
     {
       line[0] = empty_line;
-      line[1] = rle_m->lines[i];
+      line[1] = rle_m.lines[i];
       i++;
     }
-    else if ( i + 1 < rle_m->nb_lines
-           && rle_m->lines[i].line_num + 1 == rle_m->lines[i+1].line_num )
+    else if ( i + 1 < rle_m.nb_lines
+           && rle_m.lines[i].line_num + 1 == rle_m.lines[i+1].line_num )
       // successive lines
     {
-      line[0] = rle_m->lines[i];
-      line[1] = rle_m->lines[i+1];
+      line[0] = rle_m.lines[i];
+      line[1] = rle_m.lines[i+1];
       i += 2;
     }
     else // following line is empty
     {
-      line[0] = rle_m->lines[i];
+      line[0] = rle_m.lines[i];
       line[1] = empty_line;
       i++;
     }
     q_l = fuse_RleLines(line, f);
-    q_l.line_num = rle_m->lines[i_].line_num / 2;
+    q_l.line_num = rle_m.lines[i_].line_num / 2;
     da_push(lines, &q_l);
   }
   struct RleMap q_rle_m;

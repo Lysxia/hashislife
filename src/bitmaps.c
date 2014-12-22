@@ -55,13 +55,12 @@ void bm_delete(BitMap *bm)
 }
 
 /*! \param `rle` and subfields must be `malloc()`ated pointers. */
-void RleMap_delete(struct RleMap *rle)
+void RleMap_delete(struct RleMap rle)
 {
   int l;
   for ( l = 0 ; l < rle->nb_lines ; l++ )
     free(rle->lines[l].tokens);
   free(rle->lines);
-  free(rle);
 }
 
 void matrix_delete(void **a, int m)
@@ -72,7 +71,7 @@ void matrix_delete(void **a, int m)
   free(a);
 }
 
-struct RleMap *align_tokens(struct RleToken *rle)
+struct RleMap align_tokens(struct RleToken *rle)
 {
   Darray *lines = da_new(sizeof(struct RleLine));
   Darray *cur_tokens = NULL;
@@ -109,32 +108,27 @@ struct RleMap *align_tokens(struct RleToken *rle)
   AT_newline;
 #undef AT_newline
 
-  struct RleMap *rle_m = malloc(sizeof(struct RleMap));
-  if ( NULL == rle_m )
-  {
-    perror("align_tokens(): Failed to allocate memory");
-    exit(1);
-  }
-  rle_m->lines = da_unpack(lines, &rle_m->nb_lines);
+  struct RleMap rle_m;
+  rle_m.lines = da_unpack(lines, &rle_m.nb_lines);
   return rle_m;
 }
 
-struct RleToken *rle_flatten(struct RleMap *rle_m)
+struct RleToken *rle_flatten(struct RleMap rle_m)
 {
   Darray *rle_da = da_new(sizeof(struct RleToken));
-  for ( int i = 0 ; i < rle_m->nb_lines ; i++ )
+  for ( int i = 0 ; i < rle_m.nb_lines ; i++ )
   {
     struct RleToken t_nl = {
       .value = { .char_ = NEWLINE_RLE_TOKEN },
-      .repeat = rle_m->lines[i].line_num
-              - (( i == 0 ) ? 0 : rle_m->lines[i-1].line_num)
+      .repeat = rle_m.lines[i].line_num
+              - (( i == 0 ) ? 0 : rle_m.lines[i-1].line_num)
     };
     if ( t_nl.repeat > 0 )
       da_push(rle_da, &t_nl);
-    for ( int j = 0 ; j < rle_m->lines[i].nb_tokens ; j++ )
+    for ( int j = 0 ; j < rle_m.lines[i].nb_tokens ; j++ )
     {
       struct RleToken *dest = da_alloc(rle_da);
-      struct RleToken src = rle_m->lines[i].tokens[j];
+      struct RleToken src = rle_m.lines[i].tokens[j];
       dest->repeat = src.repeat;
       dest->value.char_ = src.value.int_ ? ALIVE_RLE_TOKEN : DEAD_RLE_TOKEN;
     }

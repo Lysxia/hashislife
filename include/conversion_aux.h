@@ -62,7 +62,7 @@ struct RleMap prgrph_to_qrle(Prgrph p);
 Quad *condense(Hashtbl *htbl, struct RleMap q_rle_m);
 
 struct RleMap fuse_adjacent_lines(
-  struct RleMap *rle_m,
+  struct RleMap rle_m,
   struct TokenCurry);
 
 struct RleLine fuse_RleLines(
@@ -75,6 +75,6 @@ void pop_token(struct PopToken *);
 void pop_two_tokens(struct PopTwoTokens *);
 
 const struct TokenCurry token_leaf;
-struct TokenCurry token_cons(Hashtbl *);
+struct TokenCurry token_cons_with(Hashtbl *);
 /*@}*/
 #endif

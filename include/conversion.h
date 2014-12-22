@@ -18,7 +18,7 @@ typedef union UMatrix
 Quad *prgrph_to_quad(Hashtbl *htbl, Prgrph p);
 #endif
 
-Quad *rle_to_quad(Hashtbl *htbl, struct RleMap *rle);
+Quad *rle_to_quad(Hashtbl *htbl, struct RleMap rle);
 
 // Draw the prgrph described by q at the specified location
 UMatrix quad_to_matrix(
