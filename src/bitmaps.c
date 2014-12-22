@@ -76,9 +76,9 @@ RleMap *align_tokens(struct RleToken *rle)
   Darray *cur_tokens = NULL;
   struct RleLine cur_line = { .line_num = 0 };
   int i;
-  for ( i = 0 ; rle[i].value != END_RLE_TOKEN ; i++ )
+  for ( i = 0 ; rle[i].value.char_ != END_RLE_TOKEN ; i++ )
   {
-    switch ( rle[i].value )
+    switch ( rle[i].value.char_ )
     {
       case DEAD_RLE_TOKEN:
       case ALIVE_RLE_TOKEN:
@@ -118,7 +118,7 @@ struct RleToken *rle_flatten(RleMap *rle_m)
   for ( int i = 0 ; i < rle_m->nb_lines ; i++ )
   {
     struct RleToken t_nl = {
-      .value = NEWLINE_RLE_TOKEN,
+      .value = { .char_ = NEWLINE_RLE_TOKEN },
       .repeat = rle_m->lines[i].line_num
               - (( i == 0 ) ? 0 : rle_m->lines[i-1].line_num)
     };
@@ -128,14 +128,14 @@ struct RleToken *rle_flatten(RleMap *rle_m)
       da_push(rle_da, &rle_m->lines[i].tokens[j]);
   }
   struct RleToken t_end = {
-    .value = END_RLE_TOKEN,
+    .value = { .char_ = END_RLE_TOKEN },
     .repeat = 1
   };
   da_push(rle_da, &t_end);
   return da_unpack(rle_da, NULL);
 }
 
-BitMap *rle_to_bm(struct RLE rle)
+BitMap *rle_to_bm(struct LifeRle rle)
 {
   BitMap *bm = bm_new(RLE, align_tokens(rle.tokens));
   bm->x = rle.x;
@@ -150,13 +150,13 @@ void bm_write(FILE *file, BitMap *bm)
   {
     case RLE:
       {
-        struct RLE rle = {
+        struct LifeRle rle = {
           .x = bm->x,
           .y = bm->y,
           .r = bm->r,
           .tokens = rle_flatten(bm->map.rle)
         };
-        write_rle(file, rle);
+        LifeRle_write(file, rle);
       }
       break;
     case RAW:

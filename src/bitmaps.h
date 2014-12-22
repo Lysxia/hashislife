@@ -49,7 +49,7 @@ void matrix_delete(void **a, int m);
 RleMap *align_tokens(struct RleToken *rle);
 struct RleToken *rle_flatten(RleMap *rle_m);
 
-BitMap *rle_to_bm(struct RLE rle);
+BitMap *rle_to_bm(struct LifeRle rle);
 
 void bm_write(FILE *file, BitMap *bm);
 

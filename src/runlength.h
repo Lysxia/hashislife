@@ -60,6 +60,6 @@ void write_tokens(struct TokenWriter *, struct RleToken *);
 void write_one_token(struct TokenWriter *, struct RleToken);
 
 struct LifeRLE LifeRle_read(FILE *file);
-void       LifeRle_write(FILE *file, struct LifeRLE rle);
+void           LifeRle_write(FILE *file, struct LifeRle rle);
 
 #endif
