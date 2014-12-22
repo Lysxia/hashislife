@@ -40,7 +40,8 @@ struct QRleMap
   be returned.
   
   The implementation guarantees that the `.tokens` array is lefti untouched. */
-struct PopToken {
+struct PopToken
+{
   const struct RleToken *tokens; //!< Token buffer
   int nb_tokens;
   int i; //!< Next token index
@@ -53,7 +54,8 @@ struct PopToken {
   When no more tokens are available, infinitely many pairs of `0`
   (corresponding to `DEAD_CELL_CHAR`) will be returned;
   `.empty` is also set to `true`. */
-struct PopTwoTokens {
+struct PopTwoTokens
+{
   struct PopToken pt;
   unsigned two_t; //!< Two tokens are read into the two least significant bits.
                /*!< Unrecognized tokens make the program abort */
