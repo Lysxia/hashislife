@@ -70,7 +70,7 @@ struct TokenParser tp_new(FILE *file)
   };
 }
 
-struct LifeRle life_rle_read(FILE *file)
+struct LifeRle LifeRle_read(FILE *file)
 {
   char buff[Rle_LINE_LENGTH];
   int linum = 0;
@@ -131,7 +131,7 @@ struct LifeRle life_rle_read(FILE *file)
 
 #define MIN(a,b) (((a) < (b)) ? a : b)
 
-void life_rle_write(FILE *file, struct LifeRle rle)
+void LifeRle_write(FILE *file, struct LifeRle rle)
 {
   struct TokenWriter tw = {
     .file = file,

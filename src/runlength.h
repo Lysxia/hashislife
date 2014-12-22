@@ -1,8 +1,6 @@
 #ifndef RUNLENGTH_H
 #define RUNLENGTH_H
 
-/* Run length encoding */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -10,6 +8,8 @@
 #include "definitions.h"
 #include "parsers.h"
 
+/*! \defgroup rle Run length encoding */
+/*!@{*/
 #define     END_RLE_TOKEN '!'
 #define    DEAD_RLE_TOKEN 'b'
 #define   ALIVE_RLE_TOKEN 'o'
@@ -46,7 +46,15 @@ struct TokenWriter
 //! Game of Life .rle file contents
 struct LifeRle
 {
-  struct RleToken *tokens;
+  struct RleToken *tokens; //!< An array of char tokens
+  /*!< The tokens have one of the following values:
+
+     END_RLE_TOKEN
+     DEAD_RLE_TOKEN
+     ALIVE_RLE_TOKEN
+     NEWLINE_RLE_TOKEN
+      
+    The token `END_RLE_TOKEN` indicates the end of the array. */
   int x;
   int y;
   rule r;
@@ -59,7 +67,7 @@ struct RleToken life_rle_token(struct TokenParser *tp);
 void write_tokens(struct TokenWriter *, struct RleToken *);
 void write_one_token(struct TokenWriter *, struct RleToken);
 
-struct LifeRLE LifeRle_read(FILE *file);
+struct LifeRle LifeRle_read(FILE *file);
 void           LifeRle_write(FILE *file, struct LifeRle rle);
-
+/*@}*/
 #endif
