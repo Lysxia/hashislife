@@ -2,12 +2,12 @@
 #include "conversion_aux.h"
 #include "hashtbl.h"
 
-Quad *rle_to_quad(Hashtbl *htbl, RleMap *rle_m)
+Quad *rle_to_quad(Hashtbl *htbl, struct RleMap *rle_m)
 {
-  return condense(htbl, RleMap_to_QRleMap(rle_m));
+  return condense(htbl, fuse_adjacent_lines(rle_m, token_leaf));
 }
 
-Quad *condense(Hashtbl *htbl, struct QRleMap qrle_m)
+Quad *condense(Hashtbl *htbl, struct RleMap q_rle_m)
 {
 }
 

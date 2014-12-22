@@ -24,8 +24,9 @@ static const struct RleLine empty_line =
   .line_num = -1 // Does not matter
 };
 
-union Tokenizable token_leaf(union Tokenizable cells[4])
+union Tokenizable token_leaf_(void *ptr, union Tokenizable cells[4])
 {
+  (void) ptr;
   unsigned l = 0;
   for ( int i = 0 ; i < 4 ; i++ )
   {
@@ -35,11 +36,19 @@ union Tokenizable token_leaf(union Tokenizable cells[4])
   return (union Tokenizable) { .ptr_ = leaf(l) };
 }
 
+const struct TokenCurry token_leaf =
+{
+  .f = &token_leaf_,
+  .args = NULL,
+};
+
 /* Variables corresponding to RLE encoding of `Quad*` arrays are
   prefixed with `q_`. The fusion functions have been generalized but
   the notation we use is within the context of the fusion of two
   "bit" RleMap into a "quadtree" RleMap. */
-struct RleMap RleMap_to_QRleMap(struct RleMap *rle_m)
+struct RleMap fuse_adjacent_lines(
+  struct RleMap *rle_m,
+  struct TokenCurry f) //!< Fusion function
 {
   Darray *lines = da_new(sizeof(struct RleLine));
   for ( int i = 0 ; i < rle_m->nb_lines ; )
@@ -67,7 +76,7 @@ struct RleMap RleMap_to_QRleMap(struct RleMap *rle_m)
       line[1] = empty_line;
       i++;
     }
-    q_l = fuse_RleLines(line, token_leaf);
+    q_l = fuse_RleLines(line, f);
     q_l.line_num = rle_m->lines[i_].line_num / 2;
     da_push(lines, &q_l);
   }
@@ -82,7 +91,7 @@ struct RleMap RleMap_to_QRleMap(struct RleMap *rle_m)
 /*! Leaves `.line_num` undefined! */
 struct RleLine fuse_RleLines(
   struct RleLine line[2], //!< Two lines to fuse
-  union Tokenizable (*f)(union Tokenizable[4])) //!< Fusion function
+  struct TokenCurry f) //!< Fusion function
 {
   struct PopTwoTokens p2t[2];
   // Initialize p2t
@@ -104,7 +113,7 @@ struct RleLine fuse_RleLines(
     for ( int l = 0 ; l < 4 ; l++ )
       q_ts[l] = p2t[l >> 1].t[l & 1];
     struct RleToken q_t = {
-      .value = (*f)(q_ts),
+      .value = (*f.f)(f.args, q_ts),
       .repeat = MIN(p2t[0].repeat, p2t[1].repeat)
     };
     // Consume the token pairs

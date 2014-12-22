@@ -44,6 +44,12 @@ struct PopTwoTokens
   int empty; //!< Empty token array flag
 };
 
+struct TokenCurry
+{
+  union Tokenizable (*f)(void *, union Tokenizable[4]);
+  void *args;
+};
+
 /* Error value. Recognizable by its `.nb_token` field set to -1. */
 static struct RleLine RleLine_error =
 {
@@ -53,17 +59,22 @@ static struct RleLine RleLine_error =
 };
 
 struct RleMap prgrph_to_qrle(Prgrph p);
-struct RleMap RleMap_of_quad(struct RleMap *rle_m);
+Quad *condense(Hashtbl *htbl, struct RleMap q_rle_m);
 
-Quad *condense(Hashtbl *htbl, struct RleMap qrle_m);
+struct RleMap fuse_adjacent_lines(
+  struct RleMap *rle_m,
+  struct TokenCurry);
 
 struct RleLine fuse_RleLines(
   struct RleLine line[2],
-  union Tokenizable (*f)(union Tokenizable[4]));
+  struct TokenCurry);
 
 //! Create a new `struct PopTwoTokens`
 struct PopTwoTokens p2t_new(struct RleLine);
 void pop_token(struct PopToken *);
 void pop_two_tokens(struct PopTwoTokens *);
+
+const struct TokenCurry token_leaf;
+struct TokenCurry token_cons(Hashtbl *);
 /*@}*/
 #endif
