@@ -46,7 +46,7 @@ struct TokenWriter
 //! Game of Life .rle file contents
 struct LifeRle
 {
-  struct RleToken *tokens; //!< An array of char tokens
+  struct RleToken *tokens; //!< An array of `char` tokens
   /*!< The tokens have one of the following values:
 
      END_RLE_TOKEN

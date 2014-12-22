@@ -29,12 +29,12 @@ typedef struct
 {
   union
   {
-    RleMap *rle; //!< Run length encoding
-    /*!< This encoding uses tokens of binary values `0`, `1`
-      to encode a map line by line, possibly skipping empty
-      lines (all `0`). */
+    RleMap *rle; //!< Run length encoding. More below.
     char  **raw; //!< Raw matrix
   } map;
+  /*!< `.map.rle`: This encoding uses `int` tokens of binary values
+    `0`, `1` to encode a map line by line, possibly skipping empty
+    lines (all `0`). */
 
   enum MapType map_type; //!< Type tag
 
