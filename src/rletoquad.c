@@ -1,14 +1,19 @@
+#include <assert.h>
+#include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
-#include "conversion.h"
+
 #include "bigint.h"
-#include "hashtbl.h"
+#include "conversion.h"
+#include "conversion_aux.h"
 #include "darray.h"
+#include "hashtbl.h"
 #include "prgrph.h"
 #include "runlength.h"
-#include "conversion_aux.h"
+
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 /*** Matrix to- conversion ***/
 
@@ -21,22 +26,23 @@ Quad *condense(Hashtbl *htbl, struct QRleMap qrle_m)
 {
 }
 
+static const struct RleLine empty_line = {
+  .tokens = NULL,
+  .nb_tokens = 0,
+  .line_num = -1 // Does not matter
+};
+
 struct QRleMap RleMap_to_QRleMap(RleMap *rle_m)
 {
-#define EMPTY(n) \
-  (struct RleLine) { \
-    .tokens = NULL, \
-    .nb_tokens = 0, \
-    .line_num = (n) \
-  }
   Darray *lines = da_new(sizeof(struct QRleLine));
   for ( int i = 0 ; i < rle_m->nb_lines ; )
   {
+    const int i_ = i;
     struct QRleLine ql;
     struct RleLine line[2];
     if ( 1 == rle_m->lines[i].line_num % 2 ) // preceding line is empty
     {
-      line[0] = EMPTY(rle_m->lines[i].line_num - 1);
+      line[0] = empty_line;
       line[1] = rle_m->lines[i];
       i++;
     }
@@ -51,10 +57,11 @@ struct QRleMap RleMap_to_QRleMap(RleMap *rle_m)
     else // following line is empty
     {
       line[0] = rle_m->lines[i];
-      line[1] = EMPTY(rle_m->lines[i].line_num + 1);
+      line[1] = empty_line;
       i++;
     }
     ql = fuse_RleLines(line);
+    ql.line_num = rle_m->lines[i_].line_num / 2;
     da_push(lines, &ql);
   }
   struct QRleMap qrle_m;
@@ -62,88 +69,123 @@ struct QRleMap RleMap_to_QRleMap(RleMap *rle_m)
   return qrle_m;
 }
 
-struct TokenTaker {
-  struct RleToken *tokens;
-  int nb_tokens;
-  int i;
-  struct RleToken cur_tok;
-};
+/*! Return the fused line on success (newly allocated `.tokens`),
+  a line with its `.nb_token` field set to `-1` on failure
+  (unrecognized token was found).
 
+  Leaves `.line_num` undefined! */
 struct QRleLine fuse_RleLines(struct RleLine line[2])
 {
-  Darray *qtokens = da_new(sizeof(struct QRleToken));
-  struct TokenTaker tt[2];
+  struct PopTwoTokens p2t[2];
+  // Initialize p2t
   for ( int k = 0 ; k < 2 ; k++ )
+    p2t[k] = p2t_new(line[k]);
+  // Create line
+  Darray *qtokens = da_new(sizeof(struct QRleToken));
+  while ( !p2t[0].empty || !p2t[1].empty )
   {
-    tt[k].tokens = line[k].tokens;
-    tt[k].nb_tokens = line[k].nb_tokens;
-    tt[k].i = 0;
-    tt[k].cur_tok.repeat = 0;
-  }
-  while ( tt[0].i < tt[0].nb_tokens || tt[1].i < tt[1].nb_tokens )
-  {
-    int repeat = INT_MAX; /*pretty much infinity*/
-    int leaf_id = 0;
-    /* _Popping_ tokens places them in the fields of tt[]
-      to make it simple to _take_ them.
-      Because we are trying to zip two lines,
-      we may not _take_ all of the lastly popped tokens at once.
-    */
     for ( int k = 0 ; k < 2 ; k++ )
     {
-      if ( tt[k].cur_tok.repeat == 0 )
+      if ( p2t[k].repeat == 0 && pop_two_tokens(&p2t[k]) )
       {
-#define POP(k) \
-        if ( tt[k].i == tt[k].nb_tokens ) \
-        { \
-          tt[k].cur_tok.value = 0; \
-          tt[k].cur_tok.repeat = INT_MAX; /*pretty much infinity*/\
-        } \
-        else \
-        { \
-          tt[k].cur_tok.repeat = tt[k].tokens[tt[k].i].repeat; \
-          switch ( tt[k].tokens[tt[k].i].value ) \
-          { \
-            case ALIVE_CELL_CHAR: \
-              tt[k].cur_tok.value = 1; \
-              break; \
-            case DEAD_CELL_CHAR: \
-              tt[k].cur_tok.value = 0; \
-            default: \
-              perror("fuse_RleLines()"); \
-              exit(3); \
-          }  \
-          tt[k].i++; \
-        }
-        POP(k);
+        free(da_unpack(qtokens, NULL));
+        return error_QL;
       }
-      if ( tt[k].cur_tok.repeat == 1 )
-      {
-        repeat = 1;
-        leaf_id |= tt[k].cur_tok.value << (3 - 2*k);
-        POP(k); // One token taken
-        leaf_id |= tt[k].cur_tok.value << (2 - 2*k);
-      }
-      else
-      {
-        int can_repeat = tt[k].cur_tok.repeat / 2;
-        repeat = ( repeat < can_repeat ) ? repeat : can_repeat;
-        leaf_id |= (tt[k].cur_tok.value * 3) << (2 - 2*k);
-      }
-    }
-    for ( int k = 0 ; k < 2 ; k++ ) // Take popped token
-    {
-      tt[k].cur_tok.repeat -= 2 * repeat;
     }
     struct QRleToken qt = {
-      .value = leaf(leaf_id),
-      .repeat = repeat
+      .value = leaf((p2t[0].two_t << 2) | p2t[1].two_t),
+      .repeat = MIN(p2t[0].repeat, p2t[1].repeat)
     };
+    for ( int k = 0 ; k < 2 ; k++ )
+      p2t[k].repeat -= qt.repeat;
     da_push(qtokens, &qt);
   }
-  struct QRleLine ql = { .line_num = line[0].line_num / 2 };
+  struct QRleLine ql;
   ql.tokens = da_unpack(qtokens, &ql.nb_tokens);
   return ql;
+}
+
+struct PopTwoTokens p2t_new(struct RleLine line)
+{
+  return (struct PopTwoTokens) {
+    .pt = (struct PopToken) {
+      .tokens = line.tokens,
+      .nb_tokens = line.nb_tokens,
+      .i = 0,
+      .cur_tok.repeat = 0,
+    },
+    .repeat = 0,
+    /* One (safe) risk of this initialization is that two empty lines
+      will be popped at least once in `fuse_RleLines()` (for which the
+      present function was defined) when it could return an empty line.
+      However `fuse_RleLines()` is always called with at least one
+      nonempty line. */
+    .empty = false
+  };
+}
+
+/*! Pops a token from the given array and places it in the `.cur_tok`
+  field.  The current token (if any) is discarded even if its `.repeat`
+  field is not 0.
+  
+  Return 0 on success, 1 on failure (unrecognized token).
+
+  \see struct PopToken */
+int pop_token(struct PopToken *pt)
+{
+  if ( pt->i == pt->nb_tokens )
+  {
+    // No more tokens = implicitly, infinitely many zero tokens.
+    pt->cur_tok.value = 0;
+    pt->cur_tok.repeat = INT_MAX; /*prepty much infinity*/
+  }
+  else
+  {
+    pt->cur_tok.repeat = pt->tokens[pt->i].repeat;
+    switch ( pt->tokens[pt->i].value )
+    {
+      case ALIVE_CELL_CHAR:
+        pt->cur_tok.value = 1;
+        break;
+      case DEAD_CELL_CHAR:
+        pt->cur_tok.value = 0;
+      default:
+        perror("pop_token(): unrecognized token");
+        return 1;
+    }
+    pt->i++;
+  }
+  assert( pt->cur_tok.repeat > 0 );
+  return 0;
+}
+
+/*! Return 0 on success, 1 on failure
+  (`pop_token()` met an unrecognized token).
+  
+  \see struct PopTwoTokens */
+int pop_two_tokens(struct PopTwoTokens *p2t)
+{
+#define POP() if ( pop_token(&p2t->pt) ) return 1
+  if ( p2t->pt.cur_tok.repeat == 0 )
+  {
+    POP();
+  }
+  if ( p2t->pt.cur_tok.repeat == 1 )
+  {
+    p2t->repeat = 1;
+    p2t->two_t = p2t->pt.cur_tok.value << 1;
+    POP();
+    p2t->pt.cur_tok.repeat--;
+    p2t->two_t |= p2t->pt.cur_tok.value;
+  }
+  else
+  {
+    p2t->repeat = p2t->pt.cur_tok.repeat / 2;
+    p2t->pt.cur_tok.repeat %= 2;
+    p2t->two_t = ( p2t->pt.cur_tok.value == 1 ) ? 3 : 0;
+  }
+  return 0;
+#undef POP
 }
 
 #if 0
@@ -224,5 +266,4 @@ struct Quad_rle rle_to_qrle(Rle *rle)
   return qrle;
 }
 #endif
-
 
