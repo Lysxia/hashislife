@@ -80,13 +80,18 @@ RleMap *align_tokens(struct RleToken *rle)
   int i;
   for ( i = 0 ; rle[i].value.char_ != END_RLE_TOKEN ; i++ )
   {
+    int value = 1;
     switch ( rle[i].value.char_ )
     {
       case DEAD_RLE_TOKEN:
+        value = 0;
       case ALIVE_RLE_TOKEN:
-        if ( NULL == cur_tokens )
+        // value = 1 by default
+        if ( NULL == cur_tokens ) // First time pushing
           cur_tokens = da_new(sizeof(struct RleToken));
-        da_push(cur_tokens, &rle[i]);
+        struct RleToken *dest = da_alloc(cur_tokens);
+        dest->value.int_ = value;
+        dest->repeat = rle[i].repeat;
         break;
       case NEWLINE_RLE_TOKEN:
 #define AT_newline \
@@ -127,7 +132,12 @@ struct RleToken *rle_flatten(RleMap *rle_m)
     if ( t_nl.repeat > 0 )
       da_push(rle_da, &t_nl);
     for ( int j = 0 ; j < rle_m->lines[i].nb_tokens ; j++ )
-      da_push(rle_da, &rle_m->lines[i].tokens[j]);
+    {
+      struct RleToken *dest = da_alloc(rle_da);
+      struct RleToken src = rle_m->lines[i].tokens[j];
+      dest->repeat = src.repeat;
+      dest->value.char_ = src.value.int_ ? ALIVE_RLE_TOKEN : DEAD_RLE_TOKEN;
+    }
   }
   struct RleToken t_end = {
     .value = { .char_ = END_RLE_TOKEN },
