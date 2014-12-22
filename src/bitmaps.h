@@ -7,7 +7,7 @@
 
 /*! \defgroup bmp Cell matrix representation */
 /*!@{*/
-//! Types of supported map
+//! Types of supported maps
 enum MapType { RAW, RLE };
 
 //! Run length encoded line
@@ -30,6 +30,9 @@ typedef struct
   union
   {
     RleMap *rle; //!< Run length encoding
+    /*!< This encoding uses tokens of binary values `0`, `1`
+      to encode a map line by line, possibly skipping empty
+      lines (all `0`). */
     char  **raw; //!< Raw matrix
   } map;
 
