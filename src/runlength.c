@@ -54,6 +54,8 @@ struct RleToken life_rle_token(struct TokenParser *tp)
       t.value.char_ = tp->buff[tp->i];
       t.repeat = z;
       break;
+    default:
+      return t; // Unrecognized token
   }
   tp->i++;
   return t;
@@ -116,7 +118,7 @@ struct LifeRle life_rle_read(FILE *file)
     t = life_rle_token(&tp);
     if ( t.repeat < 0 )
     {
-      free(da_unpack(rle_da, NULL));
+      da_destroy(rle_da);
       perror("read_rle(): Syntax error.");
       exit(3);
     }

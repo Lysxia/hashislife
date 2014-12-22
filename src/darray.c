@@ -26,7 +26,7 @@ Darray *da_new(size_t data_size)
   return da;
 }
 
-void da_push(Darray *da, void *v)
+void *da_alloc(Darray *da)
 {
   if ( da->array_length == 0 )
     da->da = malloc(da->data_size);
@@ -39,13 +39,13 @@ void da_push(Darray *da, void *v)
       exit(1);
     }
   }
+  return da->da + da->data_size * da->array_length++;
+}
 
-  char *dest = da->da + da->data_size * da->array_length;
-
-  if ( v != NULL )
-    memcpy(dest, (char *) v, da->data_size);
-
-  da->array_length++;
+void *da_push(Darray *da, void *v)
+{
+  char *dest = da_alloc(da);
+  return memcpy(dest, (char *) v, da->data_size);
 }
 
 void *da_unpack(Darray *da, int *length)
@@ -67,4 +67,9 @@ void *da_unpack(Darray *da, int *length)
 
   free(da);
   return a;
+}
+
+void da_destroy(Darray *da)
+{
+  free(da_unpack(da, NULL));
 }

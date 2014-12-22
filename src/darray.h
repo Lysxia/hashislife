@@ -10,7 +10,9 @@
 typedef struct Darray Darray;
 
 Darray *da_new(size_t data_size);
-void    da_push(Darray *da, void *v);
+void   *da_alloc(Darray *da);
+void   *da_push(Darray *da, void *v);
 void   *da_unpack(Darray *da, int *length);
+void    da_destroy(Darray *da);
 
 #endif
