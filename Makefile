@@ -1,52 +1,42 @@
 BUILDDIR=build
-TESTDIR=test
-SRCDIR=src
+SRCDIR=main src test
 
 CC=gcc -std=c99
 #CFLAGS=-W -Wall -O2 -fmax-errors=2
 CFLAGS=-W -Wall -O0 -g -fmax-errors=2
 INCLUDES=-Iinclude
 
-SRC=$(shell ls -1 src | grep \\.c) \
-		$(shell ls -1 src/conversion | sed "s:\(.*\.c\):conversion/\1:")
-OBJ=$(SRC:%.c=$(BUILDDIR)/%.o)
-MAIN=main/main.c
+OBJ=$(shell find src -type f -name \*.c | sed 's:^\(.*\)\.c:$(BUILDDIR)/\1\.o:')
+ALLSRC=$(shell find $(SRCDIR) -type f -name \*.c) $(shell find lex -type f -name \*.l | sed 's/\.l/\.c/')
+DEPENDS=$(ALLSRC:%.c=$(BUILDDIR)/%.d)
+#BUILDSUBDIR=$(shell find $(SRCDIR) -type d | sed s:^:$(BUILDDIR)/:)
+MAIN=main/main
 
-hashlife: $(BUILDDIR) $(BUILDDIR)/hashlife
+hashlife: $(BUILDDIR)/hashlife
 
-$(BUILDDIR):
-	@mkdir -p $(BUILDDIR)
-	@mkdir -p $(BUILDDIR)/conversion
+$(BUILDDIR)/hashlife: $(BUILDDIR)/$(MAIN)
+	ln $< $@
 
-$(BUILDDIR)/hashlife: $(OBJ) $(BUILDDIR)/main.o
-	$(CC) $(CFLAGS) $(INCLUDES) $(OBJ) $(BUILDDIR)/main.o -o $@
-
-$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+$(BUILDDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-$(BUILDDIR)/main.o: $(MAIN)
+$(BUILDDIR)/$(MAIN).o: $(MAIN).c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-$(BUILDDIR)/%.d: $(SRCDIR)/%.c $(BUILDDIR)
-	@$(CC) $(INCLUDES) -MM $< -MT $(@:.d=.o) -MF $@
+$(BUILDDIR)/%.d: %.c
+	mkdir -p $(@D)
+	$(CC) $(INCLUDES) -MM $< -MT $(@:.d=.o) -MF $@
 
-$(BUILDDIR)/main.d: $(MAIN) $(BUILDDIR)
-	@$(CC) $(INCLUDES) -MM $< -MT $(@:.d=.o) -MF $@
+$(BUILDDIR)/%: $(BUILDDIR)/%.o $(OBJ)
+	$(CC) $(CFLAGS) $(INCLUDES) $(OBJ) $< -o $@
 
 clean:
 	rm -rf $(BUILDDIR)
-	rm -f $(TESTS)
+	rm -f lex/*.c
 
-.PHONY: clean
+.PHONY: builddir clean
 
 ifneq ($(MAKECMDGOALS), clean)
--include $(OBJ:.o=.d) $(BUILDDIR)/main.d
+-include $(DEPENDS)
 endif
 
-tests: hashlife
-	$(BUILDDIR)/hashlife ../patterns/glider_gun.txt 0
-
-TESTS=chunks htbl runlength quadtomatrix rletoquad
-
-test/test_%: test/test_%.c $(OBJ)
-	$(CC) $(CFLAGS) $(INCLUDES) $(OBJ) $< -o $@
