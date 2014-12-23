@@ -39,23 +39,7 @@ endif
 tests: hashlife
 	$(BUILDDIR)/hashlife ../patterns/glider_gun.txt 0
 
-TESTS=test/test_chunks test/test_htbl test/test_runlength
+TESTS=chunks htbl runlength quadtomatrix rletoquad
 
-TEST_CHUNKS=build/chunks.o build/definitions.o test/test_chunks.c
-test/test_chunks: $(TEST_CHUNKS)
-	$(CC) $(CFLAGS) $(INCLUDES) $(TEST_CHUNKS) -o $@
-
-TEST_HTBL_OBJ=definitions chunks bigint createquad hashtbl
-TEST_HTBL=$(TEST_HTBL_OBJ:%=build/%.o) test/test_htbl.c
-test/test_htbl: $(TEST_HTBL)
-	$(CC) $(CFLAGS) $(INCLUDES) $(TEST_HTBL) -o $@
-
-TEST_RUNLENGTH_OBJ=definitions bitmaps parsers darray runlength
-TEST_RUNLENGTH=$(TEST_RUNLENGTH_OBJ:%=build/%.o) test/test_runlength.c
-test/test_runlength: $(TEST_RUNLENGTH)
-	$(CC) $(CFLAGS) $(INCLUDES) $(TEST_RUNLENGTH) -o $@
-
-TEST_QTM_OBJ=definitions bigint chunks hashtbl createquad lifecount prgrph darray conversion/quadtomatrix
-TEST_QTM=$(TEST_QTM_OBJ:%=build/%.o) test/test_quadtomatrix.c
-test/test_quadtomatrix: $(TEST_QTM)
-	$(CC) $(CFLAGS) $(INCLUDES) $(TEST_QTM) -o $@
+test/test_%: test/test_%.c $(OBJ)
+	$(CC) $(CFLAGS) $(INCLUDES) $(OBJ) $< -o $@
