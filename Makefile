@@ -22,9 +22,10 @@ $(BUILDDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 $(BUILDDIR)/%.d: %.c
-	mkdir -p $(@D)
-	$(CC) $(INCLUDES) -MM $< -MT $(@:.d=.o) -MF $@
+	@mkdir -p $(@D)
+	@$(CC) $(INCLUDES) -MM $< -MT $(@:.d=.o) -MF $@
 
+#tests and stuff
 $(BUILDDIR)/%: $(BUILDDIR)/%.o $(OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) $(OBJ) $< -o $@
 
