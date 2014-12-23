@@ -3,7 +3,6 @@
 
 #include "bitmaps.h"
 #include "hashtbl.h"
-#include "prgrph.h"
 #include "quad.h"
 #include "runlength.h"
 
@@ -63,7 +62,7 @@ struct ZipArgs_cons
   int d;
 };
 
-struct RleMap prgrph_to_qrle(Prgrph p);
+//struct RleMap prgrph_to_qrle(Prgrph p);
 Quad *condense(Hashtbl *htbl, struct RleMap q_rle_m);
 
 struct RleMap zip_adjacent_lines(

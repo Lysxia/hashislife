@@ -10,13 +10,10 @@
 #include "conversion.h"
 #include "parsers.h"
 #include "runlength.h"
-#include "prgrph.h"
 
 void test_quad(Hashtbl*, Quad*, BigInt *, int);
 
 const char *get_filename_ext(const char *filename);
-
-const char *collect_arg3(char *argv, BigInt **t);
 
 int main(int argc, char *argv[])
 {
@@ -35,34 +32,20 @@ int main(int argc, char *argv[])
 
       file = fopen(filename, "r");
 
-
       Hashtbl *htbl = hashtbl_new(CONWAY);
       Quad *q;
 
       if ( strcmp(get_filename_ext(filename), "rle") == 0 )
       {
-        Rle *rle = read_rle(file);
-
-        write_rle(stdout, rle);
-        
-        printf("___\n");
-        fflush(stdout);
-
-        q = rle_to_quad(htbl, rle);
-
-        printf("...\n");
-        fflush(stdout);
-
-        free_rle(rle);
+        struct LifeRle rle = LifeRle_read(file);
+        struct RleMap rle_m = align_tokens(rle.tokens);
+        free(rle.tokens);
+        q = rle_to_quad(htbl, rle_m);
+        RleMap_delete(rle_m);
       }
       else
       {
-        Prgrph p = read_prgrph(file);
-
-        q = prgrph_to_quad(htbl, p);
-
-        //write_prgrph(stdout, p);
-        free_prgrph(p);
+        return 0;
       }
 
       fclose(file);
@@ -72,7 +55,6 @@ int main(int argc, char *argv[])
 
       bi_free(t);
       hashtbl_delete(htbl);
-
       break;
     case 1:
 #if 0
@@ -90,11 +72,6 @@ const char *get_filename_ext(const char *filename)
   const char *dot = strrchr(filename, '.');
   if ( !dot || dot == filename) return "";
   return dot + 1;
-}
-
-const char *collect_arg3(char *argv, BigInt **t)
-{
-  return NULL;
 }
 
 void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
@@ -115,41 +92,34 @@ void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
 
   int d = q->depth;
   q = destiny(htbl, q, &task);
-
-  /*
+  //q = skip(htbl,q,NULL);
+  //q = expand(htbl, q, q->depth+1);
   while (q->depth > d)
     q = center(htbl, q->node.n.sub, q->depth-1);
-    */
 
-  UMatrix um = quad_to_matrix(bi_zero(), bi_zero(), m, n, h, q); 
+  UMatrix um = quad_to_matrix(q, h, bi_zero(), m, bi_zero(), n); 
 #endif
 
-  Prgrph next_p;
+  char **next_p;
   if ( h == 0 )
   {
-    next_p.prgrph = um.um_char;
+    next_p = um.char_;
   }
   else
   {
-    next_p = bi_mat_to_prgrph(um.um_bi, m, n, h);
+    next_p = bi_to_char_mat(um.bi_, m, n, h);
   }
 
-  next_p.m = m;
-
-  write_prgrph(stdout, next_p);
-
-  //printf("Cell count (log2):%d\n", bi_log2(cell_count(q)));
-  //bi_print(cell_count(q));
-
-  //htbl_stat(htbl);
+  matrix_write(stdout, next_p, m, n);
 
   if ( h == 0 )
   {
-    free_um_char(um, m);
+    matrix_delete((void **) um.char_, m);
   }
   else
   {
-    free_um_bi(um, m);
-    free_prgrph(next_p);
+    // Does not free the big ints
+    matrix_delete((void **) um.bi_, m);
+    matrix_delete((void **) next_p, m);
   }
 }

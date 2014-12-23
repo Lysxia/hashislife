@@ -15,14 +15,14 @@ Quad *skip(
   assert( 0 < d );
 
   const int long_skip = NULL == task;
-  const int task_done = NULL != q->node.n.short_skip
-                     && task->id == q->node.n.short_skip->task_id;
+  // Macro because this is ill defined when task == NULL
+#define TASK_DONE NULL != q->node.n.short_skip && task->id == q->node.n.short_skip->task_id
   const int half_skip = long_skip || bi_digit(task->steps, d-1);
 
   /* The recursion stops at depth 1 in the worst case */
   if ( long_skip && NULL != q->node.n.skip )
     return q->node.n.skip;
-  else if ( !long_skip && task_done )
+  else if ( !long_skip && TASK_DONE )
     return q->node.n.short_skip->head;
 
   Quad *q_out;
@@ -112,13 +112,15 @@ Quad *destiny(
   Quad    *q, //!< Not a leaf
   Task    *task)
 {
-  int d;
   const int len = bi_log2(task->steps);
 
   /* Increase the size of the quad tree so that the center square
     can contain all the effects of the starting configuration */
-  for ( d = q->depth ; d < len + 2 ; d++ )
-    q = expand(htbl, q, d);
+  do
+  {
+    q = expand(htbl, q, q->depth+1);
+  }
+  while ( q->depth < len );
 
   return skip(htbl, q, task);
 }

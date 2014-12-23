@@ -193,6 +193,7 @@ void quad_d1(
 
   ql->head.depth = 1;
   ql->head.alive = NULL;
+  ql->head.node.n.short_skip = NULL;
 
   // Fill skip field
   int acc = 0, i;

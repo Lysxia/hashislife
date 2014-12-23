@@ -4,7 +4,6 @@
 #include "bigint.h"
 #include "bitmaps.h"
 #include "hashtbl.h"
-#include "prgrph.h"
 
 typedef union UMatrix
 {
@@ -61,12 +60,6 @@ void quad_to_matrix_(
   int tree_h,
   struct FramePositionBig m,
   struct FramePositionBig n);
-
-Prgrph bi_mat_to_prgrph(
-  const BigInt ***bm,
-  int m,
-  int n,
-  int height);
 
 void free_um_char(UMatrix um, int m);
 void free_um_bi(UMatrix um, int m);

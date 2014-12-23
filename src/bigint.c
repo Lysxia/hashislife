@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <limits.h>
 #include <string.h>
+
 #include "bigint.h"
 
 // Unsigned type for bitwise manipulation
@@ -433,3 +434,11 @@ void bi_test()
   bi_free(b);
 #endif
 }
+
+char** bi_to_char_mat(
+  const BigInt ***bm,
+  int m,
+  int n,
+  int height)
+{}
+

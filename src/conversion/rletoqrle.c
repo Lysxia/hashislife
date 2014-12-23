@@ -10,7 +10,6 @@
 #include "conversion_aux.h"
 #include "hashtbl.h"
 #include "darray.h"
-#include "prgrph.h"
 #include "runlength.h"
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))

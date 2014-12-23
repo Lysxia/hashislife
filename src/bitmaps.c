@@ -91,9 +91,11 @@ void RleMap_delete(struct RleMap rle)
 
 void matrix_delete(void **a, int m)
 {
-  int i;
-  for ( i = 0 ; i < m ; i++ )
+#if 0
+  for ( int i = 0 ; i < m ; i++ )
     free(a[i]);
+#endif
+  free(a[0]);
   free(a);
 }
 

@@ -34,4 +34,10 @@ void bi_free(BigInt *b);
 void bi_print(const BigInt *b);
 void bi_test();
 
+char** bi_to_char_mat(
+  const BigInt ***bm,
+  int m,
+  int n,
+  int height);
+
 #endif
