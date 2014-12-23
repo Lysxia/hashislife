@@ -17,21 +17,38 @@ void plaintext_push(Darray *rle_da, char value, int repeat);
               .r = 0,
             };
             Darray *rle_da = da_new(sizeof(struct RleToken));
-            int linum = 0;
-            #define PUSH(x, n) \
-              struct = plaintext_push(rle_da, &t, (x), (n))
-![^\n]*\n   linum++; // Comment lines
-\.+         plaintext_push(rle_da,    DEAD_RLE_TOKEN, yyleng);
-O+          plaintext_push(rle_da,   ALIVE_RLE_TOKEN, yyleng);
-\n+         plaintext_push(rle_da, NEWLINE_RLE_TOKEN, yyleng); linum+=yyleng;
+            int line_num = 0;
+            int line_len = 0;
+            #define PUSH(x, n) plaintext_push(rle_da, (x), (n));
+![^\n]*\n   line_num++; // Comment lines
+\.+         {
+            PUSH(DEAD_RLE_TOKEN, yyleng);
+            line_len += yyleng;
+            }
+O+          {
+            PUSH(ALIVE_RLE_TOKEN, yyleng);
+            line_len += yyleng;
+            }
+\n+         {
+            PUSH(NEWLINE_RLE_TOKEN, yyleng);
+            line_num += yyleng;
+            rle.x += yyleng;
+            if ( rle.y < line_len )
+              rle.y = line_len;
+            line_len = 0;
+            }
 <<EOF>>     {
-            plaintext_push(rle_da,     END_RLE_TOKEN, 1);
+            PUSH(END_RLE_TOKEN, 1);
             rle.tokens = da_unpack(rle_da, NULL);
+            if ( 0 < line_len ) rle.x++;
+            if ( rle.y < line_len )
+              rle.y = line_len;
             return rle;
             }
 .|\n        {
-            fprintf(stderr, "Line %d: unexpected character.", linum);
+            fprintf(stderr, "Line %d: unexpected character.", line_num);
             da_destroy(rle_da);
+            rle.x = rle.y = -1;
             return rle;
             }
 %%
