@@ -22,13 +22,14 @@ Quad *leaves = NULL;
 */
 Hashtbl *hashtbl_new(rule r)
 {
+  extern Quad *leaves;
   /* The first call initializes global parameters */
-  if (leaves == NULL)
+  if ( leaves == NULL )
     hashlife_init();
 
   Hashtbl *htbl = malloc(sizeof(Hashtbl));
 
-  if (htbl == NULL)
+  if ( htbl == NULL )
   {
     perror("hashtbl_new(): Failed to allocate table.");
     exit(1);
@@ -95,6 +96,7 @@ void hashtbl_delete(Hashtbl *htbl)
 /*! Leaves are indexed from 0 to `leaves_count`-1 = 15. */
 Quad *leaf(int k)
 {
+  extern Quad *leaves;
   return &leaves[k];
 }
 
@@ -137,6 +139,7 @@ Quad *dead_space(Hashtbl *htbl, int d)
 /*! This is automatically called at the first call of `hashtbl_new()` */
 void hashlife_init(void)
 {
+  extern Quad *leaves;
   // Initialize quadtree leaves
   leaves = malloc(leaves_count * sizeof(Quad));
 
@@ -166,6 +169,7 @@ void hashlife_init(void)
 /*! Frees resources allocated by `hashlife_init()`. */
 void hashlife_cleanup(void)
 {
+  extern Quad *leaves;
   free(leaves);
   leaves = NULL;
 }
@@ -196,7 +200,7 @@ void quad_d1(
   ql->head.node.n.short_skip = NULL;
 
   // Fill skip field
-  int acc = 0, i;
+  int l = 0, i;
   for ( i = 0 ; i < 4 ; ++i )
   {
     int j, sum = 0;
@@ -208,12 +212,12 @@ void quad_d1(
       sum += quad[coord[i][j][0]]->node.l.map[coord[i][j][1]];
 
     if ( quad[pos[i][0]]->node.l.map[pos[i][1]] )
-      acc |= ((r >> (sum + 9)) & 1) << (3 - i);
+      l |= ((r >> (sum + 9)) & 1) << (3 - i);
     else
-      acc |= ((r >> sum) & 1) << (3 - i);
+      l |= ((r >> sum) & 1) << (3 - i);
   }
 
-  ql->head.node.n.skip = &leaves[acc];
+  ql->head.node.n.skip = leaf(l);
 
   hashtbl_add(htbl, hash(quad), ql);
 }
@@ -375,7 +379,7 @@ int depth1_skip(Hashtbl *htbl, int state[4])
 
   int i;
   for ( i = 0 ; i < 4 ; i++ )
-    quad[i] = &leaves[state[i]];
+    quad[i] = leaf(state[i]);
 
   Quad *q = hashtbl_find(htbl, hash(quad), quad);
 
