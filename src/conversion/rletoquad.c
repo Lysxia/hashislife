@@ -12,11 +12,12 @@ Quad *condense(Hashtbl *htbl, struct RleMap q_rle_m)
   if ( q_rle_m.nb_lines == 0 )
     return dead_space(htbl, 0);
 
-  for ( int d = 1 ;
-        q_rle_m.nb_lines > 1
+  for ( int d = 1
+      ; q_rle_m.nb_lines > 1
+     || q_rle_m.lines[0].line_num > 0
      || q_rle_m.lines[0].nb_tokens > 1
-     || q_rle_m.lines[0].tokens[0].repeat > 1 ;
-        d++ )
+     || q_rle_m.lines[0].tokens[0].repeat > 1
+      ; d++ )
   {
 #if 0
     if ( d > 20) exit(0);
