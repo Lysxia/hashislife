@@ -20,9 +20,6 @@ $(BUILDDIR)/hashlife: $(BUILDDIR)/$(MAIN)
 $(BUILDDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-$(BUILDDIR)/$(MAIN).o: $(MAIN).c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
-
 $(BUILDDIR)/%.d: %.c
 	mkdir -p $(@D)
 	$(CC) $(INCLUDES) -MM $< -MT $(@:.d=.o) -MF $@
