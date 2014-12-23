@@ -120,7 +120,7 @@ Quad *destiny(
   {
     q = expand(htbl, q, q->depth+1);
   }
-  while ( q->depth < len );
+  while ( q->depth <= len );
 
   return skip(htbl, q, task);
 }
