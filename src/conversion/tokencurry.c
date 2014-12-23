@@ -58,7 +58,7 @@ struct ZipParam param_cons_with(Hashtbl *htbl, int d)
     },
     .deflt = (struct RleToken)
     {
-      .value = { .ptr_ = dead_space(htbl, d) },
+      .value = { .ptr_ = dead_space(htbl, d-1) },
       .repeat = INT_MAX,
     },
   };

@@ -1,5 +1,6 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
+
 #include <stdint.h>
 
 /*! \defgroup rules Game rules */

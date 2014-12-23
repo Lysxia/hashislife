@@ -1,6 +1,8 @@
 #ifndef CHUNKS_H
 #define CHUNKS_H
+
 #include <stdlib.h>
+
 /*! \defgroup chunks Memory chunks */
 /*!@{*/
 typedef struct Chunks Chunks;

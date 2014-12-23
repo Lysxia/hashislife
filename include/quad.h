@@ -1,5 +1,6 @@
 #ifndef QUAD_H
 #define QUAD_H
+
 #include "bigint.h"
 
 /*! \defgroup quad Quadtrees */

@@ -43,6 +43,28 @@ BitMap *bm_new_mat(char **mat, int m, int n)
   return bm;
 }
 
+void **matrix_new(size_t sz, int m, int n)
+{
+  void **mat = malloc(m * sizeof(*mat));
+  if ( NULL == mat )
+  {
+    perror("matrix_new()");
+    return NULL;
+  }
+  void *mat_ = malloc(m * n * sz);
+  if ( NULL == mat_ )
+  {
+    free(mat);
+    perror("matrix_new()");
+    return NULL;
+  }
+  for ( int i = 0 ; i < m ; i++ )
+  {
+    mat[i] = mat_ + i * n;
+  }
+  return mat;
+}
+
 void bm_delete(BitMap *bm)
 {
   switch ( bm->map_type )
@@ -62,8 +84,7 @@ void bm_delete(BitMap *bm)
 /*! \param `rle` and subfields must be `malloc()`ated pointers. */
 void RleMap_delete(struct RleMap rle)
 {
-  int l;
-  for ( l = 0 ; l < rle.nb_lines ; l++ )
+  for ( int l = 0 ; l < rle.nb_lines ; l++ )
     free(rle.lines[l].tokens);
   free(rle.lines);
 }
@@ -74,6 +95,35 @@ void matrix_delete(void **a, int m)
   for ( i = 0 ; i < m ; i++ )
     free(a[i]);
   free(a);
+}
+
+void matrix_write(FILE *file, char **mat, int m, int n)
+{
+  for ( int i = 0 ; i < m ; i++ )
+  {
+    fwrite(mat[i], sizeof(char), n, file);
+    fputc('\n', file);
+  }
+}
+
+void bm_write(FILE *file, BitMap *bm)
+{
+  switch ( bm->map_type )
+  {
+    case RLE:
+      {
+        struct LifeRle rle = {
+          .x = bm->x,
+          .y = bm->y,
+          .r = bm->r,
+          .tokens = rle_flatten(bm->map.rle)
+        };
+        LifeRle_write(file, rle);
+      }
+      break;
+    case MAT:
+      break; // unimplemented
+  }
 }
 
 struct RleMap align_tokens(struct RleToken *rle)
@@ -144,25 +194,5 @@ struct RleToken *rle_flatten(struct RleMap rle_m)
   };
   da_push(rle_da, &t_end);
   return da_unpack(rle_da, NULL);
-}
-
-void bm_write(FILE *file, BitMap *bm)
-{
-  switch ( bm->map_type )
-  {
-    case RLE:
-      {
-        struct LifeRle rle = {
-          .x = bm->x,
-          .y = bm->y,
-          .r = bm->r,
-          .tokens = rle_flatten(bm->map.rle)
-        };
-        LifeRle_write(file, rle);
-      }
-      break;
-    case MAT:
-      break; // unimplemented
-  }
 }
 

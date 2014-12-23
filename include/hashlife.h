@@ -1,6 +1,10 @@
 #ifndef HASHLIFE_H
 #define HASHLIFE_H
+
 #include "bigint.h"
+#include "chunks.h"
+#include "hashtbl.h"
+#include "quad.h"
 
 typedef struct Task Task;
 

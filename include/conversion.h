@@ -3,13 +3,13 @@
 
 #include "bigint.h"
 #include "bitmaps.h"
-#include "prgrph.h"
 #include "hashtbl.h"
+#include "prgrph.h"
 
 typedef union UMatrix
 {
-  char **um_char;
-  const BigInt ***um_bi;
+  char **char_;
+  const BigInt ***bi_;
 } UMatrix;
 
 #if 0
@@ -23,15 +23,15 @@ Quad *rle_to_quad(Hashtbl *htbl, struct RleMap rle);
 // Draw the prgrph described by q at the specified location
 UMatrix quad_to_matrix(
   Quad *q,
-  int zoom,
-  BigInt *mmin,
+  int zoom, //! >= 0
+  const BigInt *mmin,
   int mlen,
-  BigInt *nmin,
+  const BigInt *nmin,
   int nlen);
 
 struct FramePositionBig {
   int m_min;
-  BigInt *min;
+  const BigInt *min;
   int len;
 };
 
@@ -61,14 +61,6 @@ void quad_to_matrix_(
   int tree_h,
   struct FramePositionBig m,
   struct FramePositionBig n);
-
-UMatrix quad_to_matrix(
-  Quad *q,
-  int zoom, //! >= 0
-  BigInt *mmin,
-  int mlen,
-  BigInt *nmin,
-  int nlen);
 
 Prgrph bi_mat_to_prgrph(
   const BigInt ***bm,

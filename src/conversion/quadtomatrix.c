@@ -68,7 +68,7 @@ void simple_quad_to_matrix(
   else if ( tree_h <= 0 )
   {
     assert( m.len == 1 && n.len == 1 );
-    p.um_bi[m.m_min][n.m_min] = cell_count(q);
+    p.bi_[m.m_min][n.m_min] = cell_count(q);
   }
   else if ( q->depth == 0 && tree_h == 1)
   {
@@ -76,7 +76,7 @@ void simple_quad_to_matrix(
     for ( int i = 0 ; i < m.len ; i++ )
       for ( int j = 0 ; j < n.len ; j++ )
       {
-        p.um_char[m.m_min+i][n.m_min+j]
+        p.char_[m.m_min+i][n.m_min+j]
           = q->node.l.map[2 * (m.min+i) + (n.min+j)]
           ? ALIVE_CELL_CHAR : DEAD_CELL_CHAR;
       }
@@ -212,9 +212,9 @@ void cropping_quad_to_matrix(
 UMatrix quad_to_matrix(
   Quad *q,
   int zoom, //! >= 0
-  BigInt *mmin,
+  const BigInt *mmin,
   int mlen,
-  BigInt *nmin,
+  const BigInt *nmin,
   int nlen)
 {
   UMatrix p;
@@ -222,21 +222,27 @@ UMatrix quad_to_matrix(
   assert( zoom >= 0 );
   if ( zoom == 0 )
   {
-    p.um_char = alloc_prgrph(mlen, nlen, sizeof(char));
-    if ( !p.um_char )
+    p.char_ = (char **) matrix_new(sizeof(char), mlen, nlen);
+    if ( NULL == p.char_ )
     {
       perror("quad_to_matrix(): char");
       return p;
     }
+    for ( int i = 0 ; i < mlen ; i++ )
+      for ( int j = 0 ; j < nlen ; j++ )
+        p.char_[i][j] = DEAD_CELL_CHAR;
   }
   else
   {
-    p.um_bi = alloc_prgrph(mlen, nlen, sizeof(const BigInt *));
-    if ( !p.um_bi )
+    p.bi_ = (const BigInt ***) matrix_new(sizeof(const BigInt *), mlen, nlen);
+    if ( NULL == p.bi_ )
     {
       perror("quad_to_matrix(): bi");
       return p;
     }
+    for ( int i = 0 ; i < mlen ; i++ )
+      for ( int j = 0 ; j < nlen ; j++ )
+        p.bi_[i][j] = bi_zero_const;
   }
 
   const int tree_h = q->depth - zoom + 1;
@@ -251,7 +257,7 @@ UMatrix quad_to_matrix(
       .min = bi_to_int(nmin),
       .len = nlen
     };
-    simple_quad_to_matrix(p, q, tree_h, m, n);
+    cropping_quad_to_matrix(p, q, tree_h, m, n);
   } else {
     struct FramePositionBig m = {
       .m_min = 0,

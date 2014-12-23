@@ -2,9 +2,9 @@
 #define HASHTBL_H
 /* Quadtree hashconsing */
 
-#include "definitions.h"
-#include "chunks.h"
 #include "bigint.h"
+#include "chunks.h"
+#include "definitions.h"
 #include "quad.h"
 
 /*! \defgroup hashtbl Hashtables */
@@ -35,16 +35,21 @@ struct QuadList
   QuadList *tail;
 };
 
+/* Create and delete */
 Hashtbl *hashtbl_new(rule r); //!< Create hashtbl
 void     hashtbl_delete(Hashtbl*); //!< Deallocate hashtbl
 
+/* Globally initialize and quit */
 void hashlife_init(void); //!< Global initializer
 void hashlife_cleanup(void); //!< Clear hashlife resources
 
+/* Simple blocks */
 Quad *leaf(int k); //!< `int` to leaf
 Quad *dead_space(Hashtbl *htbl, int d);
   //!< Returns an area of dead cells at depth `d`
 
+//! Debugging
+/*! Use `quad_to_matrix()` */
 void print_quad(Quad*);
 void hashtbl_stat(Hashtbl*);
 int  depth1_skip(Hashtbl*, int[4]);

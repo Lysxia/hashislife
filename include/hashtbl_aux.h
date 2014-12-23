@@ -3,6 +3,7 @@
 /* Auxiliary definitions for hashtable manipulation */
 
 #include "hashtbl.h"
+#include "quad.h"
 
 /*! \defgroup hashtbl_aux Auxiliary definitions (hashtables) */
 /*!@{*/
@@ -29,6 +30,6 @@ static const int init_dead_size = 32;
   representing the 4 bit map
   0 1
   2 3 */
-Quad      *leaves;
+extern Quad *leaves;
 /*!@}*/
 #endif

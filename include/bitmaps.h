@@ -44,18 +44,22 @@ typedef struct
   rule r;
 } BitMap;
 
+/* Create */
 BitMap *bm_new_rle(struct LifeRle);
 BitMap *bm_new_mat(char **, int, int); //!< Create matrix
-void    bm_delete(BitMap *map); //!< Destroy map
+void **matrix_new(size_t, int, int);
 
+/* Destroy */
+void bm_delete(BitMap *map); //!< Destroy map
 void RleMap_delete(struct RleMap rle);
-void matrix_delete(void **a, int m);
+void matrix_delete(void **, int);
 
+/* Write */
+void matrix_write(FILE *, char **, int, int);
+void bm_write(FILE *, BitMap *);
+
+/* Translate */
 struct RleMap align_tokens(struct RleToken *rle);
 struct RleToken *rle_flatten(struct RleMap rle_m);
-
-void bm_write(FILE *file, BitMap *bm);
-
-//Rle_line *bm_rle_newline(Darray *rle, int line_num);
 /*!@}*/
 #endif

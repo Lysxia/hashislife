@@ -27,6 +27,7 @@ struct PopToken
   int i; //!< Next token index
   struct RleToken cur_tok; //!< Current token
   struct RleToken def_tok; //!< Default token to use when the buffer is spent
+  int empty;
 };
 
 //! Facility for acquiring sequences of pairs of RLE tokens.
@@ -80,5 +81,8 @@ void pop_two_tokens(struct PopTwoTokens *);
 
 const struct ZipParam param_leaf;
 struct ZipParam param_cons_with(Hashtbl *, int);
+
+//! Debugging
+void RleMap_write(struct RleMap rle_m);
 /*@}*/
 #endif

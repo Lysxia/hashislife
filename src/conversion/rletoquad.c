@@ -19,12 +19,8 @@ Quad *condense(Hashtbl *htbl, struct RleMap q_rle_m)
         d++ )
   {
 #if 0
-    {
-      printf("-%d-", qrle.qrle_len);
-      int i;
-      for ( i = 0 ; i < qrle.qrle_len ; i++ )
-        printf("%d %d, ", qrle.qrle[i].qrle_linelen, qrle.qrle[i].qrle_linenum);
-    }
+    if ( d > 20) exit(0);
+    RleMap_write(q_rle_m); fflush(stdout);
 #endif
     struct RleMap tmp = q_rle_m;
     q_rle_m = zip_adjacent_lines(tmp, param_cons_with(htbl, d));
