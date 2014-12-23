@@ -6,8 +6,9 @@ CC=gcc -std=c99
 CFLAGS=-W -Wall -O0 -g -fmax-errors=2
 INCLUDES=-Iinclude
 
-OBJ=$(shell find src -type f -name \*.c | sed 's:^\(.*\)\.c:$(BUILDDIR)/\1\.o:')
-ALLSRC=$(shell find $(SRCDIR) -type f -name \*.c) $(shell find lex -type f -name \*.l | sed 's/\.l/\.c/')
+LEXSRC=$(shell find lex -type f -name \*.l)
+ALLSRC=$(shell find $(SRCDIR) -type f -name \*.c) $(LEXSRC:.l=.c)
+OBJ=$(patsubst %.c, $(BUILDDIR)/%.o, $(filter src/% lex/%, $(ALLSRC)))
 DEPENDS=$(ALLSRC:%.c=$(BUILDDIR)/%.d)
 #BUILDSUBDIR=$(shell find $(SRCDIR) -type d | sed s:^:$(BUILDDIR)/:)
 MAIN=main/main
