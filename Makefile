@@ -34,6 +34,7 @@ clean:
 	rm -f lex/*.c
 
 .PHONY: builddir clean
+.SECONDARY:
 
 ifneq ($(MAKECMDGOALS), clean)
 -include $(DEPENDS)
