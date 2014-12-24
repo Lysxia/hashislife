@@ -16,7 +16,10 @@
 #define NEWLINE_RLE_TOKEN '$'
 
 //! Polymorphism!
-/*! A union for RleToken */
+/*! A union for `struct RleToken` value field.
+  This is convenient because the same structure of run length encoded
+  lines as in `bitmaps.h` and the same algorithm are used to
+  hashcons these streams of tokens into quadtrees. */
 union Tokenizable
 {
   char char_;
@@ -24,12 +27,19 @@ union Tokenizable
   void *ptr_;
 };
 
+//! Generic repeated value
+/*! Run length encoding encodes successive equal values by prefixing
+  the value with the number of repetitions. A safer version which deals
+  with larger ranges, as is part of the goal of this project, would
+  use big ints. */ /* TODO */
 struct RleToken
 {
   union Tokenizable value;
   int repeat;
 };
 
+//! State used by the `life_rle_write()` implementation
+/*! Carry information between calls to write_one_token. */
 struct TokenWriter
 {
   FILE *file;

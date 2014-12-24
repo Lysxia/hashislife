@@ -89,7 +89,9 @@ void RleMap_delete(struct RleMap rle)
   free(rle.lines);
 }
 
-void matrix_delete(void **a, int m)
+/*! Delete a matrix which was allocated in one block, as is done
+  in `matrix_new()`. */
+void matrix_delete(void **a)
 {
 #if 0
   for ( int i = 0 ; i < m ; i++ )
@@ -128,6 +130,8 @@ void bm_write(FILE *file, BitMap *bm)
   }
 }
 
+/*! Split a stream of tokens (in the format understood by runlength.h functions)
+  by lines. In the process, the token values are translated to binary values. */
 struct RleMap align_tokens(struct RleToken *rle)
 {
   Darray *lines = da_new(sizeof(struct RleLine));
@@ -170,6 +174,7 @@ struct RleMap align_tokens(struct RleToken *rle)
   return rle_m;
 }
 
+/*! Inverse of `align_tokens()` */
 struct RleToken *rle_flatten(struct RleMap rle_m)
 {
   Darray *rle_da = da_new(sizeof(struct RleToken));
