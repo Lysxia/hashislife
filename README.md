@@ -89,12 +89,11 @@ Project composition
 Example
 -------
 
-    $ cd src
     $ make
     (...)
-    $ ./hashlife
-    usage: ./hashlife (filename) (t:integer) [h:integer]
-    $ ./hashlife ../patterns/glider_gun.txt 1789
+    $ ./build/hashlife
+    usage: ./build/hashlife (filename) (t:integer) [h:integer]
+    $ ./build/hashlife ../patterns/glider_gun.txt 1789
     ................................................................................
     ............................O...................................................
     ...........................OOOO.................................................
