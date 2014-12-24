@@ -30,13 +30,6 @@ struct RleToken
   int repeat;
 };
 
-struct TokenParser
-{
-  FILE *file;
-  char *buff;
-  int   i;
-};
-
 struct TokenWriter
 {
   FILE *file;
@@ -60,14 +53,14 @@ struct LifeRle
   rule r;
 };
 
-struct TokenParser tp_new(FILE *file);
-int tp_regenerate(struct TokenParser *tp);
-struct RleToken life_rle_token(struct TokenParser *tp);
+extern FILE *life_rle_in;
+struct LifeRle life_rle_lex();
+struct LifeRle life_rle_read(FILE *);
+void           life_rle_write(FILE *, struct LifeRle);
+
+void push_token(Darray *, union Tokenizable, int);
 
 void write_tokens(struct TokenWriter *, struct RleToken *);
 void write_one_token(struct TokenWriter *, struct RleToken);
-
-struct LifeRle LifeRle_read(FILE *file);
-void           LifeRle_write(FILE *file, struct LifeRle rle);
 /*@}*/
 #endif

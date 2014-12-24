@@ -9,129 +9,15 @@
 
 #define Rle_LINE_LENGTH 100
 
-int tp_regenerate(struct TokenParser *tp)
+struct LifeRle life_rle_read(FILE *file)
 {
-  if ( tp->file != NULL
-    && fgets(tp->buff, Rle_LINE_LENGTH, tp->file) != NULL )
-  {
-    tp->i = 0;
-    return 1;
-  }
-  else {
-    return 0;
-  }
-}
-
-struct RleToken life_rle_token(struct TokenParser *tp)
-{
-  char buff[10] = {'\0'};
-  int j;
-  struct RleToken t =
-  {
-    .value.char_ = 0,
-    .repeat = -1
-  };
-
-  while ( tp->buff[tp->i] == '\0' || isspace(tp->buff[tp->i]) )
-  {
-    // Skip spaces
-    tp->i += strspn(tp->buff + tp->i, "\x20\x0c\x0a\x0d\x09\x0b");
-    if ( tp->buff[tp->i] == '\0' && !tp_regenerate(tp) )
-      return t; // EOF
-  }
-  j = strspn(tp->buff + tp->i, "0123456789");
-  if ( j > 10 )
-    return t; // integer too large
-  memcpy(buff, tp->buff + tp->i, j);
-  tp->i += j;
-  int z = ( j == 0 ) ? 1 : atoi(buff);
-  switch ( tp->buff[tp->i] )
-  {
-    case END_RLE_TOKEN:
-    case DEAD_RLE_TOKEN:
-    case ALIVE_RLE_TOKEN:
-    case NEWLINE_RLE_TOKEN:
-      t.value.char_ = tp->buff[tp->i];
-      t.repeat = z;
-      break;
-    default:
-      return t; // Unrecognized token
-  }
-  tp->i++;
-  return t;
-}
-
-struct TokenParser tp_new(FILE *file)
-{
-  return (struct TokenParser) {
-    .file = file,
-    .buff = calloc(Rle_LINE_LENGTH, sizeof(char)),
-    .i = 0
-  };
-}
-
-struct LifeRle LifeRle_read(FILE *file)
-{
-  char buff[Rle_LINE_LENGTH];
-  int linum = 0;
-  const struct LifeRle fail_rle = { .tokens = NULL, .r = -1 };
-
-  do
-  {
-    linum++;
-    if ( fgets(buff, Rle_LINE_LENGTH, file) == NULL )
-    {
-      perror("read_rle(): Error on input");
-      return fail_rle;
-    }
-  }
-  while ( buff[0] == '#' );
-
-  char s[22];
-  struct LifeRle rle;
-  switch ( sscanf(buff, "x = %d, y = %d, rule = %21s ", &rle.x, &rle.y, s) )
-  {
-    case 2:
-      rle.r = 0;
-      break;
-    case 3:
-      if ( (rle.r = parse_rule(s)) != (rule) (-1) )
-        break;
-    case EOF:
-    case 1:
-    default:
-      perror("read_rle(): Syntax error.");
-      fprintf(stderr,"Line %d: %s\n", linum, s);
-      return fail_rle;
-  }
-
-  Darray *rle_da = da_new(sizeof(struct RleToken));
-  if ( rle_da == NULL )
-  {
-    perror("read_rle()");
-    exit(1);
-  }
-
-  struct RleToken t;
-  struct TokenParser tp = tp_new(file);
-  do {
-    t = life_rle_token(&tp);
-    if ( t.repeat < 0 )
-    {
-      da_destroy(rle_da);
-      perror("read_rle(): Syntax error.");
-      exit(3);
-    }
-    da_push(rle_da, &t);
-  } while ( t.value.char_ != END_RLE_TOKEN );
-
-  rle.tokens = da_unpack(rle_da, NULL);
-  return rle;
+  life_rle_in = file;
+  return life_rle_lex();
 }
 
 #define MIN(a,b) (((a) < (b)) ? a : b)
 
-void LifeRle_write(FILE *file, struct LifeRle rle)
+void life_rle_write(FILE *file, struct LifeRle rle)
 {
   struct TokenWriter tw = {
     .file = file,
@@ -194,5 +80,11 @@ void write_one_token(struct TokenWriter *tw, struct RleToken t)
   
   fputs(a, tw->file);
 }
-#undef MAX_COLS
+
+void push_token(Darray *rle_da, union Tokenizable value, int repeat)
+{
+  struct RleToken *t = da_alloc(rle_da);
+  t->value = value;
+  t->repeat = repeat;
+}
 

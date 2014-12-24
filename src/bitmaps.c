@@ -120,7 +120,7 @@ void bm_write(FILE *file, BitMap *bm)
           .r = bm->r,
           .tokens = rle_flatten(bm->map.rle)
         };
-        LifeRle_write(file, rle);
+        life_rle_write(file, rle);
       }
       break;
     case MAT:

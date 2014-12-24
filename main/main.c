@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
       if ( strcmp(get_filename_ext(filename), "rle") == 0 )
       {
-        struct LifeRle rle = LifeRle_read(file);
+        struct LifeRle rle = life_rle_read(file);
         struct RleMap rle_m = align_tokens(rle.tokens);
         free(rle.tokens);
         q = rle_to_quad(htbl, rle_m);

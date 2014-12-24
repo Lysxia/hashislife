@@ -5,9 +5,8 @@
 #include "runlength.h"
 
 #define YY_DECL struct LifeRle yylex(void)
-
-void plaintext_push(Darray *rle_da, char value, int repeat);
 %}
+%s H
 %%
             struct LifeRle rle =
             {
@@ -19,8 +18,13 @@ void plaintext_push(Darray *rle_da, char value, int repeat);
             Darray *rle_da = da_new(sizeof(struct RleToken));
             int line_num = 0;
             int line_len = 0;
-            #define PUSH(x, n) plaintext_push(rle_da, (x), (n));
-![^\n]*\n   line_num++; // Comment lines
+            #define TOKEN(x) (union Tokenizable) { .char_ = (x) }
+            #define PUSH(x, n) \
+              BEGIN(0); \
+              push_token(rle_da, TOKEN(x), (n))
+            BEGIN(H);
+
+<H>![^\n]*\n  line_num++; // Comment lines
 \.+         {
             PUSH(DEAD_RLE_TOKEN, yyleng);
             line_len += yyleng;
@@ -46,15 +50,10 @@ O+          {
             return rle;
             }
 .|\n        {
-            fprintf(stderr, "Line %d: unexpected character.", line_num);
+            fprintf(stderr, "Line %d: unexpected character '%c'\n",
+              line_num, yytext[0]);
             da_destroy(rle_da);
             rle.x = rle.y = -1;
             return rle;
             }
 %%
-void plaintext_push(Darray *rle_da, char value, int repeat)
-{
-  struct RleToken *t = da_alloc(rle_da);
-  t->value.char_ = value;
-  t->repeat = repeat;
-}
