@@ -74,7 +74,9 @@ void bm_delete(BitMap *bm)
       break;
     case MAT:
       if ( bm->map.mat != NULL )
-        matrix_delete((void **) bm->map.mat, bm->y);
+        matrix_delete((void **) bm->map.mat);
+        // TODO Are we sure all matrices would have been allocated the way
+        // that call requires?
       break;
   }
 

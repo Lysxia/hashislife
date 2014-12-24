@@ -114,12 +114,12 @@ void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
 
   if ( h == 0 )
   {
-    matrix_delete((void **) um.char_, m);
+    matrix_delete((void **) um.char_);
   }
   else
   {
     // Does not free the big ints
-    matrix_delete((void **) um.bi_, m);
-    matrix_delete((void **) next_p, m);
+    matrix_delete((void **) um.bi_);
+    matrix_delete((void **) next_p);
   }
 }
