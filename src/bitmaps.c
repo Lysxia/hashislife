@@ -130,7 +130,7 @@ void bm_write(FILE *file, BitMap *bm)
 
 /*! Split a stream of tokens (in the format understood by runlength.h functions)
   by lines. In the process, the token values are translated to binary values. */
-int align_tokens(struct RleToken *rle, struct RleMap *m)
+int align_tokens(struct RleMap *m, struct RleToken *rle)
 {
   DArray lines, cur_tokens;
   da_init(&lines, sizeof(struct RleLine));
@@ -163,7 +163,7 @@ int align_tokens(struct RleToken *rle, struct RleMap *m)
     }
   }
   NEW_LINE();
-  rle_m->lines = da_unpack(&lines, &rle_m->nb_lines);
+  m->lines = da_unpack(&lines, &m->nb_lines);
   return 0;
 }
 
