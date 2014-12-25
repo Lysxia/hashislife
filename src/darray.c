@@ -10,7 +10,7 @@
   \param da Pointer to the structure to be initialized.
 
   Return 0 if successful, 1 otherwise. */
-int da_init(size_t data_size, DArray *da)
+int da_init(DArray *da, size_t data_size)
 {
   const size_t da_init_max_len = 8;
   da->data_size = data_size;

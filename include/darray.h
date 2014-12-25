@@ -15,7 +15,7 @@ typedef struct {
 } DArray;
 
 //! Initialize empty DArray
-int   da_init(size_t data_size, DArray *da);
+int   da_init(DArray *da, size_t data_size);
 //! Extend the array by one uninitialized block and returns a pointer to it
 void *da_alloc(DArray *da);
 //! Extend the array and initialize it with the value pointed to by `v`
