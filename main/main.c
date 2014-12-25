@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
             break;
         }
         struct RleMap rle_m;
-        align_tokens(rle.tokens, &rle_m);
+        align_tokens(&rle_m, rle.tokens);
         free(rle.tokens);
         q = rle_to_quad(htbl, rle_m);
       }

@@ -45,7 +45,7 @@ typedef struct
 } BitMap;
 
 /* Create */
-BitMap *bm_new_rle(struct LifeRle);
+int bm_new_rle(BitMap *, struct LifeRle);
 BitMap *bm_new_mat(char **, int, int); //!< Create matrix
 void **matrix_new(size_t, int, int);
 

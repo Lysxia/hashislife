@@ -8,20 +8,15 @@
 
 int push_new_line(DArray *lines, DArray *token_line, int line_num);
 
-BitMap *bm_new_rle(struct LifeRle rle)
+int bm_new_rle(BitMap *bm, struct LifeRle rle)
 {
-  BitMap *bm = malloc(sizeof(*bm));
-  if ( NULL == bm )
-  {
-    perror("bm_new_rle()");
-    return NULL;
-  }
-  bm->map_type = RLE;
-  bm->map.rle = align_tokens(rle.tokens);
-  bm->x = rle.x;
-  bm->y = rle.y;
-  bm->r = rle.r;
-  return bm;
+  *bm = (BitMap) {
+    .map_type = RLE,
+    .x = rle.x,
+    .y = rle.y,
+    .r = rle.r,
+  };
+  return ( align_tokens(&bm->map.rle, rle.tokens) );
 }
 
 BitMap *bm_new_mat(char **mat, int m, int n)
