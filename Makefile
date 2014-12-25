@@ -16,7 +16,7 @@ MAIN=main/main
 hashlife: $(BUILDDIR)/hashlife
 
 $(BUILDDIR)/hashlife: $(BUILDDIR)/$(MAIN)
-	ln $< $@
+	ln -f $< $@
 
 $(BUILDDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@

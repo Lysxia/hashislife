@@ -16,73 +16,65 @@ Quad *skip(
 
   const int long_skip = NULL == task;
   // Macro because this is ill defined when task == NULL
-#define TASK_DONE NULL != q->node.n.short_skip && task->id == q->node.n.short_skip->task_id
-  const int half_skip = long_skip || bi_digit(task->steps, d-1);
 
   /* The recursion stops at depth 1 in the worst case */
   if ( long_skip && NULL != q->node.n.skip )
     return q->node.n.skip;
-  else if ( !long_skip && TASK_DONE )
+  if ( q->depth == 1 )
+    // long_skip == false, otherwise the previous branch would have been taken
+    // Depth 1 nodes will always have their short_skip field set to NULL.
+    // In that case they always return the center area.
+    return center(htbl, q->node.n.sub, 0);
+  #define TASK_DONE !long_skip && NULL != q->node.n.short_skip && task->id == q->node.n.short_skip->task_id
+  else if ( TASK_DONE )
     return q->node.n.short_skip->head;
 
-  Quad *q_out;
-  if ( q->depth == 1 )
-  {
-    q_out = ( bi_digit(task->steps, 0) )
-          ? q->node.n.skip
-          : center(htbl, q->node.n.sub, 0);
-  }
-  else
-  {
-    /* qs is the array of depth d-2 subtrees:
+  const int half_skip = long_skip || bi_digit(task->steps, d-2);
+  /* qs is the array of depth d-2 subtrees:
 
-        00 01 02 03
-        10 11 12 13
-        20 21 22 23
-        30 31 32 33 */
-    Quad *qs[4][4];
-    flatten(qs, q);
-    
-    /* q1 contains the progress after 2^(d-1) steps at the centers of
-       2x2 subblocks of qs:
+      00 01 02 03
+      10 11 12 13
+      20 21 22 23
+      30 31 32 33 */
+  Quad *qs[4][4];
+  flatten(qs, q);
+  
+  /* q1 contains the progress after 2^(d-1) steps at the centers of
+     2x2 subblocks of qs:
 
-        00 01 02
-        10 11 12
-        20 21 22 */
-    Quad *q1[3][3];
-    int i, j;
-    for ( i = 0 ; i < 3 ; i++ )
-      for ( j = 0 ; j < 3 ; j++ )
-      {
-        Quad *cur_quad[4];
+      00 01 02
+      10 11 12
+      20 21 22 */
+  Quad *q1[3][3];
+  for ( int i = 0 ; i < 3 ; i++ )
+    for ( int j = 0 ; j < 3 ; j++ )
+    {
+      Quad *cur_quad[4];
 
-        int k;
-        for ( k = 0 ; k < 4 ; k++ )
-          cur_quad[k] = qs[i + (k >> 1)][j + (k & 1)];
+      int k;
+      for ( k = 0 ; k < 4 ; k++ )
+        cur_quad[k] = qs[i + (k >> 1)][j + (k & 1)];
 
-        if ( half_skip )
-          q1[i][j] = skip(htbl, cons_quad(htbl, cur_quad, d - 1), NULL);
-        else
-          q1[i][j] = center(htbl, cur_quad, d-2);
-      }
+      if ( half_skip )
+        q1[i][j] = skip(htbl, cons_quad(htbl, cur_quad, d - 1), NULL);
+      else
+        q1[i][j] = center(htbl, cur_quad, d-2);
+    }
 
-    /* Holds the subtrees after step 2^d */
-    Quad *nxt[4];
+  /* Holds the subtrees after step 2^d */
+  Quad *nxt[4];
+  for ( int i = 0 ; i < 2 ; i++ )
+    for ( int j = 0 ; j < 2 ; j++ )
+    {
+      Quad *cur_quad[4];
 
-    for ( i = 0 ; i < 2 ; i++ )
-      for ( j = 0 ; j < 2 ; j++ )
-      {
-        Quad *cur_quad[4];
+      for ( int k = 0 ; k < 4 ; k++ )
+        cur_quad[k] = q1[i + (k >> 1)][j + (k & 1)];
 
-        int k;
-        for ( k = 0 ; k < 4 ; k++ )
-          cur_quad[k] = q1[i + (k >> 1)][j + (k & 1)];
+      nxt[2 * i + j] = skip(htbl, cons_quad(htbl, cur_quad, d - 1), task);
+    }
 
-        nxt[2 * i + j] = skip(htbl, cons_quad(htbl, cur_quad, d - 1), task);
-      }
-
-    q_out = cons_quad(htbl, nxt, d-1);
-  }
+  Quad *q_out = cons_quad(htbl, nxt, d-1);
 
   if ( long_skip )
     q->node.n.skip = q_out;
@@ -120,7 +112,7 @@ Quad *destiny(
   {
     q = expand(htbl, q, q->depth+1);
   }
-  while ( q->depth <= len );
+  while ( q->depth < len + 2 );
 
   return skip(htbl, q, task);
 }
