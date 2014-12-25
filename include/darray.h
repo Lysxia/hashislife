@@ -10,7 +10,8 @@
 
   These functions (except `da_init()` of course) all assume that the
   array argument has already been initialized with `da_init()`,
-  and not yet `da_unpack()`-ed nor `da_destroy()`-ed. */
+  and not yet `da_unpack()`-ed nor `da_destroy()`-ed.
+*/
 /*!@{*/
 typedef struct {
   char   *array;

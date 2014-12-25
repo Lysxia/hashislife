@@ -7,7 +7,6 @@
 
   \param da Pointer to the structure to be initialized.
   \param data_size Size of objects to be stored in the array.
-                   Must be positive.
 */
 void da_init(DArray *da, size_t data_size)
 {
@@ -70,12 +69,12 @@ void *da_push(DArray *da, void *v)
                 (E.g. if you just need a null-terminated string.)
 
   The array is resized to the given length.
-  If the array is empty, return `NULL`.
+  If the array is empty, return `NULL` after `free()`-ing the array (unless it was already `NULL`).
 
-  Otherwise may also fail and return `NULL` as well. (That should happen
+  If the resizing fails, `NULL` is returned as well. (That should happen
   only with very odd implementations of `realloc()` though...)
-  
-  The array is left intact. */
+  The array is not freed.
+*/
 void *da_unpack(
   const DArray *da,
   size_t *length)
@@ -83,7 +82,11 @@ void *da_unpack(
   if ( NULL != length )
     *length = da->array_length;
   if ( 0 == da->array_length ) // Then the array is assumed to be NULL
+  {
+    if ( NULL != da->array )
+      free(da->array);
     return NULL;
+  }
   else
     return realloc(da->array, da->array_length * da->data_size);
 }
