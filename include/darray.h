@@ -1,7 +1,7 @@
 #ifndef DARRAY_H
 #define DARRAY_H
 
-#include <stdlib.h>
+#include <stddef.h>
 
 /*! \defgroup darray (Generic) dynamic array implementation. (Well, as generic as C allows) */
 // Implements a stack
