@@ -133,10 +133,17 @@ void bm_write(FILE *file, BitMap *bm)
 int align_tokens(struct RleMap *m, struct RleToken *rle)
 {
   DArray lines, cur_tokens;
+  size_t line_num = 0;
   da_init(&lines, sizeof(struct RleLine));
-#define RESET_LINE() da_init(&cur_tokens, sizeof(struct RleToken))
-#define NEW_LINE() push_new_line(&lines, &cur_tokens)
-  RESET_LINE();
+  da_init(&cur_tokens, sizeof(struct RleToken));
+#define DESTROY_IF(x) \
+  if ( x ) \
+  { \
+    da_destroy(&lines); \
+    da_destroy(&cur_tokens); \
+    return 1; \
+  } // END OF MACRO
+#define NEW_LINE() DESTROY_IF( push_new_line(&lines, &cur_tokens, line_num) )
   for ( size_t i = 0 ; rle[i].value.char_ != END_RLE_TOKEN ; i++ )
   {
     int value = 1;
@@ -151,15 +158,16 @@ int align_tokens(struct RleMap *m, struct RleToken *rle)
           .value = { .int_ = value },
           .repeat = rle[i].repeat,
         };
-        da_push(&cur_tokens, &dest);
+        DESTROY_IF( NULL == da_push(&cur_tokens, &dest) );
         break;
       }
       case NEWLINE_RLE_TOKEN:
         NEW_LINE();
-        cur_line.line_num += rle[i].repeat;
+        line_num += rle[i].repeat;
         break;
       default:
-        ; // TODO
+        DESTROY_IF(1);
+        return 2;
     }
   }
   NEW_LINE();
@@ -206,7 +214,7 @@ int push_new_line(DArray *lines, DArray *token_line, int line_num)
   {
     struct RleLine new_line = { .line_num = line_num };
     new_line.tokens = da_unpack(token_line, &new_line.nb_tokens);
-    reset_line(token_line);
+    da_init(token_line, sizeof(struct RleToken));
     return ( NULL == new_line.tokens || NULL == da_push(lines, &new_line) );
   }
   else
