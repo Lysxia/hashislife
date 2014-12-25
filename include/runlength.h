@@ -68,7 +68,7 @@ struct LifeRle life_rle_lex();
 struct LifeRle life_rle_read(FILE *);
 void           life_rle_write(FILE *, struct LifeRle);
 
-void push_token(Darray *, union Tokenizable, int);
+void push_token(DArray *, union Tokenizable, int);
 
 void write_tokens(struct TokenWriter *, struct RleToken *);
 void write_one_token(struct TokenWriter *, struct RleToken);

@@ -81,10 +81,13 @@ void write_one_token(struct TokenWriter *tw, struct RleToken t)
   fputs(a, tw->file);
 }
 
-void push_token(Darray *rle_da, union Tokenizable value, int repeat)
+void push_token(DArray *rle_da, union Tokenizable value, int repeat)
 {
-  struct RleToken *t = da_alloc(rle_da);
-  t->value = value;
-  t->repeat = repeat;
+  struct RleToken t =
+  {
+    .value = value,
+    .repeat = repeat,
+  };
+  da_push(rle_da, &t);
 }
 
