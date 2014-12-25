@@ -57,8 +57,10 @@ void *da_push(DArray *da, void *v)
                 (E.g. if you just need a null-terminated string.)
 
   The array is resized to the given length.
-  Return NULL on failure. (That should happen only with very odd
-  implementations of `realloc()` though...
+  If the array is empty, return `NULL`
+
+  Otherwise may also fail and return `NULL` as well. (That should happen
+  only with very odd implementations of `realloc()` though...)
   */
 void *da_unpack(
   DArray *da,
@@ -66,7 +68,13 @@ void *da_unpack(
 {
   if ( NULL != length )
     *length = da->array_length;
-  return realloc(da->array, da->array_length * da->data_size);
+  if ( 0 == da->array_length )
+  {
+    free(da->array);
+    return NULL;
+  }
+  else
+    return realloc(da->array, da->array_length * da->data_size);
 }
 
 /*! Free the array */
