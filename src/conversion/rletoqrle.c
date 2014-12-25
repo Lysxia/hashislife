@@ -23,14 +23,6 @@ static const struct RleLine empty_line =
   .line_num = -1 // Does not matter
 };
 
-/* Error value. Recognizable by its `.nb_token` field set to -1. */
-static const struct RleLine RleLine_error =
-{
-  .tokens = NULL,
-  .nb_tokens = -1,
-  .line_num = 0
-};
-
 /* Variables corresponding to RLE encoding of `Quad*` arrays are
   prefixed with `q_`. The fusion functions have been generalized but
   the notation we use is within the context of the fusion of two
