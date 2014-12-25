@@ -50,10 +50,10 @@ int main(int argc, char *argv[])
           default:
             break;
         }
-        struct RleMap rle_m = align_tokens(rle.tokens);
+        struct RleMap rle_m;
+        align_tokens(rle.tokens, &rle_m);
         free(rle.tokens);
         q = rle_to_quad(htbl, rle_m);
-        RleMap_delete(rle_m);
       }
       else
       {

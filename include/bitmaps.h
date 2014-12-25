@@ -59,7 +59,7 @@ void matrix_write(FILE *, char **, int, int);
 void bm_write(FILE *, BitMap *);
 
 /* Translate */
-struct RleMap align_tokens(struct RleToken *rle);
+int align_tokens(struct RleToken *rle, struct RleMap *m);
 struct RleToken *rle_flatten(struct RleMap rle_m);
 /*!@}*/
 #endif

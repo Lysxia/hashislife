@@ -6,6 +6,8 @@
 #include "definitions.h"
 #include "runlength.h"
 
+int push_new_line(DArray *lines, DArray *token_line, int line_num);
+
 BitMap *bm_new_rle(struct LifeRle rle)
 {
   BitMap *bm = malloc(sizeof(*bm));
@@ -128,21 +130,12 @@ void bm_write(FILE *file, BitMap *bm)
 
 /*! Split a stream of tokens (in the format understood by runlength.h functions)
   by lines. In the process, the token values are translated to binary values. */
-// TODO Error handling
-struct RleMap align_tokens(struct RleToken *rle)
+int align_tokens(struct RleToken *rle, struct RleMap *m)
 {
   DArray lines, cur_tokens;
-  struct RleLine cur_line = { .line_num = 0 };
   da_init(&lines, sizeof(struct RleLine));
-  #define RESET_LINE() da_init(&cur_tokens, sizeof(struct RleToken))
-  #define PUSH_NEWLINE() \
-  if ( !da_is_empty(&cur_tokens) ) \
-  { \
-    cur_line.tokens = da_unpack(&cur_tokens, &(cur_line.nb_tokens)); \
-    cur_tokens.array = NULL; \
-    da_push(&lines, &cur_line); \
-    RESET_LINE(); \
-  }
+#define RESET_LINE() da_init(&cur_tokens, sizeof(struct RleToken))
+#define NEW_LINE() push_new_line(&lines, &cur_tokens)
   RESET_LINE();
   for ( size_t i = 0 ; rle[i].value.char_ != END_RLE_TOKEN ; i++ )
   {
@@ -162,18 +155,16 @@ struct RleMap align_tokens(struct RleToken *rle)
         break;
       }
       case NEWLINE_RLE_TOKEN:
-        PUSH_NEWLINE();
+        NEW_LINE();
         cur_line.line_num += rle[i].repeat;
         break;
       default:
         ; // TODO
     }
   }
-  PUSH_NEWLINE();
-
-  struct RleMap rle_m;
-  rle_m.lines = da_unpack(&lines, &rle_m.nb_lines);
-  return rle_m;
+  NEW_LINE();
+  rle_m->lines = da_unpack(&lines, &rle_m->nb_lines);
+  return 0;
 }
 
 /*! Inverse of `align_tokens()` */
@@ -207,5 +198,18 @@ struct RleToken *rle_flatten(struct RleMap rle_m)
   };
   da_push(&rle_da, &t_end);
   return da_unpack(&rle_da, NULL);
+}
+
+int push_new_line(DArray *lines, DArray *token_line, int line_num)
+{
+  if ( !da_is_empty(token_line) )
+  {
+    struct RleLine new_line = { .line_num = line_num };
+    new_line.tokens = da_unpack(token_line, &new_line.nb_tokens);
+    reset_line(token_line);
+    return ( NULL == new_line.tokens || NULL == da_push(lines, &new_line) );
+  }
+  else
+    return 0;
 }
 
