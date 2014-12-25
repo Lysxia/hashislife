@@ -30,14 +30,26 @@ int main(int argc, char *argv[])
       filename = argv[1];
       t = bi_from_string(argv[2], 10);
 
-      file = fopen(filename, "r");
-
       Hashtbl *htbl = hashtbl_new(CONWAY);
       Quad *q;
 
+      file = fopen(filename, "r");
+
       if ( strcmp(get_filename_ext(filename), "rle") == 0 )
       {
-        struct LifeRle rle = life_rle_read(file);
+        struct LifeRle rle;
+        switch ( life_rle_read(&rle, file) )
+        {
+          case 2:
+            fputs("Syntax error.", stderr);
+            exit(2);
+          case 1:
+            perror("Reading file");
+            exit(1);
+          case 0:
+          default:
+            break;
+        }
         struct RleMap rle_m = align_tokens(rle.tokens);
         free(rle.tokens);
         q = rle_to_quad(htbl, rle_m);

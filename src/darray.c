@@ -5,9 +5,9 @@
 
 /*! Allocates a starting array.
 
+  \param da Pointer to the structure to be initialized.
   \param data_size Size of objects to be stored in the array.
                    Must be positive.
-  \param da Pointer to the structure to be initialized.
 */
 void da_init(DArray *da, size_t data_size)
 {
@@ -19,42 +19,43 @@ void da_init(DArray *da, size_t data_size)
   };
 }
 
-int da_is_empty(DArray *da)
+int da_is_empty(const DArray *da)
 {
   return ( 0 == da->array_length );
 }
 
-/*! Assumes `da->array` has already been allocated
-  (as is done by `da_init()`).
-
-  Return NULL in case of failure. */
+/*! Return a pointer to the newly allocated object (but uninitialized).
+  Return `NULL` in case of failure, then `da` is left intact. */
 void *da_alloc(DArray *da)
 {
   if ( da->array_length == da->max_length )
   {
+    void *tmp;
     if ( NULL == da->array ) // Empty array
     {
       const size_t da_init_max_len = 8;
       da->max_length = da_init_max_len;
-      da->array = malloc(da_init_max_len * da->data_size);
+      tmp = malloc(da_init_max_len * da->data_size);
+      if ( NULL == tmp )
+        return NULL;
     }
     else
     {
       da->max_length *= 2;
-      da->array = realloc(da->array, da->max_length * da->data_size);
+      tmp = realloc(da->array, da->max_length * da->data_size);
     }
-    if ( NULL == da->array )
+    if ( NULL == tmp )
       return NULL;
+    da->array = tmp;
   }
   return da->array + da->data_size * da->array_length++;
 }
 
-/*! Assumes `da->array` has already been allocated
-  (as is done by `da_init()`).
-
+/*!
   \param v Pointer to an object of size `da->data_size`.
 
-  Return NULL in case of failure. */
+  Return a pointer to the new object, initialized with the contents at `v`.
+  Return `NULL` in case of failure, then `da` is left intact. */
 void *da_push(DArray *da, void *v)
 {
   char *dest = da_alloc(da);
@@ -69,29 +70,28 @@ void *da_push(DArray *da, void *v)
                 (E.g. if you just need a null-terminated string.)
 
   The array is resized to the given length.
-  If the array is empty, return `NULL`
+  If the array is empty, return `NULL`.
 
   Otherwise may also fail and return `NULL` as well. (That should happen
   only with very odd implementations of `realloc()` though...)
-  */
+  
+  The array is left intact. */
 void *da_unpack(
-  DArray *da,
+  const DArray *da,
   size_t *length)
 {
   if ( NULL != length )
     *length = da->array_length;
-  if ( 0 == da->array_length )
-  {
-    free(da->array);
+  if ( 0 == da->array_length ) // Then the array is assumed to be NULL
     return NULL;
-  }
   else
     return realloc(da->array, da->array_length * da->data_size);
 }
 
-/*! Free the array */
+/*! Free the array if it's not `NULL`. */
 void da_destroy(DArray *da)
 {
-  free(da->array);
+  if ( NULL != da->array )
+    free(da->array);
 }
 

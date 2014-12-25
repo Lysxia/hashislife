@@ -9,10 +9,10 @@
 
 #define Rle_LINE_LENGTH 100
 
-struct LifeRle life_rle_read(FILE *file)
+int life_rle_read(struct LifeRle *rle, FILE *file)
 {
   life_rle_in = file;
-  return life_rle_lex();
+  return life_rle_lex(rle);
 }
 
 #define MIN(a,b) (((a) < (b)) ? a : b)
@@ -81,13 +81,13 @@ void write_one_token(struct TokenWriter *tw, struct RleToken t)
   fputs(a, tw->file);
 }
 
-void push_token(DArray *rle_da, union Tokenizable value, int repeat)
+void *push_token(DArray *rle_da, union Tokenizable value, int repeat)
 {
   struct RleToken t =
   {
     .value = value,
     .repeat = repeat,
   };
-  da_push(rle_da, &t);
+  return da_push(rle_da, &t);
 }
 

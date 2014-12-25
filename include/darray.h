@@ -22,14 +22,14 @@ typedef struct {
 //! Initialize empty DArray
 void  da_init(DArray *da, size_t data_size);
 //! Check whether the array is empty
-int   da_is_empty(DArray *da);
+int   da_is_empty(const DArray *da);
 //! Extend the array by one uninitialized block and returns a pointer to it
 void *da_alloc(DArray *da);
 //! Extend the array and initialize it with the value pointed to by `v`
 void *da_push(DArray *da, void *v);
 //! Extract the underlying array
-void *da_unpack(DArray *da, size_t *length);
-/*! One line wrapper around `free()` */
+void *da_unpack(const DArray *da, size_t *length);
+/*! Wrapper around `free()` */
 void  da_destroy(DArray *da);
 
 // Might need a da_append/concat some day

@@ -64,11 +64,21 @@ struct LifeRle
 };
 
 extern FILE *life_rle_in;
-struct LifeRle life_rle_lex();
-struct LifeRle life_rle_read(FILE *);
-void           life_rle_write(FILE *, struct LifeRle);
+//! Parse a file in *run length encoded* format
+/*! The argument must be a non-`NULL` pointer to `struct LifeRle`.
+  It is initialized with a runlength encoding of the file contents.
 
-void push_token(DArray *, union Tokenizable, int);
+  In case of failure the fields of the argument are undefined.
+
+  Return values:
+  - 0 on success;
+  - 1 on other errors (see `errno`),
+  - 2 on parse error. */
+int life_rle_lex(struct LifeRle *);
+int life_rle_read(struct LifeRle *, FILE *);
+void life_rle_write(FILE *, struct LifeRle);
+
+void *push_token(DArray *, union Tokenizable, int);
 
 void write_tokens(struct TokenWriter *, struct RleToken *);
 void write_one_token(struct TokenWriter *, struct RleToken);
