@@ -29,7 +29,7 @@ void *da_alloc(DArray *da);
 void *da_push(DArray *da, void *v);
 //! Extract the underlying array
 void *da_unpack(const DArray *da, size_t *length);
-/*! Wrapper around `free()` */
+//! Free resources allocated for the array
 void  da_destroy(DArray *da);
 
 // Might need a da_append/concat some day
