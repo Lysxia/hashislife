@@ -76,7 +76,8 @@ void *da_push(DArray *da, void *v)
   Return 0 on success.
   Return 1 on failure; the resizing failed (that should happen
   only with very odd implementations of `realloc()` though...);
-  the original array is not freed, and the references have undefined values.
+  the original array is not freed, and still available,
+  and the references have undefined values.
 
   The type `DArray` argument is left untouched, although the pointer
   may now contain an invalid address.
