@@ -39,10 +39,11 @@ struct RleMap zip_adjacent_lines(
   struct RleMap rle_m,
   struct ZipParam p) //!< Fusion function
 {
-  Darray *lines = da_new(sizeof(struct RleLine));
-  for ( int i = 0 ; i < rle_m.nb_lines ; )
+  DArray lines;
+  da_init(&lines, sizeof(struct RleLine));
+  for ( size_t i = 0 ; i < rle_m.nb_lines ; )
   {
-    const int i_ = i;
+    const size_t i_ = i;
     struct RleLine q_l;
     struct RleLine line[2];
     if ( 1 == rle_m.lines[i].line_num % 2 ) // preceding line is empty
@@ -67,10 +68,10 @@ struct RleMap zip_adjacent_lines(
     }
     q_l = zip_RleLines(line, p);
     q_l.line_num = rle_m.lines[i_].line_num / 2;
-    da_push(lines, &q_l);
+    da_push(&lines, &q_l);
   }
   struct RleMap q_rle_m;
-  q_rle_m.lines = da_unpack(lines, &q_rle_m.nb_lines);
+  q_rle_m.lines = da_unpack(&lines, &q_rle_m.nb_lines);
   return q_rle_m;
 }
 
@@ -90,7 +91,8 @@ struct RleLine zip_RleLines(
     pop_two_tokens(&p2t[k]);
   }
   // Create line
-  Darray *q_tokens = da_new(sizeof(struct RleToken));
+  DArray q_tokens;
+  da_init(&q_tokens, sizeof(struct RleToken));
   do
   {
     // Pop a pair of tokens (possibly repeated) on each line
@@ -103,7 +105,7 @@ struct RleLine zip_RleLines(
       .value = (*p.tc.f)(p.tc.args, q_ts),
       .repeat = MIN(p2t[0].repeat, p2t[1].repeat)
     };
-    da_push(q_tokens, &q_t);
+    da_push(&q_tokens, &q_t);
     // Consume the token pairs
     for ( int k = 0 ; k < 2 ; k++ )
     {
@@ -114,7 +116,7 @@ struct RleLine zip_RleLines(
   }
   while ( !p2t[0].empty || !p2t[1].empty );
   struct RleLine q_l;
-  q_l.tokens = da_unpack(q_tokens, &q_l.nb_tokens);
+  q_l.tokens = da_unpack(&q_tokens, &q_l.nb_tokens);
   return q_l;
 }
 
@@ -192,9 +194,9 @@ void pop_two_tokens(struct PopTwoTokens *p2t)
 
 void RleMap_write(struct RleMap rle_m)
 {
-  for ( int i = 0 ; i < rle_m.nb_lines ; i++ )
+  for ( size_t i = 0 ; i < rle_m.nb_lines ; i++ )
   {
-    for ( int j = 0 ; j < rle_m.lines[i].nb_tokens ; j++ )
+    for ( size_t j = 0 ; j < rle_m.lines[i].nb_tokens ; j++ )
       printf("%d ", rle_m.lines[i].tokens[j].repeat);
     printf("\n");
   }

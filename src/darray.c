@@ -8,17 +8,20 @@
   \param data_size Size of objects to be stored in the array.
                    Must be positive.
   \param da Pointer to the structure to be initialized.
-
-  Return 0 if successful, 1 otherwise. */
-int da_init(DArray *da, size_t data_size)
+*/
+void da_init(DArray *da, size_t data_size)
 {
-  const size_t da_init_max_len = 8;
-  da->data_size = data_size;
-  da->array_length = 0;
-  da->max_length = da_init_max_len;
-  da->array = malloc(da_init_max_len * data_size);
+  *da = (DArray) {
+    .array = NULL,
+    .data_size = data_size,
+    .array_length = 0,
+    .max_length = 0,
+  };
+}
 
-  return ( NULL == da->array );
+int da_is_empty(DArray *da)
+{
+  return ( 0 == da->array_length );
 }
 
 /*! Assumes `da->array` has already been allocated
@@ -29,8 +32,17 @@ void *da_alloc(DArray *da)
 {
   if ( da->array_length == da->max_length )
   {
-    da->max_length *= 2;
-    da->array = realloc(da->array, da->max_length * da->data_size);
+    if ( NULL == da->array ) // Empty array
+    {
+      const size_t da_init_max_len = 8;
+      da->max_length = da_init_max_len;
+      da->array = malloc(da_init_max_len * da->data_size);
+    }
+    else
+    {
+      da->max_length *= 2;
+      da->array = realloc(da->array, da->max_length * da->data_size);
+    }
     if ( NULL == da->array )
       return NULL;
   }

@@ -16,12 +16,6 @@ BitMap *bm_new_rle(struct LifeRle rle)
   }
   bm->map_type = RLE;
   bm->map.rle = align_tokens(rle.tokens);
-  if ( bm->map.rle.nb_lines < 0 )
-  {
-    free(bm);
-    perror("bm_new_rle()");
-    return NULL;
-  }
   bm->x = rle.x;
   bm->y = rle.y;
   bm->r = rle.r;
@@ -86,7 +80,7 @@ void bm_delete(BitMap *bm)
 /*! \param `rle` and subfields must be `malloc()`ated pointers. */
 void RleMap_delete(struct RleMap rle)
 {
-  for ( int l = 0 ; l < rle.nb_lines ; l++ )
+  for ( size_t l = 0 ; l < rle.nb_lines ; l++ )
     free(rle.lines[l].tokens);
   free(rle.lines);
 }
@@ -134,13 +128,23 @@ void bm_write(FILE *file, BitMap *bm)
 
 /*! Split a stream of tokens (in the format understood by runlength.h functions)
   by lines. In the process, the token values are translated to binary values. */
+// TODO Error handling
 struct RleMap align_tokens(struct RleToken *rle)
 {
-  Darray *lines = da_new(sizeof(struct RleLine));
-  Darray *cur_tokens = NULL;
+  DArray lines, cur_tokens;
   struct RleLine cur_line = { .line_num = 0 };
-  int i;
-  for ( i = 0 ; rle[i].value.char_ != END_RLE_TOKEN ; i++ )
+  da_init(&lines, sizeof(struct RleLine));
+  #define RESET_LINE() da_init(&cur_tokens, sizeof(struct RleToken))
+  #define PUSH_NEWLINE() \
+  if ( !da_is_empty(&cur_tokens) ) \
+  { \
+    cur_line.tokens = da_unpack(&cur_tokens, &(cur_line.nb_tokens)); \
+    cur_tokens.array = NULL; \
+    da_push(&lines, &cur_line); \
+    RESET_LINE(); \
+  }
+  RESET_LINE();
+  for ( size_t i = 0 ; rle[i].value.char_ != END_RLE_TOKEN ; i++ )
   {
     int value = 1;
     switch ( rle[i].value.char_ )
@@ -148,39 +152,36 @@ struct RleMap align_tokens(struct RleToken *rle)
       case DEAD_RLE_TOKEN:
         value = 0;
       case ALIVE_RLE_TOKEN:
+      {
         // value = 1 by default
-        if ( NULL == cur_tokens ) // First time pushing
-          cur_tokens = da_new(sizeof(struct RleToken));
-        struct RleToken *dest = da_alloc(cur_tokens);
-        dest->value.int_ = value;
-        dest->repeat = rle[i].repeat;
+        struct RleToken dest = {
+          .value = { .int_ = value },
+          .repeat = rle[i].repeat,
+        };
+        da_push(&cur_tokens, &dest);
         break;
+      }
       case NEWLINE_RLE_TOKEN:
-#define AT_newline \
-        if ( NULL != cur_tokens ) \
-        { \
-          cur_line.tokens = da_unpack(cur_tokens, &cur_line.nb_tokens); \
-          cur_tokens = NULL; \
-          da_push(lines, &cur_line); \
-        }
-        AT_newline
+        PUSH_NEWLINE();
         cur_line.line_num += rle[i].repeat;
         break;
+      default:
+        ; // TODO
     }
   }
-  AT_newline;
-#undef AT_newline
+  PUSH_NEWLINE();
 
   struct RleMap rle_m;
-  rle_m.lines = da_unpack(lines, &rle_m.nb_lines);
+  rle_m.lines = da_unpack(&lines, &rle_m.nb_lines);
   return rle_m;
 }
 
 /*! Inverse of `align_tokens()` */
 struct RleToken *rle_flatten(struct RleMap rle_m)
 {
-  Darray *rle_da = da_new(sizeof(struct RleToken));
-  for ( int i = 0 ; i < rle_m.nb_lines ; i++ )
+  DArray rle_da;
+  da_init(&rle_da, sizeof(struct RleToken));
+  for ( size_t i = 0 ; i < rle_m.nb_lines ; i++ )
   {
     struct RleToken t_nl = {
       .value = { .char_ = NEWLINE_RLE_TOKEN },
@@ -188,20 +189,23 @@ struct RleToken *rle_flatten(struct RleMap rle_m)
               - (( i == 0 ) ? 0 : rle_m.lines[i-1].line_num)
     };
     if ( t_nl.repeat > 0 )
-      da_push(rle_da, &t_nl);
-    for ( int j = 0 ; j < rle_m.lines[i].nb_tokens ; j++ )
+      da_push(&rle_da, &t_nl);
+    for ( size_t j = 0 ; j < rle_m.lines[i].nb_tokens ; j++ )
     {
-      struct RleToken *dest = da_alloc(rle_da);
-      struct RleToken src = rle_m.lines[i].tokens[j];
-      dest->repeat = src.repeat;
-      dest->value.char_ = src.value.int_ ? ALIVE_RLE_TOKEN : DEAD_RLE_TOKEN;
+      struct RleToken src_ = rle_m.lines[i].tokens[j];
+      struct RleToken src = {
+        .value = {
+          .int_ = src_.value.int_ ? ALIVE_RLE_TOKEN : DEAD_RLE_TOKEN },
+        .repeat = src_.repeat,
+      };
+      da_push(&rle_da, &src);
     }
   }
   struct RleToken t_end = {
     .value = { .char_ = END_RLE_TOKEN },
     .repeat = 1
   };
-  da_push(rle_da, &t_end);
-  return da_unpack(rle_da, NULL);
+  da_push(&rle_da, &t_end);
+  return da_unpack(&rle_da, NULL);
 }
 

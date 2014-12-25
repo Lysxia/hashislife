@@ -14,14 +14,14 @@ enum MapType { MAT, RLE };
 struct RleLine
 {
   struct RleToken *tokens;
-  int nb_tokens;
-  int line_num;
+  size_t nb_tokens;
+  size_t line_num; //!< Can be larger than `.nb_tokens`
 };
 
 struct RleMap
 {
   struct RleLine *lines;
-  int nb_lines;
+  size_t nb_lines;
 };
 
 //! Tagged union type

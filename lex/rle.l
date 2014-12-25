@@ -25,13 +25,14 @@ NEWLINE   \$
     .y = 0,
     .r = 0,
   };
-  Darray *rle_da = da_new(sizeof(struct RleToken));
+  DArray rle_da;
+  da_init(&rle_da, sizeof(struct RleToken));
   #define TOKEN(x) (union Tokenizable) { .char_ = (x) }
   #define PUSH(x) \
-    push_token(rle_da, TOKEN(x), repeat); \
+    push_token(&rle_da, TOKEN(x), repeat); \
     repeat = 1; \
     BEGIN(D)
-  #define RLE_ERROR() da_destroy(rle_da); rle.x = rle.y = -1; return rle
+  #define RLE_ERROR() da_destroy(&rle_da); rle.x = rle.y = -1; return rle
   BEGIN(H); // Header
 
 <H>#[^\n]*\n  line_num++;
@@ -62,25 +63,25 @@ NEWLINE   \$
 {DEAD}     PUSH(   DEAD_RLE_TOKEN);
 {ALIVE}    PUSH(  ALIVE_RLE_TOKEN);
 {NEWLINE}  PUSH(NEWLINE_RLE_TOKEN);
-<INITIAL>{END}      {
+<INITIAL>{END}  {
   fprintf(stderr, "Line %d: unexpected character '!' following a count\n",
                         line_num);
   RLE_ERROR();
   }
-{END}               {
+{END} {
   repeat = 1;
   PUSH(END_RLE_TOKEN);
-  rle.tokens = da_unpack(rle_da, NULL);
+  rle.tokens = da_unpack(&rle_da, NULL);
   return rle;
   }
 [ \t]*      ;
 \n          line_num++;
-<*>.|\n     {
+<*>.|\n {
   fprintf(stderr, "Line %d: unexpected character '%c'\n",
                         line_num,                 yytext[0]);
   RLE_ERROR();
   }
-<<EOF>>     {
+<<EOF>> {
   perror("End of file encountered before closing token '!'");
   RLE_ERROR();
   }
