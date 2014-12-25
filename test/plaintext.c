@@ -3,5 +3,10 @@
 
 int main(void)
 {
-  LifeRle_write(stdout, plaintextlex());
+  struct LifeRle rle;
+  if ( plaintextlex(&rle) == 0 )
+    life_rle_write(stdout, rle);
+  else
+    puts("Incorrect format.");
+  return 0;
 }

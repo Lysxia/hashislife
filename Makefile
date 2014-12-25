@@ -9,6 +9,7 @@ INCLUDES=-Iinclude
 LEXSRC=$(shell find lex -type f -name \*.l)
 ALLSRC=$(shell find $(SRCDIR) -type f -name \*.c) $(LEXSRC:.l=.c)
 OBJ=$(patsubst %.c, $(BUILDDIR)/%.o, $(filter src/% lex/%, $(ALLSRC)))
+TESTS=$(patsubst %.c, $(BUILDDIR)/%, $(filter test/%, $(ALLSRC)))
 DEPENDS=$(ALLSRC:%.c=$(BUILDDIR)/%.d)
 #BUILDSUBDIR=$(shell find $(SRCDIR) -type d | sed s:^:$(BUILDDIR)/:)
 MAIN=main/main
@@ -29,11 +30,13 @@ $(BUILDDIR)/%.d: %.c
 $(BUILDDIR)/%: $(BUILDDIR)/%.o $(OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) $(OBJ) $< -o $@
 
+tests: $(TESTS)
+
 clean:
 	rm -rf $(BUILDDIR)
 	rm -f lex/*.c
 
-.PHONY: builddir clean
+.PHONY: builddir clean tests
 .SECONDARY:
 
 ifneq ($(MAKECMDGOALS), clean)

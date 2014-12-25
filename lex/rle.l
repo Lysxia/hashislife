@@ -53,7 +53,7 @@ NEWLINE   \$
     case EOF:
     case 1:
     default:
-      fputs("Incorrect header", stderr);
+      fputs("Incorrect header\n", stderr);
       PARSE_ERROR();
   }
   line_num++;
@@ -85,7 +85,7 @@ NEWLINE   \$
   PARSE_ERROR();
   }
 <<EOF>> {
-  fputs("End of file encountered before closing token '!'", stderr);
+  fputs("End of file encountered before closing token '!'\n", stderr);
   PARSE_ERROR();
   }
 %%
