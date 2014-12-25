@@ -64,31 +64,45 @@ void *da_push(DArray *da, void *v)
 }
 
 /*!
+  \param a Pointer to a location where to store the array.
   \param length Pointer to a location where to store the length.
                 Possibly NULL, in which case the value is just forgotten.
                 (E.g. if you just need a null-terminated string.)
 
   The array is resized to the given length.
-  If the array is empty, return `NULL` after `free()`-ing the array (unless it was already `NULL`).
+  If the array is empty, set `a` to `NULL` after `free()`-ing the array
+  (unless it was already `NULL`).
 
-  If the resizing fails, `NULL` is returned as well. (That should happen
-  only with very odd implementations of `realloc()` though...)
-  The array is not freed.
+  Return 0 on success.
+  Return 1 on failure; the resizing failed (that should happen
+  only with very odd implementations of `realloc()` though...);
+  the original array is not freed, and the references have undefined values.
+
+  The type `DArray` argument is left untouched, although the pointer
+  may now contain an invalid address.
+
+  In this implementation, `length` is unconditionally set to the array length
+  and `a` is set to `NULL` in case of failure, but use the return value
+  for error handling.
 */
-void *da_unpack(
+int da_unpack(
   const DArray *da,
+  void **a,
   size_t *length)
 {
-  if ( NULL != length )
-    *length = da->array_length;
-  if ( 0 == da->array_length ) // Then the array is assumed to be NULL
+  *length = da->array_length;
+  if ( 0 == *length ) // Then the array is assumed to be NULL
   {
     if ( NULL != da->array )
       free(da->array);
-    return NULL;
+    *a = NULL;
+    return 0;
   }
   else
-    return realloc(da->array, da->array_length * da->data_size);
+  {
+    *a = realloc(da->array, da->array_length * da->data_size);
+    return ( NULL == *a );
+  }
 }
 
 /*! Free the array if it's not `NULL`. */

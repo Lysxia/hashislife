@@ -14,10 +14,11 @@
 */
 /*!@{*/
 typedef struct {
-  char   *array;
-  size_t  data_size;
-  size_t  array_length;
-  size_t  max_length;
+  char *array; //!< Underlying array
+  size_t data_size; //!< Size of an object
+  size_t array_length; //!< Effective (current) length of the array
+  size_t max_length; /*!< \brief Physical length of the array
+                        (for dynamic growing purposes */
 } DArray;
 
 //! Initialize empty DArray
@@ -29,7 +30,7 @@ void *da_alloc(DArray *da);
 //! Extend the array and initialize it with the value pointed to by `v`
 void *da_push(DArray *da, void *v);
 //! Extract the underlying array
-void *da_unpack(const DArray *da, size_t *length);
+int   da_unpack(const DArray *da, void **a, size_t *length);
 //! Free resources allocated for the array
 void  da_destroy(DArray *da);
 
