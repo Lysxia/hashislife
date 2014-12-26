@@ -19,13 +19,15 @@
             int line_num = 0;
             int line_len = 0;
             #define TOKEN(x) (union Tokenizable) { .char_ = (x) }
-            #define PUSH(x, n) \
-              if ( NULL == push_token(&rle_da, TOKEN(x), (n)) ) \
+            #define DESTROY_IF(x) \
+              if ( x ) \
               { \
                 da_destroy(&rle_da); \
                 return 1; \
-              } \
-              BEGIN(0)
+              } // end of DESTROY_IF
+            #define PUSH(x, n) \
+              DESTROY_IF( NULL == push_token(&rle_da, TOKEN(x), (n)) ); \
+              BEGIN(0) // end of PUSH
             BEGIN(H);
 
 <H>![^\n]*\n  line_num++; // Comment lines
@@ -47,7 +49,7 @@ O+          {
             }
 <<EOF>>     {
             PUSH(END_RLE_TOKEN, 1);
-            rle->tokens = da_unpack(&rle_da, NULL);
+            DESTROY_IF( da_unpack(&rle_da, (void **) &rle->tokens, NULL) );
             if ( 0 < line_len ) rle->x++;
             if ( rle->y < line_len )
               rle->y = line_len;

@@ -27,14 +27,16 @@ NEWLINE   \$
   DArray rle_da;
   da_init(&rle_da, sizeof(struct RleToken));
   #define TOKEN(x) (union Tokenizable) { .char_ = (x) }
-  #define PUSH(x) \
-    if ( NULL == push_token(&rle_da, TOKEN(x), repeat) ) \
+  #define DESTROY_IF(x) \
+    if ( x ) \
     { \
       da_destroy(&rle_da); \
       return 1; \
-    } \
+    } // end of DESTROY_IF
+  #define PUSH(x) \
+    DESTROY_IF( NULL == push_token(&rle_da, TOKEN(x), repeat) ); \
     repeat = 1; \
-    BEGIN(D)
+    BEGIN(D) // end of PUSH
   #define PARSE_ERROR() da_destroy(&rle_da); rle->x = rle->y = -1; return 2
   BEGIN(H); // Header
 
@@ -74,7 +76,7 @@ NEWLINE   \$
 {END} {
   repeat = 1;
   PUSH(END_RLE_TOKEN);
-  rle->tokens = da_unpack(&rle_da, NULL);
+  DESTROY_IF( da_unpack(&rle_da, (void **) &rle->tokens, NULL) )
   return 0;
   }
 [ \t]*      ;
