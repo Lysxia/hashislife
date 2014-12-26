@@ -91,8 +91,10 @@ int da_unpack(
   void **a,
   size_t *length)
 {
-  *length = da->array_length;
-  if ( 0 == *length ) // Then the array is assumed to be NULL
+  if ( NULL != length )
+    *length = da->array_length;
+  // We cannot use length in general because it might be NULL
+  if ( 0 == da->array_length ) // Then the array is assumed to be NULL
   {
     if ( NULL != da->array )
       free(da->array);
