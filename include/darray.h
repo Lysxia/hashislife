@@ -31,6 +31,7 @@ void *da_alloc(DArray *da);
 void *da_push(DArray *da, void *v);
 //! Extract the underlying array
 int   da_unpack(const DArray *da, void **a, size_t *length);
+// TODO void ** cast = Alignment hazards?
 //! Free resources allocated for the array
 void  da_destroy(DArray *da);
 
