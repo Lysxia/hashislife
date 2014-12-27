@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,6 +55,7 @@ int main(int argc, char *argv[])
         align_tokens(&rle_m, rle.tokens);
         free(rle.tokens);
         q = rle_to_quad(htbl, rle_m);
+        assert( q != NULL );
       }
       else
       {

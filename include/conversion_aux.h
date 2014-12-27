@@ -63,13 +63,17 @@ struct ZipArgs_cons
 };
 
 //struct RleMap prgrph_to_qrle(Prgrph p);
-Quad *condense(Hashtbl *htbl, struct RleMap q_rle_m);
+Quad *condense(Hashtbl *htbl, struct RleMap *q_rle_m);
 
-struct RleMap zip_adjacent_lines(
+//! "Zip" consecutively numbered lines
+int zip_adjacent_lines(
+  struct RleMap *zipped_lines,
   struct RleMap rle_m,
   struct ZipParam);
 
-struct RleLine zip_RleLines(
+//! "Zip" two lines
+int zip_RleLines(
+  struct RleLine *zipped,
   struct RleLine line[2],
   struct ZipParam);
 
@@ -82,6 +86,6 @@ const struct ZipParam param_leaf;
 struct ZipParam param_cons_with(Hashtbl *, int);
 
 //! Debugging
-void RleMap_write(struct RleMap rle_m);
+void RleMap_write_debug(struct RleMap rle_m);
 /*@}*/
 #endif

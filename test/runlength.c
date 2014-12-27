@@ -15,7 +15,11 @@ int main(void) {
   life_rle_write(stdout, rle);
   puts("Convert to bitmap and back again");
   BitMap bm;
-  bm_new_rle(&bm, rle);
+  if ( bm_new_rle(&bm, rle) )
+  {
+    puts("Conversion error");
+    exit(0);
+  }
   bm_write(stdout, &bm);
   return 0;
 }

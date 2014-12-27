@@ -106,8 +106,8 @@ void bm_write(FILE *file, BitMap *bm)
           .x = bm->x,
           .y = bm->y,
           .r = bm->r,
-          .tokens = rle_flatten(bm->map.rle)
         };
+        rle_flatten(&rle.tokens, bm->map.rle);
         life_rle_write(file, rle);
       }
       break;
@@ -116,8 +116,13 @@ void bm_write(FILE *file, BitMap *bm)
   }
 }
 
-/*! Split a stream of tokens (in the format understood by runlength.h functions)
-  by lines. In the process, the token values are translated to binary values. */
+/*! Split a stream of tokens (in the format understood by runlength.h
+  functions) by lines. In the process, the token values are translated
+  to binary values.
+
+  Return 0 on success, 1 on system failure (full memory, etc.
+  Check `errno`), 2 on incorrect token (should be one of the four
+  from runlength.h). */
 int align_tokens(struct RleMap *m, struct RleToken *rle)
 {
   DArray lines, cur_tokens;
@@ -130,7 +135,7 @@ int align_tokens(struct RleMap *m, struct RleToken *rle)
     da_destroy(&lines); \
     da_destroy(&cur_tokens); \
     return 1; \
-  } // END OF MACRO
+  } // end of DESTROY_IF
 #define NEW_LINE() DESTROY_IF( push_new_line(&lines, &cur_tokens, line_num) )
   for ( size_t i = 0 ; rle[i].value.char_ != END_RLE_TOKEN ; i++ )
   {
@@ -154,20 +159,30 @@ int align_tokens(struct RleMap *m, struct RleToken *rle)
         line_num += rle[i].repeat;
         break;
       default:
-        DESTROY_IF(1);
+        DESTROY_IF( 1 );
         return 2;
     }
   }
   NEW_LINE();
-  m->lines = da_unpack(&lines, &m->nb_lines);
+  DESTROY_IF( da_unpack(&lines, (void **) &m->lines, &m->nb_lines) );
   return 0;
+#undef DESTROY_IF
+#undef NEW_LINE
 }
 
-/*! Inverse of `align_tokens()` */
-struct RleToken *rle_flatten(struct RleMap rle_m)
+/*!
+  Return 0 on success, 1 on system failure. */
+int rle_flatten(struct RleToken **rle, struct RleMap rle_m)
 {
   DArray rle_da;
   da_init(&rle_da, sizeof(struct RleToken));
+#define DESTROY_IF(x) \
+  if ( x ) \
+  { \
+    da_destroy(&rle_da); \
+    return 1; \
+  }
+#define PUSH(x) DESTROY_IF( NULL == da_push(&rle_da, &x) )
   for ( size_t i = 0 ; i < rle_m.nb_lines ; i++ )
   {
     struct RleToken t_nl = {
@@ -176,7 +191,7 @@ struct RleToken *rle_flatten(struct RleMap rle_m)
               - (( i == 0 ) ? 0 : rle_m.lines[i-1].line_num)
     };
     if ( t_nl.repeat > 0 )
-      da_push(&rle_da, &t_nl);
+      PUSH(t_nl);
     for ( size_t j = 0 ; j < rle_m.lines[i].nb_tokens ; j++ )
     {
       struct RleToken src_ = rle_m.lines[i].tokens[j];
@@ -185,25 +200,36 @@ struct RleToken *rle_flatten(struct RleMap rle_m)
           .int_ = src_.value.int_ ? ALIVE_RLE_TOKEN : DEAD_RLE_TOKEN },
         .repeat = src_.repeat,
       };
-      da_push(&rle_da, &src);
+      PUSH(src);
     }
   }
   struct RleToken t_end = {
     .value = { .char_ = END_RLE_TOKEN },
     .repeat = 1
   };
-  da_push(&rle_da, &t_end);
-  return da_unpack(&rle_da, NULL);
+  PUSH(t_end);
+  DESTROY_IF( da_unpack(&rle_da, (void **) rle, NULL) )
+  return 0;
+#undef DESTROY_IF
+#undef PUSH
 }
 
+/*! Auxiliary function for `align_tokens()`.
+
+  Return 0 on success, 1 on failure.
+
+  `token_line` is `da_unpack()`-ed but left unmodified in case of failure
+  (so the caller may free it). */
 int push_new_line(DArray *lines, DArray *token_line, int line_num)
 {
   if ( !da_is_empty(token_line) )
   {
     struct RleLine new_line = { .line_num = line_num };
-    new_line.tokens = da_unpack(token_line, &new_line.nb_tokens);
+    if ( da_unpack(token_line, (void **) &new_line.tokens,
+           &new_line.nb_tokens) )
+      return 1;
     da_init(token_line, sizeof(struct RleToken));
-    return ( NULL == new_line.tokens || NULL == da_push(lines, &new_line) );
+    return ( NULL == da_push(lines, &new_line) );
   }
   else
     return 0;

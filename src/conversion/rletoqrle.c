@@ -27,12 +27,19 @@ static const struct RleLine empty_line =
   prefixed with `q_`. The fusion functions have been generalized but
   the notation we use is within the context of the fusion of two
   "bit" RleMap into a "quadtree" RleMap. */
-struct RleMap zip_adjacent_lines(
+int zip_adjacent_lines(
+  struct RleMap *q_rle_m,
   struct RleMap rle_m,
   struct ZipParam p) //!< Fusion function
 {
   DArray lines;
   da_init(&lines, sizeof(struct RleLine));
+#define DESTROY_IF(x) \
+  if ( x ) \
+  { \
+    da_destroy(&lines); \
+    return 1; \
+  } // end of DESTROY_IF
   for ( size_t i = 0 ; i < rle_m.nb_lines ; )
   {
     const size_t i_ = i;
@@ -58,20 +65,22 @@ struct RleMap zip_adjacent_lines(
       line[1] = empty_line;
       i++;
     }
-    q_l = zip_RleLines(line, p);
+    DESTROY_IF( zip_RleLines(&q_l, line, p) );
     q_l.line_num = rle_m.lines[i_].line_num / 2;
-    da_push(&lines, &q_l);
+    DESTROY_IF( NULL == da_push(&lines, &q_l) );
   }
-  struct RleMap q_rle_m;
-  q_rle_m.lines = da_unpack(&lines, &q_rle_m.nb_lines);
-  return q_rle_m;
+  DESTROY_IF( da_unpack(&lines, (void **) &q_rle_m->lines,
+                &q_rle_m->nb_lines) );
+  return 0;
+#undef DESTROY_IF
 }
 
-/* \deprecated Return the zipped line on success (newly allocated `.tokens`),
-  a line with its `.nb_token` field set to `-1` on failure
-  (unrecognized token was found). */
-/*! Leaves `.line_num` undefined! */
-struct RleLine zip_RleLines(
+/*! Does not modify `zipped->line_num`.
+
+  Return 0 on success, 1 on failure (full memory, etc. Check `errno`.).
+*/
+int zip_RleLines(
+  struct RleLine *zipped,
   struct RleLine line[2], //!< Two lines to zip
   struct ZipParam p) //!< Fusion function
 {
@@ -85,6 +94,12 @@ struct RleLine zip_RleLines(
   // Create line
   DArray q_tokens;
   da_init(&q_tokens, sizeof(struct RleToken));
+#define DESTROY_IF(x) \
+  if ( x ) \
+  { \
+    da_destroy(&q_tokens); \
+    return 1; \
+  } // end of DESTROY_IF
   do
   {
     // Pop a pair of tokens (possibly repeated) on each line
@@ -97,7 +112,7 @@ struct RleLine zip_RleLines(
       .value = (*p.tc.f)(p.tc.args, q_ts),
       .repeat = MIN(p2t[0].repeat, p2t[1].repeat)
     };
-    da_push(&q_tokens, &q_t);
+    DESTROY_IF( NULL == da_push(&q_tokens, &q_t) );
     // Consume the token pairs
     for ( int k = 0 ; k < 2 ; k++ )
     {
@@ -107,9 +122,10 @@ struct RleLine zip_RleLines(
     }
   }
   while ( !p2t[0].empty || !p2t[1].empty );
-  struct RleLine q_l;
-  q_l.tokens = da_unpack(&q_tokens, &q_l.nb_tokens);
-  return q_l;
+  DESTROY_IF( da_unpack(&q_tokens, (void **) &zipped->tokens,
+                &zipped->nb_tokens) );
+  return 0;
+#undef DESTROY_IF
 }
 
 /*!
@@ -155,10 +171,7 @@ void pop_token(struct PopToken *pt)
   }
 }
 
-/*! Return 0 on success, 1 on failure
-  (`pop_token()` met an unrecognized token).
-
-  \see struct PopTwoTokens */
+/*! \see struct PopTwoTokens */
 void pop_two_tokens(struct PopTwoTokens *p2t)
 {
 #define POP() pop_token(&p2t->pt)
@@ -184,7 +197,7 @@ void pop_two_tokens(struct PopTwoTokens *p2t)
 #undef POP
 }
 
-void RleMap_write(struct RleMap rle_m)
+void RleMap_write_debug(struct RleMap rle_m)
 {
   for ( size_t i = 0 ; i < rle_m.nb_lines ; i++ )
   {
