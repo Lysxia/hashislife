@@ -19,19 +19,14 @@ int bm_new_rle(BitMap *bm, struct LifeRle rle)
   return ( align_tokens(&bm->map.rle, rle.tokens) );
 }
 
-BitMap *bm_new_mat(char **mat, int m, int n)
+void bm_new_mat(BitMap *bm, char **mat, int m, int n)
 {
-  BitMap *bm = malloc(sizeof(*bm));
-  if ( NULL == bm )
-  {
-    perror("bm_new_rle()");
-    return NULL;
-  }
-  bm->map_type = MAT;
-  bm->map.mat = mat;
-  bm->x = m;
-  bm->y = n;
-  return bm;
+  *bm = (BitMap) {
+    .map_type = MAT,
+    .map.mat = mat,
+    .x = m,
+    .y = n,
+  };
 }
 
 void **matrix_new(size_t sz, int m, int n)
@@ -70,8 +65,6 @@ void bm_delete(BitMap *bm)
         // that call requires?
       break;
   }
-
-  free(bm);
 }
 
 /*! \param `rle` and subfields must be `malloc()`ated pointers. */
