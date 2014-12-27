@@ -39,7 +39,15 @@ O+          {
             PUSH(ALIVE_RLE_TOKEN, yyleng);
             line_len += yyleng;
             }
-\n+         {
+(\r\n)+     {
+            PUSH(NEWLINE_RLE_TOKEN, yyleng);
+            line_num += yyleng/2;
+            rle->x += yyleng/2;
+            if ( rle->y < line_len )
+              rle->y = line_len;
+            line_len = 0;
+            }
+\n+|\r+     {
             PUSH(NEWLINE_RLE_TOKEN, yyleng);
             line_num += yyleng;
             rle->x += yyleng;

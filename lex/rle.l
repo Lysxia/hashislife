@@ -80,10 +80,14 @@ NEWLINE   \$
   return 0;
   }
 [ \t]*      ;
-\n          line_num++;
+\n+|\r+     line_num += yyleng;
+(\r\n)+     line_num += yyleng/2;
 <*>.|\n {
-  fprintf(stderr, "Line %d: unexpected character '%c'\n",
-                        line_num,                 yytext[0]);
+  fprintf(stderr, "Line %d: unexpected character ", line_num);
+  if ( isprint(yytext[0]) )
+    fprintf(stderr, "'%c'", yytext[0]);
+  else
+    fprintf(stderr, "'%d'", yytext[0]);
   PARSE_ERROR();
   }
 <<EOF>> {
