@@ -1,6 +1,8 @@
 %option prefix="life_rle_"
 %option noyywrap
 %{
+#include <ctype.h>
+
 #include "darray.h"
 #include "runlength.h"
 
