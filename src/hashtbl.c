@@ -252,7 +252,7 @@ int hash(Quad* key[4])
 {
   uintptr_t *a = (uintptr_t *) key, x;
 
-  x = (a[0] >> 6) ^ a[1] ^ (a[2] << 10) ^ (a[3] << 15);
+  x = (a[0] >> (uintptr_t) 3) ^ (a[1] << (uintptr_t) 10) ^ (a[2] << (uintptr_t) 17) ^ (a[3] << (uintptr_t) 23);
 
 #ifdef HASHSAMPLE
   //sample
@@ -268,7 +268,7 @@ int hash(Quad* key[4])
     binary(a[3]);
   }
 #endif
-  return (int) ((unsigned) x % (unsigned) init_size);
+  return (int) (x % (uintptr_t) init_size);
 }
 
 /*! Find a quadtree in a hashtable.

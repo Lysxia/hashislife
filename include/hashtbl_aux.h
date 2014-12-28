@@ -23,7 +23,7 @@ void quad_free(Quad *);
 
 /*** Constants and global elements ***/
 static const int chunk_max_len = 1048576;
-static const int init_size = 33550033; // size of hashtbl
+static const int init_size = 72246773; // size of hashtbl
 static const int init_dead_size = 32;
 
 /* The address of a leaf is a 4 digit binary number 0123
