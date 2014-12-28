@@ -51,7 +51,7 @@ void **matrix_new(size_t, int, int);
 
 /* Destroy */
 void bm_delete(BitMap *map); //!< Destroy map
-void RleMap_delete(struct RleMap rle);
+void RleMap_delete(const struct RleMap *rle);
 void matrix_delete(void **);
 
 /* Write */

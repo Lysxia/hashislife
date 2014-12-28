@@ -56,7 +56,7 @@ void bm_delete(BitMap *bm)
   switch ( bm->map_type )
   {
     case RLE:
-      RleMap_delete(bm->map.rle);
+      RleMap_delete(&bm->map.rle);
       break;
     case MAT:
       if ( bm->map.mat != NULL )
@@ -68,11 +68,11 @@ void bm_delete(BitMap *bm)
 }
 
 /*! \param `rle` and subfields must be `malloc()`ated pointers. */
-void RleMap_delete(struct RleMap rle)
+void RleMap_delete(const struct RleMap *rle)
 {
-  for ( size_t l = 0 ; l < rle.nb_lines ; l++ )
-    free(rle.lines[l].tokens);
-  free(rle.lines);
+  for ( size_t l = 0 ; l < rle->nb_lines ; l++ )
+    free(rle->lines[l].tokens);
+  free(rle->lines);
 }
 
 /*! Delete a matrix which was allocated in one block, as is done

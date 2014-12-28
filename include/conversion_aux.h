@@ -68,21 +68,21 @@ Quad *condense(Hashtbl *htbl, struct RleMap *q_rle_m);
 //! "Zip" consecutively numbered lines
 int zip_adjacent_lines(
   struct RleMap *zipped_lines,
-  struct RleMap rle_m,
-  struct ZipParam);
+  const struct RleMap *rle_m,
+  const struct ZipParam);
 
 //! "Zip" two lines
 int zip_RleLines(
   struct RleLine *zipped,
-  struct RleLine line[2],
-  struct ZipParam);
+  const struct RleLine line[2],
+  const struct ZipParam);
 
 //! Create a new `struct PopTwoTokens`
 struct PopTwoTokens p2t_new(struct RleLine line, struct RleToken deflt);
 void pop_token(struct PopToken *);
 void pop_two_tokens(struct PopTwoTokens *);
 
-const struct ZipParam param_leaf;
+extern const struct ZipParam param_leaf;
 struct ZipParam param_cons_with(Hashtbl *, int);
 
 //! Debugging

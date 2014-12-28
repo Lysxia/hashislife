@@ -29,8 +29,8 @@ static const struct RleLine empty_line =
   "bit" RleMap into a "quadtree" RleMap. */
 int zip_adjacent_lines(
   struct RleMap *q_rle_m,
-  struct RleMap rle_m,
-  struct ZipParam p) //!< Fusion function
+  const struct RleMap *rle_m,
+  const struct ZipParam p) //!< Fusion function
 {
   DArray lines;
   da_init(&lines, sizeof(struct RleLine));
@@ -40,33 +40,33 @@ int zip_adjacent_lines(
     da_destroy(&lines); \
     return 1; \
   } // end of DESTROY_IF
-  for ( size_t i = 0 ; i < rle_m.nb_lines ; )
+  for ( size_t i = 0 ; i < rle_m->nb_lines ; )
   {
     const size_t i_ = i;
     struct RleLine q_l;
     struct RleLine line[2];
-    if ( 1 == rle_m.lines[i].line_num % 2 ) // preceding line is empty
+    if ( 1 == rle_m->lines[i].line_num % 2 ) // preceding line is empty
     {
       line[0] = empty_line;
-      line[1] = rle_m.lines[i];
+      line[1] = rle_m->lines[i];
       i++;
     }
-    else if ( i + 1 < rle_m.nb_lines
-           && rle_m.lines[i].line_num + 1 == rle_m.lines[i+1].line_num )
+    else if ( i + 1 < rle_m->nb_lines
+           && rle_m->lines[i].line_num + 1 == rle_m->lines[i+1].line_num )
       // successive lines
     {
-      line[0] = rle_m.lines[i];
-      line[1] = rle_m.lines[i+1];
+      line[0] = rle_m->lines[i];
+      line[1] = rle_m->lines[i+1];
       i += 2;
     }
     else // following line is empty
     {
-      line[0] = rle_m.lines[i];
+      line[0] = rle_m->lines[i];
       line[1] = empty_line;
       i++;
     }
     DESTROY_IF( zip_RleLines(&q_l, line, p) );
-    q_l.line_num = rle_m.lines[i_].line_num / 2;
+    q_l.line_num = rle_m->lines[i_].line_num / 2;
     DESTROY_IF( NULL == da_push(&lines, &q_l) );
   }
   DESTROY_IF( da_unpack(&lines, (void **) &q_rle_m->lines,
@@ -81,8 +81,8 @@ int zip_adjacent_lines(
 */
 int zip_RleLines(
   struct RleLine *zipped,
-  struct RleLine line[2], //!< Two lines to zip
-  struct ZipParam p) //!< Fusion function
+  const struct RleLine line[2], //!< Two lines to zip
+  const struct ZipParam p) //!< Fusion function
 {
   struct PopTwoTokens p2t[2];
   // Initialize p2t
