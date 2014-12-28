@@ -14,6 +14,7 @@ typedef uint32_t rule; // at least 18 bits
 /*!@}*/
 
 char digit_to_char(int d);
+int char_to_digit(char c);
 int itoa(char *dest, int src, int base);
 
 #define ALIVE_CELL_CHAR 'O'

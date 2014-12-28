@@ -316,7 +316,7 @@ int list_length(QuadList *list)
 void quad_free(Quad *q)
 {
   if ( NULL != q->alive )
-    bi_free(q->alive);
+    bi_zero(q->alive);
   // Other references (including the `.short_skip` list and `q` itself)
   // are currently managed elsewhere...
 }

@@ -1,438 +1,342 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
+#include <assert.h>
 #include <limits.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bigint.h"
+#include "definitions.h"
 
-// Unsigned type for bitwise manipulation
-// We use max width integer type
-typedef uintmax_t bi_block;
+#define C_ARRAY(a) (a)->digits.composite.array
+#define C_LENGTH(a) (a)->digits.composite.len
+#define SIMPLE(a) (a)->digits.simple
+#define MAX_LEN(a) (a)->max_len
+#define IS_SIMPLE(a) 0 == (a)->max_len
+#define IS_COMPOSITE(a) 0 < (a)->max_len
 
-const bi_block bi_block_max = UINTMAX_MAX;
+const size_t BiBlock_bit = CHAR_BIT * sizeof(BiBlock);
+const BiBlock BiBlock_max = UINTMAX_MAX;
 
-// Number of bits in the type bi_block
-const int bi_block_bit = CHAR_BIT * sizeof(bi_block);
-
-struct BigInt {
-  bi_block *digits;
-  int       len;
+const BigInt bi_zero_const_ = {
+  .digits = { .simple = 0 },
+  .max_len = 0
 };
+const BigInt * const bi_zero_const = &bi_zero_const_;
 
-// The leading digit/block of results should always be non-zero,
-// except for zero in which case there are no digits,
-// the following function ensures this invariant
-
-void bi_canonize(BigInt *b);
-
-BigInt *bi_new(int len)
+void bi_simple(BigInt *a, const BiBlock n)
 {
-  BigInt *n = malloc(sizeof(BigInt));
+  MAX_LEN(a) = 0;
+  SIMPLE(a) = n;
+}
 
-  if ( !n )
-    return NULL;
+void bi_zero(BigInt *a)
+{
+  if ( IS_COMPOSITE(a) )
+    free(C_ARRAY(a));
+  MAX_LEN(a) = 0;
+  SIMPLE(a) = 0;
+}
 
-  if ( len > 0 )
+/* Return `0` if success, return `1` if failure (without modifying `a`). */
+int bi_normalize(BigInt *a)
+{
+  if ( IS_COMPOSITE(a) )
   {
-    n->digits = malloc(len * sizeof(bi_block));
-    if ( !n->digits )
+    if ( C_LENGTH(a) < 2 )
     {
-      free(n);
-      return NULL;
+      BiBlock tmp = C_ARRAY(a)[0];
+      free(C_ARRAY(a));
+      MAX_LEN(a) = 0;
+      SIMPLE(a) = tmp;
+    }
+    else if ( C_LENGTH(a) < MAX_LEN(a) )
+    {
+      BiBlock *tmp = realloc(C_ARRAY(a), C_LENGTH(a) * sizeof(BiBlock));
+      if ( NULL == tmp )
+        return 1;
+      C_ARRAY(a) = tmp;
+      MAX_LEN(a) = C_LENGTH(a);
     }
   }
-
-  n->len = len;
-
-  return n;
+  return 0;
 }
 
-const BigInt  bi_zero_      = { .digits = NULL, .len = 0 },
-             *bi_zero_const = &bi_zero_;
-
-BigInt *bi_zero(void)
+int bi_is_zero(const BigInt *a)
 {
-  BigInt *zero = malloc(sizeof(BigInt));
+  return ( IS_SIMPLE(a) ? 0 == SIMPLE(a) : 0 == C_LENGTH(a) );
+}
 
-  if ( !zero )
+/*! 0 when `a` is zero */
+size_t bi_log2(const BigInt *a)
+{
+  if ( IS_COMPOSITE(a) && 0 == C_LENGTH(a) )
+    return 0;
+
+  size_t d = BiBlock_bit, nb_prec_blocks;
+  BiBlock last_block;
+
+  if ( IS_SIMPLE(a) )
   {
-    perror("bi_zero()");
-    exit(1);
+    nb_prec_blocks = 0;
+    last_block = SIMPLE(a);
+  }
+  else
+  {
+    nb_prec_blocks = C_LENGTH(a)-1;
+    last_block = C_ARRAY(a)[C_LENGTH(a)-1];
   }
 
-  *zero = bi_zero_;
-
-  return zero;
-}
-
-// Number of bits
-// floor(log(bi)) + 1
-int bi_log2(const BigInt *b)
-{
-  int d = b->len * bi_block_bit;
-
-  while ( d > 0 &&
-            ((b->digits[(d - 1) / bi_block_bit]) &
-            ((bi_block) 1 << ((d - 1) % bi_block_bit)))
-              == 0 )
+  while ( d > 0 && 0 == (1 & (last_block >> (d - 1))) )
     d--;
 
-  return d;
+  return d + nb_prec_blocks * BiBlock_bit;
 }
 
-int bi_slice(const BigInt *b, int c)
+int bi_copy(BigInt *a, const BigInt *b)
 {
-  int pos = c / bi_block_bit, ofs = c % bi_block_bit;
-
-  if ( pos >= b->len )
-    return 0;
-  else if ( pos == b->len - 1 || bi_block_bit - (unsigned) ofs > CHAR_BIT * sizeof(int) )
-    return b->digits[pos] >> ofs & INT_MAX;
-  else
-    return (b->digits[pos] >> ofs | b->digits[pos+1] << (bi_block_bit - ofs)) & INT_MAX;
-}
-
-int bi_digit(const BigInt *b, int d)
-{
-  if ( d < b->len * bi_block_bit )
-    return (b->digits[d / bi_block_bit] >> (d % bi_block_bit)) & 1;
-  else
-    return 0;
-}
-
-int bi_iszero(const BigInt *b)
-{
-  return b->len == 0;
-}
-
-BigInt *bi_copy(const BigInt *b)
-{
-  if ( bi_iszero(b) )
-    return bi_zero();
+  if ( IS_SIMPLE(b) )
+  {
+    MAX_LEN(a) = 0;
+    SIMPLE(a) = SIMPLE(b);
+  }
   else
   {
-    BigInt *c = bi_new(b->len);
-
-    if ( !c )
-    {
-      perror("bi_copy()");
-      return NULL;
-    }
-
-    memcpy(c->digits, b->digits, b->len * sizeof(bi_block));
-
-    return c;
+    BiBlock *array = malloc(C_LENGTH(b) * sizeof(*array));
+    if ( NULL == array )
+      return 1;
+    memcpy(array, C_ARRAY(b), C_LENGTH(b) * sizeof(*array));
+    MAX_LEN(a) = C_LENGTH(a) = C_LENGTH(b);
+    C_ARRAY(a) = array;
   }
+  return 0;
 }
 
-void bi_canonize(BigInt *b)
+int bi_slice(const BigInt *a, const size_t k)
 {
-  while ( b->len > 0 && b->digits[b->len - 1] == 0 )
-    b->len--;
+  size_t pos = k / BiBlock_bit, ofs = k % BiBlock_bit;
 
-  if ( b->len == 0 && b->digits )
+  if ( IS_SIMPLE(a) )
   {
-    free(b->digits);
-    b->digits = NULL;
-  }
-}
-
-BigInt *bi_power_2(int k)
-{
-  const int len_ = k / bi_block_bit + 1;
-  BigInt *s = bi_new(len_);
-
-  if ( !s )
-  {
-    perror("bi_power_2()");
-    exit(1);
-  }
-
-  memset(s->digits, 0, (len_ - 1) * sizeof(bi_block));
-
-  s->digits[len_-1] = (bi_block) 1 << (k % bi_block_bit);
-
-  return s;
-}
-
-BigInt *bi_plus_int(const BigInt *b, int i)
-{
-  BigInt *s = bi_new(b->len + 1);
-
-  if ( !s )
-  {
-    perror("bi_plus_int()");
-    exit(1);
-  }
-
-  if ( b->len == 0 )
-  {
-    s->digits[0] = i;
-    bi_canonize(s);
-
-    return s;
-  }
-
-  int k;
-
-  for ( k = 0 ; k < b->len ; k++ )
-  {
-    if ( k == 0 )
-    {
-      s->digits[0] = b->digits[0] + i;
-      if ( s->digits[0] >= b->digits[0] )
-        break;
-    }
+    if ( 0 == pos )
+      return (int) ((unsigned) (SIMPLE(a) >> ofs) & INT_MAX);
     else
+      return 0;
+  }
+  else if ( pos == C_LENGTH(a) - 1
+         || BiBlock_bit - ofs > CHAR_BIT * sizeof(int) )
+    return (C_ARRAY(a)[pos] >> ofs) & INT_MAX;
+  else if ( pos < C_LENGTH(a) - 1 )
+    return (C_ARRAY(a)[pos+1] << (BiBlock_bit - ofs) | C_ARRAY(a)[pos] >> ofs)
+      & INT_MAX;
+  else
+    return 0;
+}
+
+int bi_digit(const BigInt *a, const size_t k)
+{
+  if ( IS_SIMPLE(a) && k < BiBlock_bit )
+      return (SIMPLE(a) >> k) & 1;
+  else if ( IS_COMPOSITE(a) && k < C_LENGTH(a) * BiBlock_bit )
+      return (C_ARRAY(a)[k / BiBlock_bit] >> (k % BiBlock_bit)) & 1;
+  else
+    return 0;
+}
+
+const BiBlock *bi_digits(size_t *len, const BigInt *a)
+{
+  if ( IS_SIMPLE(a) )
+  {
+    *len = 1;
+    return &SIMPLE(a);
+  }
+  else
+  {
+    *len = C_LENGTH(a);
+    return C_ARRAY(a);
+  }
+}
+
+int bi_add(BigInt *a, const BigInt *b, const BigInt *c)
+{
+  size_t b_len, c_len;
+  const BiBlock *b_digits, *c_digits;
+
+  b_digits = bi_digits(&b_len, b);
+  c_digits = bi_digits(&c_len, c);
+
+  if ( b_len < c_len )
+  {
+    size_t tmp = b_len; b_len = c_len; c_len = tmp;
+    const BiBlock *tmp_d = b_digits; b_digits = c_digits; c_digits = tmp_d;
+  } // b now has at least as many digits as c
+
+  BiBlock *a_digits = malloc((b_len + 1) * sizeof(*a_digits));
+  if ( NULL == a_digits )
+    return 1;
+  size_t a_len;
+
+  a_digits[0] = 0;
+  // overflow check
+#define ADD_TO_OF_CHECK(a,b,carry) if ( (a+=b) < b ) carry = 1
+  for ( size_t i = 0 ; i < b_len ; i++ )
+  {
+    a_digits[i+1] = 0;
+    ADD_TO_OF_CHECK(a_digits[i], b_digits[i], a_digits[i+1]);
+    if ( i < c_len )
+      ADD_TO_OF_CHECK(a_digits[i], c_digits[i], a_digits[i+1]);
+  }
+
+  a_len = 0 == a_digits[b_len] ? b_len : b_len + 1;
+
+  if ( a_len <= 1 )
+  {
+    MAX_LEN(a) = 0;
+    SIMPLE(a) = 0 == a_len ? 0 : a_digits[0];
+    free(a_digits);
+  }
+  else
+  {
+    MAX_LEN(a) = b_len + 1;
+    C_ARRAY(a) = a_digits;
+    C_LENGTH(a) = a_len;
+  }
+  return 0;
+#undef ADD_TO_OF_CHECK
+}
+
+/*! Return -1 if the big int is too large */
+int bi_to_int(const BigInt *a)
+{
+  if ( bi_log2(a) < sizeof(int) * CHAR_BIT )
+    return SIMPLE(a);
+  else
+    return -1;
+}
+
+void bi_binary_string(char *dest, const BigInt *a)
+{
+  size_t n = bi_log2(a);
+  for ( size_t i = 0 ; i < n ; i++ )
+  {
+    dest[i] = bi_digit(a, i) ? '1' : '0';
+  }
+  dest[n] = '\0';
+}
+
+void bi_block_set(BiBlock *a, const size_t k, const int bit)
+{
+  size_t pos = k / BiBlock_bit, ofs = k % BiBlock_bit;
+  a[pos] |= (BiBlock) 1 << ofs;
+  a[pos] ^= (BiBlock) !bit << ofs; 
+}
+
+//! Divides `a` by `d`, put the quotient back in `a` and return the remainer.
+BiBlock bi_div_int(BigInt *a, BiBlock d)
+{
+  if ( IS_SIMPLE(a) )
+  {
+    BiBlock r = SIMPLE(a) % d;
+    SIMPLE(a) /= d;
+    return r;
+  }
+  else
+  {
+    BiBlock r = 0, q = 0;
+    for ( size_t i = C_LENGTH(a) - 1 ; ; i-- )
     {
-      s->digits[k] = b->digits[k] + 1;
-      if ( s->digits[k] != 0 )
+      r = C_ARRAY(a)[i] % d;
+      C_ARRAY(a)[i] = C_ARRAY(a)[i] / d + q;
+      if ( i == 0 )
         break;
-    }
-  }
-
-  if ( k == b->len )
-  {
-    s->digits[b->len] = 1;
-  }
-  else
-  {
-    for ( k++ ; k < b->len ; k++ )
-      s->digits[k] = b->digits[k];
-    s->len = b->len;
-  }
-
-  return s;
-}
-
-// b - 2^e.
-// If the result is positive, then return a BigInt and set *neg to 0
-// If the result is negative, return 0 and set *neg to min(MAX_INT, 2^e - b)
-BigInt *bi_minus_pow(const BigInt *b, int e, int *neg)
-{
-  if ( b->len == 0 )
-  {
-    *neg = (unsigned) e < CHAR_BIT * sizeof(int) - 1 ? 1 << e : INT_MAX;
-    return bi_zero();
-  }
-
-  int loc = e / bi_block_bit, ofs = e % bi_block_bit;
-
-  if ( loc > b->len || (loc == b->len && ofs != 0) )
-  {
-    *neg = INT_MAX;
-    return bi_zero();
-  }
-
-  BigInt *c = bi_copy(b);
-
-  int block_pos;
-
-  if ( loc < b->len )
-  {
-    for ( block_pos = loc ; block_pos < c->len ; block_pos++ )
-    {
-      if ( block_pos == loc )
+      else // i > 0
       {
-        c->digits[block_pos] -= (bi_block) 1 << ofs;
-        if ( c->digits[block_pos] < b->digits[block_pos] )
-          break;
-      }
-      else
-      {
-        c->digits[block_pos]--;
-        if ( c->digits[block_pos] != bi_block_max )
-          break;
+        q = 0;
+        size_t k;
+        for ( k = 1 ; k < BiBlock_bit && d >> k != 0 ; k++ )
+        {
+          BiBlock next_digit = C_ARRAY(a)[i-1] - (d << (BiBlock_bit - k));
+          BiBlock carry = next_digit <= C_ARRAY(a)[i-1] ? 0 : 1;
+          if ( r - (d >> k) - carry <= r ) // no overflow
+          {
+            r -= (d >> k) + carry;
+            q += (BiBlock) 1 << (BiBlock_bit - k);
+            C_ARRAY(a)[i-1] = next_digit;
+          }
+        }
+        assert(r <= 1);
+        if ( r == 1 )
+        {
+          q += (BiBlock) 1 << (BiBlock_bit - k);
+          C_ARRAY(a)[i-1] -= d << (BiBlock_bit - k);
+        }
       }
     }
-  }
-  else
-    block_pos = c->len;
-
-  // Overflow
-  if ( block_pos == c->len )
-  {
-    int i;
-    for ( i = c->len ; i > 0 ; i-- )
-      if ( c->digits[i-1] != bi_block_max )
-        break;
-
-    bi_block neg_ = ~c->digits[0] + 1;
-    *neg = i <= 1 && neg_ < INT_MAX ? neg_ : INT_MAX;
-
-    bi_free(c);
-    return bi_zero();
-  }
-  else
-  {
-    bi_canonize(c);
-    *neg = 0;
-    return c;
+    while ( 0 < C_LENGTH(a) && C_ARRAY(a)[C_LENGTH(a) - 1] == 0 )
+      C_LENGTH(a)--;
+    return r;
   }
 }
 
-BigInt *bi_add(const BigInt *a, const BigInt *b)
+int bi_to_string(char *dest, const BigInt *a, char base)
 {
-  if ( bi_iszero(a) && bi_iszero(b) )
-    return bi_zero();
-  else if ( a->len < b->len )
+  assert( base <= 36 );
+  BigInt b;
+  if ( bi_copy(&b, a) )
+    return 1;
+  size_t n = 0;
+  do
   {
-    const BigInt *c = b;
-    b = a;
-    a = c;
+    dest[n++] = bi_div_int(&b, base);
   }
-
-  BigInt *c = bi_new(a->len + 1);
-
-  if ( !c )
+  while ( !bi_is_zero(&b) );
+  dest[n] = '\0';
+  for ( size_t i = 0 ; 2 * i < n - 1 ; i++ )
   {
-    perror("bi_add()");
-    exit(1);
+    char tmp = dest[i]; dest[i] = dest[n-1-i]; dest[n-1-i] = tmp;
   }
-
-  int i;
-  for ( i = 0, c->digits[0] = 0 ; i < b->len ; i++ )
-  {
-    c->digits[i] += a->digits[i] + b->digits[i];
-    c->digits[i+1] = c->digits[i] < a->digits[i] || c->digits[i] < b->digits[i];
-  }
-  for ( ; i < a->len ; i++ )
-  {
-    c->digits[i] += a->digits[i];
-    c->digits[i+1] = c->digits[i] < a->digits[i];
-  }
-
-  bi_canonize(c);
-
-  return c;
+  for ( size_t i = 0 ; i < n ; i++ )
+    dest[i] = digit_to_char(dest[i]);
+  return 0;
 }
 
-int bi_to_int(const BigInt *b)
+int bi_from_string(BigInt *a, const char *dest, const char base)
 {
-  return b->len ? b->digits[0] : 0;
-}
-
-BigInt *bi_from_int(int i)
-{
-  if ( i == 0 )
-    return bi_zero();
-  else
+  assert( base <= 36 );
+  size_t n = strlen(dest);
+  char dest_[n];
+  for ( size_t i = 0 ; i < n ; i++ )
   {
-    BigInt *s = bi_new(1);
-   
-    if ( s == NULL )
+    if ( -1 == (dest_[i] = char_to_digit(dest[i])) )
+      return 2;
+  }
+  size_t max_len = 6 * n / BiBlock_bit + 1;
+  BiBlock *array = malloc(max_len * sizeof(*array));
+  if ( NULL == array )
+    return 1;
+  C_ARRAY(a) = array;
+  MAX_LEN(a) = max_len;
+  size_t start = 0, length;
+  for ( length = 0 ; start < n ; length++ )
+  {
+    if ( 0 == length % BiBlock_bit )
+      array[length/BiBlock_bit] = 0;
+    // Divide by 2
+    int r;
+    for ( size_t i = start ; i < n ; i++ )
     {
-      perror("bi_to_int()");
-      exit(1);
+      if ( i + 1 == n )
+        r = dest_[i] % 2;
+      else if ( 1 == dest_[i] % 2 )
+        dest_[i+1] += base;
+      dest_[i] /= 2;
     }
-
-    s->digits[0] = i;
-
-    return s;
+    bi_block_set(array, length, r);
+    while ( start < n && 0 == dest_[start] )
+      start++;
   }
-}
-
-BigInt *bi_mult_int(const BigInt *b, int n);
-
-BigInt *bi_from_string(const char *c, int base)
-{
-  if ( base < 2 || 10 < base )
-    return NULL;
-
-  BigInt *acc = bi_zero();
-
-  int i;
-
-  for ( i = 0 ; '0' <= c[i] && c[i] < '0' + base ; i += (c[i+1] == ',') + 1 )
-  {
-    BigInt *tmp = bi_mult_int(acc, base);
-    bi_free(acc);
-    acc = bi_plus_int(tmp, c[i] - '0');
-    bi_free(tmp);
-  }
-
-  return acc;
-}
-
-BigInt *bi_mult_int(const BigInt *b, int n)
-{
-  BigInt *acc = bi_zero();
-
-  int i;
-  for ( i = CHAR_BIT * sizeof(int) - 2 ; i >= 0 ; i-- )
-  {
-    BigInt *tmp = bi_add(acc, acc);
-    bi_free(acc);
-
-    if ( n & 1 << i )
-    {
-      acc = bi_add(tmp, b);
-      bi_free(tmp);
-    }
-    else
-      acc = tmp;
-  }
-
-  return acc;
-}
-
-void bi_free(BigInt *b)
-{
-  if ( b->digits )
-    free(b->digits);
-  free(b);
-}
-
-void bi_print(const BigInt *b)
-{
-  int d;
-  for ( d = 0 ; d < bi_log2(b) ; d++ )
-  {
-    if ( d > 0 && !(d % 8) )
-      putchar(' ');
-    putchar('0' + bi_digit(b, d));
-  }
-  putchar('\n');
-}
-
-void bi_test()
-{
-#if 0
-  const int len = 3;
-  BigInt *b = bi_new(len);
-
-  int i;
-
-  b->digits[0] = -1 ^ 36;
-  for ( i = 1 ; i < len ; i++ )
-    b->digits[i] = -1;
-
-  bi_canonize(b);
-  printf("%d\n", b->len);
-
-  bi_print(b);
-
-  BigInt *c = bi_plus_int(b, 010000000000);
-
-  bi_print(c);
-
-  int neg;
-
-  BigInt *d = bi_minus_pow(b, 192, &neg);
-
-  bi_print(d);
-  printf("%d\n", neg);
-
-  bi_free(b);
-  bi_free(c);
-  bi_free(d);
-#else
-  BigInt *b = bi_from_string("600,40100200,40100200,40100200", 8);
-
-  bi_print(b);
-  bi_free(b);
-#endif
+  C_LENGTH(a) = (length - 1) / BiBlock_bit + 1;
+  return 0;
 }
 
 char** bi_to_char_mat(
@@ -440,5 +344,12 @@ char** bi_to_char_mat(
   int m,
   int n,
   int height)
-{}
+{
+  fputs("Unimplemented bi_to_char_mat\n", stderr);
+  exit(1);
+}
 
+#undef C_ARRAY
+#undef C_LENGTH
+#undef SIMPLE
+#undef MAX_LEN

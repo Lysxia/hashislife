@@ -1,43 +1,92 @@
 #ifndef BIGINT_H
 #define BIGINT_H
 
-struct BigInt;
+#include <stdint.h>
+#include <stdlib.h>
 
-typedef struct BigInt BigInt;
+/*! \defgroup bigint Big integers
+  Except `bi_init()`, these functions assume the structures respect
+  the format described for `struct BigInt`.
+*/
+/*@{*/
+//! Unsigned type for bitwise manipulation
+/*! We use max width integer type */
+typedef uintmax_t BiBlock;
 
-BigInt *bi_zero(void);
+//! Number of bits in the type `BiBlock`
+extern const size_t BiBlock_bit;
+//! Maximum value of `BiBlock`
+extern const BiBlock BiBlock_max;
 
-const BigInt *bi_zero_const;
+struct Composite {
+  BiBlock *array;
+  size_t len; //!< Part of the array in use
+};
 
-int bi_log2(const BigInt *b);
-int bi_slice(const BigInt *b, int c); // get 31 bits starting from the c-th
-int bi_digit(const BigInt *b, int d);
-int bi_iszero(const BigInt *b);
+union Blocks {
+  BiBlock simple;
+  struct Composite composite;
+};
 
-BigInt *bi_copy(const BigInt *b);
+/*! If `.max_len == 0`, `.digits` is `.simple`;
+  otherwise `.digits` is `.composite` (already allocated),
+  with `.composite.array` pointing to an object of length `.max_len`. */
+typedef struct BigInt {
+  union Blocks digits;
+  size_t max_len; //!< Length of the allocated array (when `.max_len` > 0)
+} BigInt;
 
-BigInt *bi_power_2(int k);
-BigInt *bi_plus_int(const BigInt *b, int i);
-BigInt *bi_minus_pow(const BigInt *b, int e, int *neg);
-BigInt *bi_add(const BigInt *a, const BigInt *b);
+extern const BigInt * const bi_zero_const;
 
-int     bi_to_int(const BigInt *b);
-BigInt *bi_from_int(int i);
+//! Set a `BigInt` register to an integer value
+void bi_simple(BigInt *a, const BiBlock n);
+
+//! Set a register to zero (frees up any dynamically allocated space)
+/*! Use `bi_int()` and `bi_add()` instead to preserve the allocated memory. */
+void bi_zero(BigInt *);
+
+//! Reduce the register to a minimal representation of the current value.
+int bi_normalize(BigInt *);
+
+//! Check whether the argument contains a representation of zero
+int bi_is_zero(const BigInt *);
+//! floor(log(bi)) + 1 (minimum number of bits to represent the number)
+size_t bi_log2(const BigInt *);
+
+//! Copy a register
+int bi_copy(BigInt *a, const BigInt *b);
+
+//! Extract consecutive bits
+/*! A number of bits equal to `(sizeof(int) * CHAR_BIT)-1` starting
+  from the k-th. */
+int bi_slice(const BigInt *a, const size_t k);
+//! Extract a single digit
+int bi_digit(const BigInt *a, const size_t k);
+
+//! Addition `a = b + c`
+int bi_add(BigInt *a, const BigInt *b, const BigInt *c);
+//! Convert a `BigInt` to an `int` (if it is small enough)
+int bi_to_int(const BigInt *a);
+
+void bi_block_set(BiBlock *a, const size_t k, const int bit);
+BiBlock bi_div_int(BigInt *a, BiBlock d);
 
 // Ignores isolated commas
 // "10,00", base=10 -> 1000 (0b111010000)
 // "10,,00", base=10 -> 10 (0b1010)
-BigInt *bi_from_string(const char *c, int base);
+//! Read a string
+int bi_from_string(BigInt *a, const char *s, const char base);
 
-void bi_free(BigInt *b);
+int bi_to_string(char *dest, const BigInt *a, const char base);
 
-void bi_print(const BigInt *b);
-void bi_test();
+void bi_binary_string(char *dest, const BigInt *a);
+
+void bi_print(const BigInt *a);
 
 char** bi_to_char_mat(
   const BigInt ***bm,
   int m,
   int n,
   int height);
-
+/*!@}*/
 #endif

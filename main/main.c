@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "definitions.h"
-#include "darray.h"
+
 #include "bigint.h"
-#include "hashtbl.h"
-#include "hashlife.h"
-#include "lifecount.h"
 #include "conversion.h"
+#include "darray.h"
+#include "definitions.h"
+#include "hashlife.h"
+#include "hashtbl.h"
+#include "lifecount.h"
 #include "parsers.h"
 #include "runlength.h"
 
@@ -19,7 +20,7 @@ const char *get_filename_ext(const char *filename);
 int main(int argc, char *argv[])
 {
   int h = 0;
-  BigInt *t;
+  BigInt target;
   char *filename;
   FILE *file;
 
@@ -29,7 +30,7 @@ int main(int argc, char *argv[])
       h = atoi(argv[3]);
     case 3:
       filename = argv[1];
-      t = bi_from_string(argv[2], 10);
+      bi_from_string(&target, argv[2], 10);
 
       Hashtbl *htbl = hashtbl_new(CONWAY);
       Quad *q;
@@ -63,11 +64,11 @@ int main(int argc, char *argv[])
       }
 
       fclose(file);
-      test_quad(htbl, q, t, h);
+      test_quad(htbl, q, &target, h);
 
       hashtbl_stat(htbl);
 
-      bi_free(t);
+      bi_zero(&target);
       hashtbl_delete(htbl);
       break;
     case 1:
@@ -111,7 +112,8 @@ void test_quad(Hashtbl *htbl, Quad *q, BigInt *t, int h)
   while (q->depth > d)
     q = center(htbl, q->node.n.sub, q->depth-1);
 
-  UMatrix um = quad_to_matrix(q, h, bi_zero(), m, bi_zero(), n); 
+  BigInt zero; bi_simple(&zero, 0);
+  UMatrix um = quad_to_matrix(q, h, &zero, m, &zero, n); 
 #endif
 
   char **next_p;
