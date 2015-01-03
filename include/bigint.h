@@ -64,6 +64,9 @@ int bi_digit(const BigInt *a, const size_t k);
 
 //! Addition `a = b + c`
 int bi_add(BigInt *a, const BigInt *b, const BigInt *c);
+int bi_sub(BigInt *a, const BigInt *b, const BigInt *c, const size_t hint);
+int bi_compare(const BigInt *a, const BigInt *b, size_t *hint);
+
 //! Convert a `BigInt` to an `int` (if it is small enough)
 int bi_to_int(const BigInt *a);
 

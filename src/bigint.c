@@ -205,6 +205,92 @@ int bi_add(BigInt *a, const BigInt *b, const BigInt *c)
 #undef ADD_TO_OF_CHECK
 }
 
+/*! Assumes that `b >= c`. */
+int bi_sub(BigInt *a, const BigInt *b, const BigInt *c, const size_t hint)
+{
+  size_t b_len, c_len;
+  const BiBlock *b_digits, *c_digits;
+
+  b_digits = bi_digits(&b_len, b);
+  c_digits = bi_digits(&c_len, c);
+
+  assert( b_len >= c_len );
+
+  if ( 0 == hint )
+  {
+    bi_simple(a, 0);
+    return 0;
+  }
+  else if ( 1 == hint )
+  {
+    bi_simple(a, b_digits[0] - c_digits[0]);
+    return 0;
+  }
+  else
+  {
+    BiBlock *a_digits = malloc(hint * sizeof(*a_digits));
+    if ( NULL == a_digits )
+      return 1;
+    BiBlock carry = 0;
+    for ( size_t i = 0 ; i < hint ; i++ )
+    {
+      a_digits[i] = carry + b_digits[i];
+      if ( i < c_len )
+      {
+        a_digits[i] -= c_digits[i];
+        if ( a_digits[i] > b_digits[i]
+          || (a_digits[i] == b_digits[i] && c_digits[i] != 0) )
+        {
+          carry = -1;
+        }
+        else if ( i+1 < hint )
+        {
+          carry = 0;
+        }
+      }
+      else if ( a_digits[i] == b_digits[i] )
+      {
+        carry = 0;
+      }
+    }
+    MAX_LEN(a) = hint;
+    C_ARRAY(a) = a_digits;
+    C_LENGTH(a) = hint;
+    return 0;
+  }
+}
+
+int bi_compare(const BigInt *a, const BigInt *b, size_t *hint)
+{
+  size_t a_len, b_len;
+  const BiBlock *a_digits, *b_digits;
+
+  a_digits = bi_digits(&a_len, a);
+  b_digits = bi_digits(&b_len, b);
+
+  if ( a_len < b_len )
+  {
+    *hint = b_len;
+    return -1;
+  }
+  else if ( a_len > b_len )
+  {
+    *hint = a_len;
+    return 1;
+  }
+  else
+  {
+    for ( *hint = a_len ; 0 < *hint ; (*hint)-- )
+    {
+      if ( a_digits[*hint-1] < b_digits[*hint-1] )
+        return -1;
+      else if ( a_digits[*hint-1] > b_digits[*hint-1] )
+        return 1;
+    }
+    return 0;
+  }
+}
+
 /*! Return -1 if the big int is too large */
 int bi_to_int(const BigInt *a)
 {
@@ -214,21 +300,11 @@ int bi_to_int(const BigInt *a)
     return -1;
 }
 
-void bi_binary_string(char *dest, const BigInt *a)
-{
-  size_t n = bi_log2(a);
-  for ( size_t i = 0 ; i < n ; i++ )
-  {
-    dest[i] = bi_digit(a, i) ? '1' : '0';
-  }
-  dest[n] = '\0';
-}
-
 void bi_block_set(BiBlock *a, const size_t k, const int bit)
 {
   size_t pos = k / BiBlock_bit, ofs = k % BiBlock_bit;
   a[pos] |= (BiBlock) 1 << ofs;
-  a[pos] ^= (BiBlock) !bit << ofs; 
+  a[pos] ^= (BiBlock) !bit << ofs;
 }
 
 //! Divides `a` by `d`, put the quotient back in `a` and return the remainer.
@@ -337,6 +413,16 @@ int bi_from_string(BigInt *a, const char *dest, const char base)
   }
   C_LENGTH(a) = (length - 1) / BiBlock_bit + 1;
   return 0;
+}
+
+void bi_binary_string(char *dest, const BigInt *a)
+{
+  size_t n = bi_log2(a);
+  for ( size_t i = 0 ; i < n ; i++ )
+  {
+    dest[i] = bi_digit(a, i) ? '1' : '0';
+  }
+  dest[n] = '\0';
 }
 
 char** bi_to_char_mat(
