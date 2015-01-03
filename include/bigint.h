@@ -42,7 +42,6 @@ extern const BigInt * const bi_zero_const;
 void bi_simple(BigInt *a, const BiBlock n);
 
 //! Set a register to zero (frees up any dynamically allocated space)
-/*! Use `bi_int()` and `bi_add()` instead to preserve the allocated memory. */
 void bi_zero(BigInt *);
 
 //! Reduce the register to a minimal representation of the current value.

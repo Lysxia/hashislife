@@ -257,7 +257,7 @@ BiBlock bi_div_int(BigInt *a, BiBlock d)
         {
           BiBlock next_digit = C_ARRAY(a)[i-1] - (d << (BiBlock_bit - k));
           BiBlock carry = next_digit <= C_ARRAY(a)[i-1] ? 0 : 1;
-          if ( r - (d >> k) - carry <= r ) // no overflow
+          if ( (d >> k) + carry <= r )
           {
             r -= (d >> k) + carry;
             q += (BiBlock) 1 << (BiBlock_bit - k);
