@@ -194,7 +194,7 @@ void bi_block_sub_from(
   const BiBlock c_sign = -SIGN(c_digits[c_length-1]);
   BiBlock carry = 0;
   // subtract b from a with overflow check
-#define SUB_FROM_OF_CHECK(a,b) ( a < a - b ); a -= b
+#define SUB_FROM_OF_CHECK(a,b) ( a < b ); a -= b
   for ( size_t i = 0 ; i < a_length ; i++ )
   {
     carry = SUB_FROM_OF_CHECK(a_digits[i], carry);
@@ -240,14 +240,10 @@ int bi_compare(const BigInt *a, const BigInt *b)
         return 0;
     }
     else if ( (0 == a_sign && LENGTH(a) < LENGTH(b))
-      || (1 == a_sign && LENGTH(a) > LENGTH(b)) )
-    {
+           || (1 == a_sign && LENGTH(a) > LENGTH(b)) )
       return -1;
-    }
     else
-    {
       return 1;
-    }
   }
   else if ( a_sign == 0 ) // b < 0 <= a
     return 1;
@@ -274,48 +270,40 @@ void bi_block_set(BiBlock *a, const size_t k, const int bit)
 //! Divides `a` by `d`, put the quotient back in `a` and return the remainer.
 BiBlock bi_div_int(BigInt *a, BiBlock d)
 {
-  if ( IS_SIMPLE(a) )
+  BiBlock *a_digits = bi_digits(a);
+  BiBlock r = 0, q = 0;
+  for ( size_t i = LENGTH(a) - 1 ; ; i-- )
   {
-    BiBlock r = SIMPLE(a) % d;
-    SIMPLE(a) /= d;
-    return r;
-  }
-  else
-  {
-    BiBlock r = 0, q = 0;
-    for ( size_t i = LENGTH(a) - 1 ; ; i-- )
+    r = a_digits[i] % d;
+    a_digits[i] = a_digits[i] / d + q;
+    if ( i == 0 )
+      break;
+    else // i > 0
     {
-      r = COMPOSITE(a)[i] % d;
-      COMPOSITE(a)[i] = COMPOSITE(a)[i] / d + q;
-      if ( i == 0 )
-        break;
-      else // i > 0
+      q = 0;
+      size_t k;
+      for ( k = 1 ; k < BiBlock_bit && d >> k != 0 ; k++ )
       {
-        q = 0;
-        size_t k;
-        for ( k = 1 ; k < BiBlock_bit && d >> k != 0 ; k++ )
+        BiBlock next_digit = a_digits[i-1] - (d << (BiBlock_bit - k));
+        BiBlock carry = next_digit <= a_digits[i-1] ? 0 : 1;
+        if ( (d >> k) + carry <= r )
         {
-          BiBlock next_digit = COMPOSITE(a)[i-1] - (d << (BiBlock_bit - k));
-          BiBlock carry = next_digit <= COMPOSITE(a)[i-1] ? 0 : 1;
-          if ( (d >> k) + carry <= r )
-          {
-            r -= (d >> k) + carry;
-            q += (BiBlock) 1 << (BiBlock_bit - k);
-            COMPOSITE(a)[i-1] = next_digit;
-          }
-        }
-        assert(r <= 1);
-        if ( r == 1 )
-        {
+          r -= (d >> k) + carry;
           q += (BiBlock) 1 << (BiBlock_bit - k);
-          COMPOSITE(a)[i-1] -= d << (BiBlock_bit - k);
+          a_digits[i-1] = next_digit;
         }
       }
+      assert(r <= 1);
+      if ( r == 1 )
+      {
+        q += (BiBlock) 1 << (BiBlock_bit - k);
+        a_digits[i-1] -= d << (BiBlock_bit - k);
+      }
     }
-    while ( 1 < LENGTH(a) && COMPOSITE(a)[LENGTH(a) - 1] == 0 )
-      LENGTH(a)--;
-    return r;
   }
+  while ( 1 < LENGTH(a) && a_digits[LENGTH(a) - 1] == 0 )
+    LENGTH(a)--;
+  return r;
 }
 
 int bi_to_string(char *dest, const BigInt *a, char base)
