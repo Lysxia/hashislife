@@ -18,6 +18,7 @@
 
 const BigInt bi_zero_const_ = {
   .digits = { .simple = 0 },
+  .length = 1,
   .max_length = 0
 };
 
