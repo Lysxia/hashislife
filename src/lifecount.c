@@ -34,8 +34,8 @@ const BigInt *cell_count_(Quad *q)
 
       bi_add(q->alive, &tmp[0], &tmp[1]);
 
-      bi_zero(&tmp[0]);
-      bi_zero(&tmp[1]);
+      bi_clear(&tmp[0]);
+      bi_clear(&tmp[1]);
     }
     else // q->depth == 0
     {

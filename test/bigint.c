@@ -5,17 +5,14 @@
 
 int main(void) {
   const char *num1 = "123456789ABCDEF0123456789ABCDEF0";
-  const char *num2 = "1111111111111111111111111111111";
+  const char *num2 = "-1111111111111111111111111111111";
 
   BigInt n1, n2, nn, m, m_, one;
-  size_t hint;
   bi_from_string(&n1, num1, 16);
   bi_from_string(&n2, num2, 16);
   bi_add(&nn, &n1, &n2);
   bi_simple(&one, 1);
-  int gt = bi_compare(&nn, &one, &hint);
-  assert( gt > 0 );
-  bi_sub(&m, &nn, &one, hint);
+  bi_sub(&m, &nn, &one);
   bi_copy(&m_, &m);
   bi_div_int(&m_, 3);
   char s[1000];
