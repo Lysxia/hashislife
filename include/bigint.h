@@ -47,7 +47,8 @@ void bi_clear(BigInt *);
 //! Set a register to the number represented by the array
 int bi_normalize(BigInt *a, const BiBlock *digits, size_t length);
 //! Uniform view of the representation
-const BiBlock *bi_digits(const BigInt *);
+const BiBlock *bi_digits_const(const BigInt *);
+BiBlock *bi_digits(BigInt *);
 
 //! Copy a register
 int bi_copy(BigInt *a, const BigInt *b);

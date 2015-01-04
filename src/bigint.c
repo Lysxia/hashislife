@@ -14,7 +14,10 @@
 #define MAX_LENGTH(a) (a)->max_length
 #define IS_SIMPLE(a) 0 == (a)->max_length
 #define IS_COMPOSITE(a) 0 < (a)->max_length
+//! Sign bit
 #define SIGN(x) ((x) >> (BiBlock_bit - 1))
+//! Uniform view of the representation
+#define DIGITS(a) (IS_SIMPLE(a) ? &SIMPLE(a) : COMPOSITE(a))
 
 const BigInt bi_zero_const_ = {
   .digits = { .simple = 0 },
@@ -80,7 +83,7 @@ int bi_is_zero(const BigInt *a)
 size_t bi_log2(const BigInt *a)
 {
   size_t d = BiBlock_bit, nb_prec_blocks = LENGTH(a) - 1;
-  const BiBlock last_block = bi_digits(a)[LENGTH(a)-1];
+  const BiBlock last_block = DIGITS(a)[LENGTH(a)-1];
 
   for ( size_t d = BiBlock_bit ; d > 0 && 0 == (last_block >> (d - 1)) ; d--)
     ;
@@ -112,7 +115,7 @@ void bi_block_copy(
 int bi_slice(const BigInt *a, const size_t k)
 {
   size_t pos = k / BiBlock_bit, ofs = k % BiBlock_bit;
-  const BiBlock *a_digits = bi_digits(a);
+  const BiBlock *a_digits = DIGITS(a);
   BiBlock slice;
 
   if ( pos == LENGTH(a) - 1
@@ -127,22 +130,17 @@ int bi_slice(const BigInt *a, const size_t k)
 
 int bi_digit(const BigInt *a, const size_t k)
 {
-  const BiBlock *a_digits = bi_digits(a);
+  const BiBlock *a_digits = DIGITS(a);
   if ( k < LENGTH(a) * BiBlock_bit )
       return (a_digits[k / BiBlock_bit] >> (k % BiBlock_bit)) & 1;
   else
     return SIGN(a_digits[LENGTH(a)-1]);
 }
 
-const BiBlock *bi_digits(const BigInt *a)
-{
-  return IS_SIMPLE(a) ? &SIMPLE(a) : COMPOSITE(a);
-}
-
 int bi_minus(BigInt *a, const BigInt *b)
 {
   BiBlock a_digits[LENGTH(b)+1];
-  const BiBlock *b_digits = bi_digits(b);
+  const BiBlock *b_digits = DIGITS(b);
   BiBlock carry = 1;
   for ( size_t i = 0 ; i < LENGTH(b) ; i++ )
   {
@@ -179,8 +177,8 @@ int bi_add(BigInt *a, const BigInt *b, const BigInt *c)
   } // b has at least as many digits as c
 
   BiBlock a_digits[LENGTH(b)+1];
-  const BiBlock *b_digits = bi_digits(b);
-  const BiBlock *c_digits = bi_digits(c);
+  const BiBlock *b_digits = DIGITS(b);
+  const BiBlock *c_digits = DIGITS(c);
 
   bi_block_copy(a_digits, LENGTH(b)+1, b_digits, LENGTH(b));
   bi_block_add_to(a_digits, LENGTH(b)+1, c_digits, LENGTH(c));
@@ -210,8 +208,8 @@ int bi_sub(BigInt *a, const BigInt *b, const BigInt *c)
   const size_t a_length
     = 1 + (( LENGTH(b) < LENGTH(c) ) ? LENGTH(c) : LENGTH(b));
   BiBlock a_digits[a_length];
-  const BiBlock *b_digits = bi_digits(b);
-  const BiBlock *c_digits = bi_digits(c);
+  const BiBlock *b_digits = DIGITS(b);
+  const BiBlock *c_digits = DIGITS(c);
 
   bi_block_copy(a_digits, a_length, b_digits, LENGTH(b));
   bi_block_sub_from(a_digits, a_length, c_digits, LENGTH(c));
@@ -221,8 +219,8 @@ int bi_sub(BigInt *a, const BigInt *b, const BigInt *c)
 
 int bi_compare(const BigInt *a, const BigInt *b)
 {
-  const BiBlock *a_digits = bi_digits(a);
-  const BiBlock *b_digits = bi_digits(b);
+  const BiBlock *a_digits = DIGITS(a);
+  const BiBlock *b_digits = DIGITS(b);
 
   BiBlock a_sign = SIGN(a_digits[LENGTH(a)-1]);
   BiBlock b_sign = SIGN(b_digits[LENGTH(b)-1]);
@@ -271,7 +269,7 @@ void bi_block_set(BiBlock *a, const size_t k, const int bit)
 //! Divides `a` by `d`, put the quotient back in `a` and return the remainer.
 BiBlock bi_div_int(BigInt *a, BiBlock d)
 {
-  BiBlock *a_digits = bi_digits(a);
+  BiBlock *a_digits = DIGITS(a);
   BiBlock r = 0, q = 0;
   for ( size_t i = LENGTH(a) - 1 ; ; i-- )
   {
