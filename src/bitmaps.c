@@ -37,7 +37,7 @@ void **matrix_new(size_t sz, int m, int n)
     perror("matrix_new()");
     return NULL;
   }
-  void *mat_ = malloc(m * n * sz);
+  char *mat_ = malloc(m * n * sz);
   if ( NULL == mat_ )
   {
     free(mat);
@@ -46,7 +46,7 @@ void **matrix_new(size_t sz, int m, int n)
   }
   for ( int i = 0 ; i < m ; i++ )
   {
-    mat[i] = mat_ + i * n;
+    mat[i] = mat_ + i * n * sz;
   }
   return mat;
 }

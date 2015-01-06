@@ -2,8 +2,8 @@ BUILDDIR=build
 SRCDIR=main src test
 
 CC=gcc -std=c99
-#CFLAGS=-W -Wall -O2 -fmax-errors=2
-CFLAGS=-W -Wall -O0 -g -fmax-errors=2
+#CFLAGS=-W -Wall -O2
+CFLAGS=-W -Wall -pedantic -O0 -g -fmax-errors=2
 INCLUDES=-Iinclude
 
 LEXSRC=$(shell find lex -type f -name \*.l)
