@@ -4,6 +4,7 @@
 #include <ctype.h>
 
 #include "darray.h"
+#include "parsers.h"
 #include "runlength.h"
 
 #define YY_DECL int yylex(struct LifeRle *rle)

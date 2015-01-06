@@ -5,7 +5,6 @@
 #include "runlength.h"
 #include "definitions.h"
 #include "darray.h"
-#include "parsers.h"
 
 #define Rle_LINE_LENGTH 100
 

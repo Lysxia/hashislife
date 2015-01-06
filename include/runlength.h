@@ -6,7 +6,6 @@
 
 #include "darray.h"
 #include "definitions.h"
-#include "parsers.h"
 
 /*! \defgroup rle Run length encoding */
 /*!@{*/
