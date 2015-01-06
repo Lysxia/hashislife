@@ -6,7 +6,7 @@
 #include "definitions.h"
 #include "runlength.h"
 
-int push_new_line(DArray *lines, DArray *token_line, int line_num);
+int push_new_line(DArray *lines, DArray *token_line, size_t line_num);
 
 int bm_new_rle(BitMap *bm, struct LifeRle rle)
 {
@@ -19,7 +19,7 @@ int bm_new_rle(BitMap *bm, struct LifeRle rle)
   return ( align_tokens(&bm->map.rle, rle.tokens) );
 }
 
-void bm_new_mat(BitMap *bm, char **mat, int m, int n)
+void bm_new_mat(BitMap *bm, char **mat, size_t m, size_t n)
 {
   *bm = (BitMap) {
     .map_type = MAT,
@@ -29,7 +29,7 @@ void bm_new_mat(BitMap *bm, char **mat, int m, int n)
   };
 }
 
-void **matrix_new(size_t sz, int m, int n)
+void **matrix_new(size_t sz, size_t m, size_t n)
 {
   void **mat = malloc(m * sizeof(*mat));
   if ( NULL == mat )
@@ -44,7 +44,7 @@ void **matrix_new(size_t sz, int m, int n)
     perror("matrix_new()");
     return NULL;
   }
-  for ( int i = 0 ; i < m ; i++ )
+  for ( size_t i = 0 ; i < m ; i++ )
   {
     mat[i] = mat_ + i * n * sz;
   }
@@ -87,9 +87,9 @@ void matrix_delete(void **a)
   free(a);
 }
 
-void matrix_write(FILE *file, char **mat, int m, int n)
+void matrix_write(FILE *file, char **mat, size_t m, size_t n)
 {
-  for ( int i = 0 ; i < m ; i++ )
+  for ( size_t i = 0 ; i < m ; i++ )
   {
     fwrite(mat[i], sizeof(char), n, file);
     fputc('\n', file);
@@ -220,7 +220,7 @@ int rle_flatten(struct RleToken **rle, struct RleMap rle_m)
 
   `token_line` is `da_unpack()`-ed but left unmodified in case of failure
   (so the caller may free it). */
-int push_new_line(DArray *lines, DArray *token_line, int line_num)
+int push_new_line(DArray *lines, DArray *token_line, size_t line_num)
 {
   if ( !da_is_empty(token_line) )
   {

@@ -46,8 +46,8 @@ typedef struct
 
 /* Create */
 int bm_new_rle(BitMap *, struct LifeRle);
-void bm_new_mat(BitMap *, char **, int, int); //!< Create matrix
-void **matrix_new(size_t, int, int);
+void bm_new_mat(BitMap *, char **, size_t, size_t); //!< Create matrix
+void **matrix_new(size_t, size_t, size_t);
 
 /* Destroy */
 void bm_delete(BitMap *map); //!< Destroy map
@@ -55,7 +55,7 @@ void RleMap_delete(const struct RleMap *rle);
 void matrix_delete(void **);
 
 /* Write */
-void matrix_write(FILE *, char **, int, int);
+void matrix_write(FILE *, char **, size_t, size_t);
 void bm_write(FILE *, BitMap *);
 
 /* Translate */
