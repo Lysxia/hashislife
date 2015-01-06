@@ -9,16 +9,12 @@
 %}
 %s H
 %%
-            *rle = (struct LifeRle) {
-              .tokens = NULL,
-              .x = 0,
-              .y = 0,
-              .r = 0,
-            };
+            rle->r = 0;
             DArray rle_da;
             da_init(&rle_da, sizeof(struct RleToken));
-            int line_num = 0;
-            int line_len = 0;
+            size_t comment_lines = 0, line_num = 0;
+            size_t line_len = 0, max_line_len = 0;
+            BigInt repeat;
             #define TOKEN(x) (union Tokenizable) { .char_ = (x) }
             #define DESTROY_IF(x) \
               if ( x ) \
@@ -27,48 +23,45 @@
                 return 1; \
               } // end of DESTROY_IF
             #define PUSH(x, n) \
-              DESTROY_IF( NULL == push_token(&rle_da, TOKEN(x), (n)) ); \
+              bi_simple(&repeat, (n)); \
+              DESTROY_IF( NULL == push_token(&rle_da, TOKEN(x), &repeat) ); \
               BEGIN(0) // end of PUSH
             BEGIN(H);
 
-<H>![^\n]*\n  line_num++; // Comment lines
-\.+         {
+<H>![^\n]*\n  comment_lines++; // Comment lines
+\.+/O       {
             PUSH(DEAD_RLE_TOKEN, yyleng);
             line_len += yyleng;
             }
+\.+         ; // Ignore trailing dots
 O+          {
             PUSH(ALIVE_RLE_TOKEN, yyleng);
             line_len += yyleng;
             }
-(\r\n)+     {
-            PUSH(NEWLINE_RLE_TOKEN, yyleng);
-            line_num += yyleng/2;
-            rle->x += yyleng/2;
-            if ( rle->y < line_len )
-              rle->y = line_len;
+\n|\r|\r\n  {
+            PUSH(NEWLINE_RLE_TOKEN, 1);
+            if ( max_line_len < line_len )
+              max_line_len = line_len;
             line_len = 0;
-            }
-\n+|\r+     {
-            PUSH(NEWLINE_RLE_TOKEN, yyleng);
-            line_num += yyleng;
-            rle->x += yyleng;
-            if ( rle->y < line_len )
-              rle->y = line_len;
-            line_len = 0;
+            line_num++;
             }
 <<EOF>>     {
-            PUSH(END_RLE_TOKEN, 1);
-            DESTROY_IF( da_unpack(&rle_da, (void **) &rle->tokens, NULL) );
-            if ( 0 < line_len ) rle->x++;
-            if ( rle->y < line_len )
-              rle->y = line_len;
+            DESTROY_IF( life_rle_unpack(rle, &rle_da) );
+            if ( 0 < line_len ) line_num++;
+            if ( max_line_len < line_len )
+              max_line_len = line_len;
+            bi_simple(&rle->x, max_line_len);
+            bi_simple(&rle->y, line_num);
             return 0;
             }
 .|\n        {
-            fprintf(stderr, "Line %d: unexpected character '%c'\n",
-              line_num, yytext[0]);
+            fprintf(stderr, "Line %zu: unexpected character ",
+              comment_lines + line_num);
+            if ( isprint(yytext[0]) )
+              fprintf(stderr, "'%c'\n", yytext[0]);
+            else
+              fprintf(stderr, "'%d'\n", yytext[0]);
             da_destroy(&rle_da);
-            rle->x = rle->y = -1;
             return 2;
             }
 %%

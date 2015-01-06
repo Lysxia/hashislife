@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "bigint.h"
 #include "darray.h"
 #include "definitions.h"
 
@@ -27,14 +28,22 @@ union Tokenizable
 };
 
 //! Generic repeated value
-/*! Run length encoding encodes successive equal values by prefixing
-  the value with the number of repetitions. A safer version which deals
-  with larger ranges, as is part of the goal of this project, would
-  use big ints. */ /* TODO */
+/*! Run length encoding encodes successive equal values by prefixing the value
+  with the number of repetitions. */
 struct RleToken
 {
   union Tokenizable value;
-  int repeat;
+  BigInt repeat;
+};
+
+//! Canonical encoding of a Game of Life configuration description
+/*! Strip trailing dead cells of every line; strip trailing empty lines; gather
+  adjacent cells of identical values. */
+struct RleSequence
+{
+  DArray array;
+  struct RleToken *last;
+  struct RleToken current;
 };
 
 //! State used by the `life_rle_write()` implementation
@@ -42,7 +51,7 @@ struct RleToken
 struct TokenWriter
 {
   FILE *file;
-  int   line_length;
+  size_t line_length;
 };
 
 //! Game of Life .rle file contents
@@ -51,14 +60,14 @@ struct LifeRle
   struct RleToken *tokens; //!< An array of `char` tokens
   /*!< The tokens have one of the following values:
 
-     END_RLE_TOKEN
      DEAD_RLE_TOKEN
      ALIVE_RLE_TOKEN
      NEWLINE_RLE_TOKEN
       
-    The token `END_RLE_TOKEN` indicates the end of the array. */
-  int x;
-  int y;
+  */
+  size_t nb_tokens;
+  BigInt x;
+  BigInt y;
   rule r;
 };
 
@@ -73,13 +82,14 @@ extern FILE *life_rle_in;
   - 0 on success;
   - 1 on other errors (see `errno`),
   - 2 on parse error. */
-int life_rle_lex(struct LifeRle *);
 int life_rle_read(struct LifeRle *, FILE *);
+int life_rle_lex(struct LifeRle *);
 void life_rle_write(FILE *, struct LifeRle);
 
-void *push_token(DArray *, union Tokenizable, int);
+int life_rle_unpack(struct LifeRle *, DArray *rle_da);
+void *push_token(DArray *rle_da, union Tokenizable value, const BigInt *repeat);
 
-void write_tokens(struct TokenWriter *, struct RleToken *);
+void write_tokens(struct TokenWriter *, struct RleToken *, size_t);
 void write_one_token(struct TokenWriter *, struct RleToken);
 /*@}*/
 #endif

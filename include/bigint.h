@@ -86,7 +86,8 @@ BiBlock bi_div_int(BigInt *a, BiBlock d);
 //! Read a string
 int bi_from_string(BigInt *a, const char *s, const char base);
 
-int bi_to_string(char *dest, const BigInt *a, const char base);
+size_t bi_as_string_length(const BigInt *a);
+size_t bi_to_string(char *dest, const BigInt *a, const char base);
 
 void bi_binary_string(char *dest, const BigInt *a);
 

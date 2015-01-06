@@ -46,10 +46,33 @@ void bi_block_sub_from(
 #undef ADD_TO_OF_CHECK
 }
 
-
 void bi_block_set(BiBlock *a, const size_t k, const int bit)
 {
   size_t pos = k / BiBlock_bit, ofs = k % BiBlock_bit;
   a[pos] |= (BiBlock) 1 << ofs;
   a[pos] ^= (BiBlock) !bit << ofs;
+}
+
+size_t bi_block_from_string(BiBlock *a_digits, char *src, const size_t n)
+{
+  size_t start = 0, length;
+  for ( length = 0 ; start < n ; length++ )
+  {
+    if ( 0 == length % BiBlock_bit )
+      a_digits[length/BiBlock_bit] = 0;
+    // Divide by 2
+    int r;
+    for ( size_t i = start ; i < n ; i++ )
+    {
+      if ( i + 1 == n )
+        r = src[i] % 2;
+      else if ( 1 == src[i] % 2 )
+        src[i+1] += base;
+      src[i] /= 2;
+    }
+    bi_block_set(a_digits, length, r);
+    while ( start < n && 0 == src[start] )
+      start++;
+  }
+  return length;
 }

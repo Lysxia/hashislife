@@ -244,21 +244,24 @@ BiBlock bi_div_int(BigInt *a, BiBlock d)
   return r;
 }
 
-int bi_to_string(char *dest, const BigInt *a, char base)
+/*! The destination buffer must be long enough!
+
+  Return the number of characters written (excluding the terminating `'\0'`) */
+size_t bi_to_string(char *dest, const BigInt *a, char base)
 {
   assert( base <= 36 );
   BigInt b;
+  size_t n = 0;
   if ( -1 == bi_compare(a, bi_zero_const) )
   {
     if ( bi_minus(&b, a) )
-      return 1;
+      return 0;
     dest[0] = '-';
-    dest++;
+    n = 1;
   }
   else if ( bi_copy(&b, a) )
-      return 1;
+    return 0;
 
-  size_t n = 0;
   do
   {
     dest[n++] = bi_div_int(&b, base);
@@ -271,7 +274,7 @@ int bi_to_string(char *dest, const BigInt *a, char base)
   }
   for ( size_t i = 0 ; i < n ; i++ )
     dest[i] = digit_to_char(dest[i]);
-  return 0;
+  return n;
 }
 
 int bi_from_string(BigInt *a, const char *src, const char base)
@@ -286,27 +289,11 @@ int bi_from_string(BigInt *a, const char *src, const char base)
     if ( -1 == (src_[i] = char_to_digit(src[i])) )
       return 2;
   }
+  // As we bounded base by 36 (<= 64), each source digit contributes to less
+  // than 6 bits.
   MAX_LENGTH(a) = 6 * n / BiBlock_bit + 1;
   BiBlock a_digits[MAX_LENGTH(a)];
-  size_t start = 0, length;
-  for ( length = 0 ; start < n ; length++ )
-  {
-    if ( 0 == length % BiBlock_bit )
-      a_digits[length/BiBlock_bit] = 0;
-    // Divide by 2
-    int r;
-    for ( size_t i = start ; i < n ; i++ )
-    {
-      if ( i + 1 == n )
-        r = src_[i] % 2;
-      else if ( 1 == src_[i] % 2 )
-        src_[i+1] += base;
-      src_[i] /= 2;
-    }
-    bi_block_set(a_digits, length, r);
-    while ( start < n && 0 == src_[start] )
-      start++;
-  }
+  const size_t length = bi_block_from_string(a_digits, src_, n);
   LENGTH(a) = (length - 1) / BiBlock_bit + 1;
   COMPOSITE(a) = a_digits;
   if ( a_neg )

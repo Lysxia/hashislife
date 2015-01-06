@@ -38,16 +38,16 @@ typedef struct
 
   enum MapType map_type; //!< Type tag
 
-  int x; //!< x increasing towards the right
-  int y; //!< y towards the bottom
-  int corner_x, corner_y; //!< position of top-left corner
+  BigInt x; //!< x increasing towards the right
+  BigInt y; //!< y towards the bottom
+  BigInt corner_x, corner_y; //!< position of top-left corner
   rule r;
 } BitMap;
 
 /* Create */
-int bm_new_rle(BitMap *, struct LifeRle);
-void bm_new_mat(BitMap *, char **, size_t, size_t); //!< Create matrix
-void **matrix_new(size_t, size_t, size_t);
+int bm_new_rle(BitMap *, const struct LifeRle *);
+void bm_new_mat(BitMap *, char **, const size_t, const size_t); //!< Create matrix
+void **matrix_new(const size_t, const size_t, const size_t);
 
 /* Destroy */
 void bm_delete(BitMap *map); //!< Destroy map

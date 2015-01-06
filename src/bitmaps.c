@@ -8,25 +8,21 @@
 
 int push_new_line(DArray *lines, DArray *token_line, size_t line_num);
 
-int bm_new_rle(BitMap *bm, struct LifeRle rle)
+int bm_new_rle(BitMap *bm, const struct LifeRle *rle)
 {
-  *bm = (BitMap) {
-    .map_type = RLE,
-    .x = rle.x,
-    .y = rle.y,
-    .r = rle.r,
-  };
-  return ( align_tokens(&bm->map.rle, rle.tokens) );
+  bm->map_type = RLE;
+  bm->r = rle->r;
+  if ( bi_copy(&bm->x, &rle->x) || bi_copy(&bm->y, &rle->y) )
+    return 1;
+  return align_tokens(&bm->map.rle, rle->tokens);
 }
 
-void bm_new_mat(BitMap *bm, char **mat, size_t m, size_t n)
+void bm_new_mat(BitMap *bm, char **mat, const size_t m, const size_t n)
 {
-  *bm = (BitMap) {
-    .map_type = MAT,
-    .map.mat = mat,
-    .x = m,
-    .y = n,
-  };
+  bm->map_type = MAT;
+  bm->map.mat = mat;
+  bi_simple(&bm->x, m);
+  bi_simple(&bm->y, n);
 }
 
 void **matrix_new(size_t sz, size_t m, size_t n)
@@ -103,8 +99,6 @@ void bm_write(FILE *file, BitMap *bm)
     case RLE:
       {
         struct LifeRle rle = {
-          .x = bm->x,
-          .y = bm->y,
           .r = bm->r,
         };
         rle_flatten(&rle.tokens, bm->map.rle);
@@ -126,7 +120,7 @@ void bm_write(FILE *file, BitMap *bm)
 int align_tokens(struct RleMap *m, struct RleToken *rle)
 {
   DArray lines, cur_tokens;
-  size_t line_num = 0;
+  BigInt line_num; bi_simple(&line_num, 0);
   da_init(&lines, sizeof(struct RleLine));
   da_init(&cur_tokens, sizeof(struct RleToken));
 #define DESTROY_IF(x) \
@@ -136,7 +130,7 @@ int align_tokens(struct RleMap *m, struct RleToken *rle)
     da_destroy(&cur_tokens); \
     return 1; \
   } // end of DESTROY_IF
-#define NEW_LINE() DESTROY_IF( push_new_line(&lines, &cur_tokens, line_num) )
+#define NEW_LINE() DESTROY_IF( push_new_line(&lines, &cur_tokens, &line_num) )
   for ( size_t i = 0 ; rle[i].value.char_ != END_RLE_TOKEN ; i++ )
   {
     int value = 1;
@@ -155,9 +149,13 @@ int align_tokens(struct RleMap *m, struct RleToken *rle)
         break;
       }
       case NEWLINE_RLE_TOKEN:
+      {
+        BigInt new_line_num;
+        bi_add(&new_line_num, &line_num, &rle[i].repeat);
         NEW_LINE();
-        line_num += rle[i].repeat;
+        line_num = new_line_num;
         break;
+      }
       default:
         DESTROY_IF( 1 );
         return 2;

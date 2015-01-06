@@ -29,5 +29,7 @@ void bi_block_sub_from(
   const BiBlock *c_digits, const size_t c_length);
 
 void bi_block_set(BiBlock *a, const size_t k, const int bit);
+
+size_t bi_block_from_string(BiBlock *a_digits, char *src, const size_t n);
 /*!@}*/
 #endif
