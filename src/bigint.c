@@ -5,19 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "biblock.h"
 #include "bigint.h"
 #include "definitions.h"
-
-#define COMPOSITE(a) (a)->digits.composite
-#define SIMPLE(a) (a)->digits.simple
-#define LENGTH(a) (a)->length
-#define MAX_LENGTH(a) (a)->max_length
-#define IS_SIMPLE(a) 0 == (a)->max_length
-#define IS_COMPOSITE(a) 0 < (a)->max_length
-//! Sign bit
-#define SIGN(x) ((x) >> (BiBlock_bit - 1))
-//! Uniform view of the representation
-#define DIGITS(a) (IS_SIMPLE(a) ? &SIMPLE(a) : COMPOSITE(a))
 
 const BigInt bi_zero_const_ = {
   .digits = { .simple = 0 },
@@ -102,16 +92,6 @@ int bi_copy(BigInt *a, const BigInt *b)
     return bi_normalize(a, COMPOSITE(b), LENGTH(b));
 }
 
-void bi_block_copy(
-  BiBlock *a_digits, const size_t a_length,
-  const BiBlock *b_digits, const size_t b_length)
-{
-  const int b_sign = SIGN(b_digits[b_length-1]) ? -1 : 0;
-  memcpy(a_digits, b_digits, b_length * sizeof(*a_digits));
-  memset(a_digits + b_length, b_sign,
-    (a_length - b_length) * sizeof(*a_digits));
-}
-
 int bi_slice(const BigInt *a, const size_t k)
 {
   size_t pos = k / BiBlock_bit, ofs = k % BiBlock_bit;
@@ -152,23 +132,6 @@ int bi_minus(BigInt *a, const BigInt *b)
   return bi_normalize(a, a_digits, LENGTH(b)+1);
 }
 
-void bi_block_add_to(
-  BiBlock *a_digits, const size_t a_length, // max(b_length, c_length)
-  const BiBlock *c_digits, const size_t c_length)
-{
-  const BiBlock c_sign = -SIGN(c_digits[c_length-1]);
-  BiBlock carry = 0;
-  // add b to a with overflow check
-#define ADD_TO_OF_CHECK(a,b) ( (a+=b) < b )
-  for ( size_t i = 0 ; i < a_length ; i++ )
-  {
-    carry = ADD_TO_OF_CHECK(a_digits[i], carry);
-    const BiBlock c_ = ( i < c_length ) ? c_digits[i] : c_sign;
-    carry |= ADD_TO_OF_CHECK(a_digits[i], c_); // at most one overflow
-  }
-#undef ADD_TO_OF_CHECK
-}
-
 int bi_add(BigInt *a, const BigInt *b, const BigInt *c)
 {
   if ( LENGTH(b) < LENGTH(c) )
@@ -184,23 +147,6 @@ int bi_add(BigInt *a, const BigInt *b, const BigInt *c)
   bi_block_add_to(a_digits, LENGTH(b)+1, c_digits, LENGTH(c));
 
   return bi_normalize(a, a_digits, LENGTH(b)+1);
-}
-
-void bi_block_sub_from(
-  BiBlock *a_digits, const size_t a_length,
-  const BiBlock *c_digits, const size_t c_length)
-{
-  const BiBlock c_sign = -SIGN(c_digits[c_length-1]);
-  BiBlock carry = 0;
-  // subtract b from a with overflow check
-#define SUB_FROM_OF_CHECK(a,b) ( a < b ); a -= b
-  for ( size_t i = 0 ; i < a_length ; i++ )
-  {
-    carry = SUB_FROM_OF_CHECK(a_digits[i], carry);
-    const BiBlock c_ = ( i < c_length ) ? c_digits[i] : c_sign;
-    carry |= SUB_FROM_OF_CHECK(a_digits[i], c_);
-  }
-#undef ADD_TO_OF_CHECK
 }
 
 int bi_sub(BigInt *a, const BigInt *b, const BigInt *c)
@@ -257,13 +203,6 @@ int bi_to_int(const BigInt *a)
     return SIMPLE(a);
   else
     return -1;
-}
-
-void bi_block_set(BiBlock *a, const size_t k, const int bit)
-{
-  size_t pos = k / BiBlock_bit, ofs = k % BiBlock_bit;
-  a[pos] |= (BiBlock) 1 << ofs;
-  a[pos] ^= (BiBlock) !bit << ofs;
 }
 
 //! Divides `a` by `d`, put the quotient back in `a` and return the remainer.
@@ -398,7 +337,3 @@ char** bi_to_char_mat(
   exit(1);
 }
 
-#undef COMPOSITE
-#undef LENGTH
-#undef SIMPLE
-#undef MAX_LENGTH

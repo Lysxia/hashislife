@@ -78,7 +78,6 @@ int bi_compare(const BigInt *a, const BigInt *b);
 //! Convert a `BigInt` to an `int` (if it is small enough)
 int bi_to_int(const BigInt *a);
 
-void bi_block_set(BiBlock *a, const size_t k, const int bit);
 BiBlock bi_div_int(BigInt *a, BiBlock d);
 
 // Ignores isolated commas

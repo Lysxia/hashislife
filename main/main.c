@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 
       hashtbl_stat(htbl);
 
-      bi_zero(&target);
+      bi_clear(&target);
       hashtbl_delete(htbl);
       break;
     case 1:
